@@ -1,0 +1,23 @@
+# Build output
+dist/
+dist-ssr/
+
+# Dependencies
+node_modules/
+
+# Local environment files — contain secrets, never commit
+.env
+.env.local
+.env.docker.local
+*.local
+
+# OS / editor artefacts
+.DS_Store
+Thumbs.db
+.vscode/settings.json
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Logs
+npm-debug.log*

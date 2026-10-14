@@ -1,0 +1,13 @@
+.git
+.vscode
+node_modules
+dist
+coverage
+playwright-report
+.env
+.env.*
+!.env.example
+!.env.docker
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*

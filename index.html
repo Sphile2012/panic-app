@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Panic Ring" />
+    <meta name="theme-color" content="#0f0f13" />
+    <meta name="description" content="A privacy-first personal safety app." />
+    <title>Panic Ring</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+  </head>
+  <body>
+
+    <!-- PWA install banner — hidden until beforeinstallprompt fires -->
+    <div id="install-banner" class="install-banner" style="display:none" role="banner">
+      <span class="install-banner-text">Install Panic Ring for offline use</span>
+      <div class="install-banner-actions">
+        <button class="install-banner-btn" id="install-btn">Install</button>
+        <button class="install-banner-dismiss" id="install-dismiss" aria-label="Dismiss">✕</button>
+      </div>
+      <!-- iOS instructions (shown instead of install button on Safari) -->
+      <p class="ios-install-msg" id="ios-install-msg" style="display:none">
+        Tap <strong>Share ↑</strong> then <strong>Add to Home Screen</strong>
+      </p>
+    </div>
+
+    <!-- Phone frame -->
+    <main class="phone-frame" aria-label="Panic Ring">
+      <div id="app-root" class="phone-screen"></div>
+    </main>
+
+    <script type="module" src="/src/main.ts"></script>
+
+    <script>
+      document.getElementById('install-dismiss')?.addEventListener('click', () => {
+        document.getElementById('install-banner').style.display = 'none';
+      });
+    </script>
+  </body>
+</html>

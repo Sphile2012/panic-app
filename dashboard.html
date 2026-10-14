@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0f0f13" />
+    <title>Panic Ring — Dashboard</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.json" />
+  </head>
+  <body class="dashboard-body">
+
+    <div class="dash-layout">
+
+      <!-- Sidebar -->
+      <aside class="dash-sidebar">
+        <div class="dash-brand">
+          <div class="dash-brand-icon">○</div>
+          <span class="dash-brand-name">Panic Ring</span>
+        </div>
+        <nav class="dash-nav">
+          <a class="dash-nav-item dash-nav-item--active" href="#overview">Overview</a>
+          <a class="dash-nav-item" href="#alerts">Alerts</a>
+          <a class="dash-nav-item" href="#install">Install app</a>
+          <a class="dash-nav-item" href="#account">Account</a>
+        </nav>
+        <div class="dash-sidebar-footer">
+          <span class="dash-user-email" id="dash-user-email">—</span>
+          <button class="dash-signout-btn" id="dash-signout">Sign out</button>
+        </div>
+      </aside>
+
+      <!-- Main content -->
+      <main class="dash-main">
+
+        <!-- Header -->
+        <header class="dash-header">
+          <div>
+            <h1 class="dash-page-title">Dashboard</h1>
+            <p class="dash-page-sub" id="dash-greeting">Loading…</p>
+          </div>
+          <button class="btn-primary dash-install-btn" id="dash-header-install" style="display:none">
+            Install app
+          </button>
+        </header>
+
+        <!-- Auth gate — shown when not signed in -->
+        <section class="dash-auth-gate" id="dash-auth-gate">
+
+          <div class="dash-auth-tabs">
+            <button class="dash-tab dash-tab--active" id="tab-login">Sign in</button>
+            <button class="dash-tab" id="tab-signup">Create account</button>
+          </div>
+
+          <!-- Login form -->
+          <div class="dash-auth-form-wrap" id="login-wrap">
+            <form class="dash-auth-form" id="dash-login-form" novalidate>
+              <label class="field-label" for="d-li-email">Email</label>
+              <input class="text-input" id="d-li-email" type="email"
+                placeholder="you@example.com" autocomplete="email" required />
+              <label class="field-label" for="d-li-pw">Password</label>
+              <input class="text-input" id="d-li-pw" type="password"
+                placeholder="Your password" autocomplete="current-password" required />
+              <p class="auth-error" id="d-li-error" aria-live="polite"></p>
+              <button class="btn-primary" type="submit" id="d-li-submit">Sign in</button>
+            </form>
+          </div>
+
+          <!-- Signup form -->
+          <div class="dash-auth-form-wrap" id="signup-wrap" style="display:none">
+            <form class="dash-auth-form" id="dash-signup-form" novalidate>
+              <label class="field-label" for="d-su-email">Email</label>
+              <input class="text-input" id="d-su-email" type="email"
+                placeholder="you@example.com" autocomplete="email" required />
+              <label class="field-label" for="d-su-pw">Password</label>
+              <input class="text-input" id="d-su-pw" type="password"
+                placeholder="At least 8 characters" autocomplete="new-password"
+                minlength="8" required />
+              <label class="field-label" for="d-su-cf">Confirm password</label>
+              <input class="text-input" id="d-su-cf" type="password"
+                placeholder="Repeat password" autocomplete="new-password" required />
+              <p class="auth-error" id="d-su-error" aria-live="polite"></p>
+              <button class="btn-primary" type="submit" id="d-su-submit">Create account</button>
+            </form>
+          </div>
+
+        </section>
+
+        <!-- Dashboard content — shown when signed in -->
+        <div class="dash-content" id="dash-content" style="display:none">
+
+          <!-- Stats grid -->
+          <section class="dash-section" id="overview">
+            <h2 class="dash-section-title">Overview</h2>
+            <div class="dash-stats-grid" id="dash-stats">
+              <div class="dash-stat-card">
+                <span class="dash-stat-value" id="stat-total">—</span>
+                <span class="dash-stat-label">Total alerts sent</span>
+              </div>
+              <div class="dash-stat-card">
+                <span class="dash-stat-value" id="stat-opened">—</span>
+                <span class="dash-stat-label">Messages opened</span>
+              </div>
+              <div class="dash-stat-card">
+                <span class="dash-stat-value" id="stat-failed">—</span>
+                <span class="dash-stat-label">Failed deliveries</span>
+              </div>
+              <div class="dash-stat-card">
+                <span class="dash-stat-value" id="stat-location">—</span>
+                <span class="dash-stat-label">Sent with location</span>
+              </div>
+              <div class="dash-stat-card dash-stat-card--wide">
+                <span class="dash-stat-label">Last alert</span>
+                <span class="dash-stat-value dash-stat-value--sm" id="stat-last">Never</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- Recent alerts -->
+          <section class="dash-section" id="alerts">
+            <h2 class="dash-section-title">Recent alerts</h2>
+            <div class="dash-table-wrap">
+              <table class="dash-table" id="dash-alerts-table">
+                <thead>
+                  <tr>
+                    <th>Date &amp; time</th>
+                    <th>Contacts</th>
+                    <th>Opened</th>
+                    <th>Failed</th>
+                    <th>Location</th>
+                  </tr>
+                </thead>
+                <tbody id="dash-alerts-body">
+                  <tr><td colspan="5" class="dash-table-empty">Loading…</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- Install section -->
+          <section class="dash-section" id="install">
+            <h2 class="dash-section-title">Install the app</h2>
+            <div class="dash-install-card">
+              <div class="dash-install-icon" aria-hidden="true"></div>
+              <div class="dash-install-body">
+                <h3 class="dash-install-title">Add Panic Ring to your home screen</h3>
+                <p class="dash-install-desc">
+                  Installing makes the app available offline, removes the browser bar,
+                  and makes it launch faster. Works on Android and iOS.
+                </p>
+                <div class="dash-install-actions">
+                  <button class="btn-primary" id="dash-install-btn" style="display:none">
+                    Install now
+                  </button>
+                  <div class="dash-install-ios" id="dash-install-ios" style="display:none">
+                    <p>On iPhone/iPad: tap the <strong>Share</strong> button in Safari,
+                    then choose <strong>Add to Home Screen</strong>.</p>
+                  </div>
+                  <p class="dash-install-already" id="dash-install-already" style="display:none">
+                    App is already installed.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Account section -->
+          <section class="dash-section" id="account">
+            <h2 class="dash-section-title">Account</h2>
+            <div class="dash-account-card">
+              <p class="dash-account-email" id="dash-account-email">—</p>
+              <p class="dash-account-note">
+                Your contacts, notes and safety plan are stored encrypted on your device only.
+                This account keeps your settings backed up and lets you track alert history.
+              </p>
+              <button class="btn-danger" id="dash-account-signout">Sign out</button>
+            </div>
+          </section>
+
+        </div><!-- /dash-content -->
+
+      </main>
+    </div>
+
+    <script type="module" src="/src/dashboard.ts"></script>
+  </body>
+</html>
