@@ -1746,3 +1746,67 @@ details[open] .loc-info-summary::before { transform: rotate(90deg); }
   from { transform: translateY(-100%); }
   to   { transform: translateY(0); }
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   GOOGLE SIGN-IN BUTTON
+   ════════════════════════════════════════════════════════════════════ */
+.btn-google {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 11px 16px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 4px;
+  transition: background .15s, border-color .15s;
+}
+.btn-google:hover {
+  background: var(--surface);
+  border-color: var(--accent);
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 6px 0;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   FORGOT PASSWORD BUTTON + SUCCESS MESSAGE
+   ════════════════════════════════════════════════════════════════════ */
+.auth-forgot-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  cursor: pointer;
+  padding: 6px 0 0;
+  text-align: center;
+  width: 100%;
+  transition: color .15s;
+}
+.auth-forgot-btn:hover { color: var(--accent); }
+
+.auth-success {
+  font-size: 0.78rem;
+  color: var(--safe);
+  min-height: 1.2em;
+  margin-top: 4px;
+}

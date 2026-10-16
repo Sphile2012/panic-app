@@ -46,6 +46,35 @@ export async function signOut() {
         return;
     await getClient().auth.signOut();
 }
+
+export async function signInWithGoogle(): Promise<{ error: string | null }> {
+    if (!DB_CONFIGURED)
+        return { error: 'Secure account service unavailable.' };
+    try {
+        const { error } = await getClient().auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: window.location.origin,
+            },
+        });
+        return { error: error?.message ?? null };
+    } catch {
+        return { error: 'Unable to sign in with Google.' };
+    }
+}
+
+export async function resetPassword(email: string): Promise<{ error: string | null }> {
+    if (!DB_CONFIGURED)
+        return { error: 'Secure account service unavailable.' };
+    try {
+        const { error } = await getClient().auth.resetPasswordForEmail(email, {
+            redirectTo: window.location.origin + '?reset=true',
+        });
+        return { error: error?.message ?? null };
+    } catch {
+        return { error: 'Unable to send reset email.' };
+    }
+}
 export async function getSession() {
     if (!DB_CONFIGURED)
         return null;

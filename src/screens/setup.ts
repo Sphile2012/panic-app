@@ -1,5 +1,5 @@
 import { store } from '../state.js';
-import { getRecoveryQuestionIds, setRecoveryQuestions } from '../storage.js';
+import { getRecoveryQuestionIds, setRecoveryQuestions, loadPublicSync } from '../storage.js';
 
 const RECOVERY_QUESTIONS = [
   { id: 'first-school', label: 'What was the name of your first school?' },
@@ -74,7 +74,13 @@ export function renderSetupPin(root: HTMLElement) {
         }
         errorEl.textContent = '';
         await store.savePin(pin, decoy);
-        store.navigateTo('recovery-setup');
+        // Recovery questions only asked on first account creation, not on subsequent logins
+        const pub = loadPublicSync();
+        if (!pub.recoveryQuestionIds) {
+          store.navigateTo('recovery-setup');
+        } else {
+          store.navigateTo('setup-contacts');
+        }
     });
 }
 

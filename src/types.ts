@@ -2,6 +2,7 @@
 export type Screen =
   | 'signup'
   | 'login'
+  | 'forgot-password'
   | 'verify-email'
   | 'calculator'
   | 'decoy'

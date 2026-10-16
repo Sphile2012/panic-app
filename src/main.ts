@@ -11,7 +11,7 @@ import { renderSafetyPlan } from './screens/safetyPlan.js';
 import { renderSupport } from './screens/support.js';
 import { renderSettings } from './screens/settings.js';
 import { renderAppearance } from './screens/appearance.js';
-import { renderSignup, renderLogin, renderVerifyEmail } from './screens/auth.js';
+import { renderSignup, renderLogin, renderVerifyEmail, renderForgotPassword } from './screens/auth.js';
 import { renderBudget } from './screens/disguise/budget.js';
 import { renderWeather } from './screens/disguise/weather.js';
 import { renderNotesPlain } from './screens/disguise/notesPlain.js';
@@ -79,6 +79,9 @@ function render(screen: string) {
             break;
         case 'verify-email':
             renderVerifyEmail(appRoot);
+            break;
+        case 'forgot-password':
+            renderForgotPassword(appRoot);
             break;
         case 'calculator':
             renderDisguise();
@@ -164,7 +167,7 @@ store.subscribe((state) => {
 
 document.addEventListener('keydown', (event: KeyboardEvent) => {
     if (event.key === 'Escape') {
-        const safe = ['calculator', 'decoy', 'setup-pin', 'setup-contacts', 'signup', 'login', 'verify-email'];
+        const safe = ['calculator', 'decoy', 'setup-pin', 'setup-contacts', 'signup', 'login', 'verify-email', 'forgot-password'];
         if (!safe.includes(store.getState().screen)) {
             window.location.href = 'https://www.google.com';
         }
