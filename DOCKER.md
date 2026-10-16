@@ -1,141 +1,154 @@
-# Panic Ring — Docker setup
+# Panic Ring — Backend & Docker Setup
 
-Everything runs in Docker. One command starts the full stack:
-Postgres, Supabase Auth, PostgREST, Realtime, Storage, Studio, Kong,
-and the Nginx-served Panic Ring app.
+The full backend is self-hosted using Docker Compose. It runs:
+PostgreSQL 15, Supabase Auth (GoTrue), PostgREST, Realtime, Storage,
+Supabase Studio, Kong API gateway, and the Nginx-served Panic Ring app.
 
 ---
 
 ## Prerequisites
 
-| Tool | Minimum version | Install |
-|------|-----------------|---------|
-| Docker Desktop | 4.25 | https://www.docker.com/products/docker-desktop |
-| Docker Compose | v2 (bundled) | included with Docker Desktop |
+| Tool | Version | Install |
+|------|---------|---------|
+| Docker Desktop | ≥ 4.25 | https://www.docker.com/products/docker-desktop |
+| Node.js | ≥ 20 | https://nodejs.org |
 
 ---
 
-## Quick start
-
-### 1. Copy and edit the env file
+## First-time setup (run once)
 
 ```bash
-cp .env.docker .env.docker.local
+# 1. Clone the repo (skip if already cloned)
+git clone https://github.com/Sphile2012/panic-app.git
+cd panic-app
+
+# 2. Install dependencies
+npm install
+
+# 3. Generate all secrets and write .env files automatically
+node setup.cjs
+
+# This creates two files (both are in .gitignore — never committed):
+#   .env.docker.local   — secrets for the Docker stack
+#   .env                — secrets for the Vite dev server
 ```
 
-Open `.env.docker.local` and change **at minimum**:
+The script prints a summary including the Studio password. Save it.
 
-| Variable | What to change |
-|----------|---------------|
-| `POSTGRES_PASSWORD` | Any strong password |
-| `JWT_SECRET` | `openssl rand -base64 32` |
-| `SECRET_KEY_BASE` | `openssl rand -hex 32` |
-| `DASHBOARD_PASSWORD` | Studio login password |
-| `GOTRUE_MAILER_AUTOCONFIRM` | `true` for local-only development; set `false` with SMTP in production |
-| `ADDITIONAL_REDIRECT_URLS` | Optional comma-separated exact redirect URLs; never use `*` |
+---
 
-The `ANON_KEY` and `SERVICE_ROLE_KEY` in `.env.docker` are the standard
-Supabase local-dev JWTs signed with the default secret. If you change
-`JWT_SECRET`, regenerate them at:
-https://supabase.com/docs/guides/self-hosting/docker#generate-api-keys
-
-### 2. Start everything
+## Start the backend
 
 ```bash
-# Build the app image and start all services
+# Make sure Docker Desktop is open and running, then:
 docker compose --env-file .env.docker.local up -d --build
-
-# Or use the npm shortcut (uses .env.docker.local):
-npm run docker:up
 ```
 
-First boot takes 2–3 minutes as Docker pulls all images and Postgres
-runs the init SQL.
+First boot pulls ~1 GB of images and runs the database schema.
+Allow 2–4 minutes. Watch progress with:
 
-### 3. Open the app
+```bash
+docker compose --env-file .env.docker.local logs -f
+```
 
-| URL | What |
-|-----|------|
-| http://localhost:8080 | Panic Ring app |
+---
+
+## Verify everything is running
+
+| URL | Expected |
+|-----|----------|
+| http://localhost:8080 | Panic Ring app — login / signup |
+| http://localhost:8080/health | `ok` |
 | http://localhost:8080/dashboard.html | Dashboard |
 | http://localhost:3000 | Supabase Studio |
-| http://localhost:8000 | Kong API gateway |
+| http://localhost:8000/auth/v1/health | `{"status":"UP"}` |
+| http://localhost:8000/rest/v1/ | PostgREST root |
+
+---
+
+## Start the dev server (for local development)
+
+In a **separate terminal** after the Docker stack is up:
+
+```bash
+npm run dev
+```
+
+Opens at http://localhost:5173 with hot-reload.
+The Vite dev server proxies nothing — it talks directly to Kong at `localhost:8000`.
 
 ---
 
 ## Useful commands
 
 ```bash
+# Rebuild only the app container after a code change
+docker compose --env-file .env.docker.local up -d --build app
+
 # Tail app logs
 docker compose --env-file .env.docker.local logs -f app
 
-# Tail all service logs
-docker compose --env-file .env.docker.local logs -f
-
-# Stop everything (keeps data)
+# Stop (keeps all data)
 docker compose --env-file .env.docker.local down
 
-# Stop and delete all data (fresh start)
+# Stop and wipe all data (fresh start — DESTRUCTIVE)
 docker compose --env-file .env.docker.local down -v
 
-# Rebuild only the app after code changes
-docker compose --env-file .env.docker.local build app
-docker compose --env-file .env.docker.local up -d app
+# Re-run secret generation (creates new keys, overwrites .env files)
+node setup.cjs
 ```
 
 ---
 
-## How it works
+## Architecture
 
 ```
-Browser
+Browser  ──────────────────────────────────────────────────────────────
+  │  (dev)  http://localhost:5173  ── Vite dev server
+  │  (prod) http://localhost:8080  ── Nginx (serves dist/)
   │
-  ▼
-Nginx (port 8080) ──── serves dist/ (Vite-built app)
-  │
-  ├── /rest/v1/*    ──► Kong (8000) ──► PostgREST (3000)
-  ├── /auth/v1/*    ──► Kong (8000) ──► GoTrue    (9999)
-  ├── /storage/v1/* ──► Kong (8000) ──► Storage   (5000)
-  └── /realtime/*   ──► Kong (8000) ──► Realtime  (4000)
-                                            │
-                                          PostgreSQL (5432)
+  ├── /rest/v1/*     ──► Kong :8000 ──► PostgREST :3000
+  ├── /auth/v1/*     ──► Kong :8000 ──► GoTrue    :9999
+  ├── /storage/v1/*  ──► Kong :8000 ──► Storage   :5000
+  └── /realtime/*    ──► Kong :8000 ──► Realtime  :4000
+                                             │
+                                       PostgreSQL :5432
 ```
 
-The app's Supabase URL is set to `http://localhost:8000` (Kong) so all
-API calls go through the gateway. RLS policies in Postgres ensure users
-can only read their own data.
+**Private data stays on the device.**
+Contacts, notes and safety plans are AES-GCM encrypted in the browser's
+`localStorage`. They never reach the database in plaintext.
+The database stores only: hashed PINs, anonymous alert counts, device IDs.
 
 ---
 
-## Production deployment
+## Database schema
 
-1. Set `API_URL` and `SITE_URL` to your real domains in the env file.
-2. Put a TLS-terminating reverse proxy (Caddy, Traefik, or AWS ALB)
-   in front of the Nginx container.
-3. Change all default passwords and regenerate JWT keys.
-4. Set `GOTRUE_MAILER_AUTOCONFIRM=false`, configure real SMTP so
-   users receive email confirmation.
-5. Set `ADDITIONAL_REDIRECT_URLS` only to exact required HTTPS callback URLs.
-   Do not use a wildcard redirect allow-list.
-6. Point `ANON_KEY` and `SERVICE_ROLE_KEY` to JWTs signed with your
-   production `JWT_SECRET`.
-7. Keep the app and backend ports bound to localhost; expose them only through
-   a TLS-terminating reverse proxy. Studio and Postgres should not be public.
+Tables created by `supabase/init.sql` (runs on first Postgres boot):
+
+| Table / View | Purpose |
+|---|---|
+| `public.devices` | One row per browser install — PIN hash, decoy hash, auto-lock setting |
+| `public.alert_logs` | One row per alert fired — counts only, no personal data |
+| `public.alert_stats` | View used by the dashboard — aggregates per user |
+
+All tables have Row Level Security — each user sees only their own rows.
+
+To inspect or edit data, open **Supabase Studio → http://localhost:3000**.
 
 ---
 
-## Schema
+## Production checklist
 
-The database schema is in `supabase/init.sql` and runs automatically
-on first Postgres boot. It creates:
+Before exposing to the internet:
 
-- `public.devices` — one row per installed app, stores PIN hashes only
-- `public.alert_logs` — audit log of alerts fired (no personal data)
-- `public.alert_stats` — view used by the dashboard
-
-Row Level Security ensures every user can only see their own rows.
-**No private data (contacts, notes, safety plan) ever leaves the device** —
-it is stored AES-GCM encrypted in the browser's localStorage.
+- [ ] Put a **TLS-terminating reverse proxy** (Caddy, Traefik, or AWS ALB) in front of port 8080
+- [ ] Uncomment `Strict-Transport-Security` in `nginx.conf` once HTTPS is live
+- [ ] Set `GOTRUE_MAILER_AUTOCONFIRM=false` and configure real SMTP
+- [ ] Set `ADDITIONAL_REDIRECT_URLS` to exact HTTPS callback URLs only — never `*`
+- [ ] Change `SITE_URL` and `API_URL` to your real domains (HTTPS)
+- [ ] Keep ports 3000 (Studio), 5432 (Postgres), 8000 (Kong) bound to `127.0.0.1` — not exposed publicly
+- [ ] Set up volume backups for `panic-ring_db_data`
 
 ---
 
@@ -143,7 +156,7 @@ it is stored AES-GCM encrypted in the browser's localStorage.
 
 | Volume | Contains |
 |--------|----------|
-| `panic-ring_db_data` | Postgres data directory |
+| `panic-ring_db_data` | Postgres data |
 | `panic-ring_storage_data` | Supabase Storage files |
 
-Back these up before running `docker compose down -v`.
+Back up before running `down -v`.

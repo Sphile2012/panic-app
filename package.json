@@ -8,19 +8,19 @@
     "build":          "tsc && vite build",
     "preview":        "vite preview --port 4173",
     "typecheck":      "tsc --noEmit",
-    "docker:build":   "docker compose --env-file .env.docker.local build",
-    "docker:up":      "docker compose --env-file .env.docker.local up -d",
+    "setup":          "node setup.cjs",
+    "docker:up":      "docker compose --env-file .env.docker.local up -d --build",
     "docker:down":    "docker compose --env-file .env.docker.local down",
-    "docker:logs":    "docker compose --env-file .env.docker.local logs -f app",
     "docker:reset":   "docker compose --env-file .env.docker.local down -v",
+    "docker:logs":    "docker compose --env-file .env.docker.local logs -f",
     "docker:rebuild": "docker compose --env-file .env.docker.local up -d --build app"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.117.3"
+    "@supabase/supabase-js": "2.45.4"
   },
   "devDependencies": {
-    "typescript": "^5.4.5",
-    "vite":       "^5.2.11"
+    "typescript": "5.4.5",
+    "vite":       "5.2.11"
   },
   "engines": {
     "node": ">=20"

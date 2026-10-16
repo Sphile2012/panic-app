@@ -1,0 +1,19 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "chrome",
+      "request": "launch",
+      "name": "Dev — Panic Ring (localhost:5173)",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}"
+    },
+    {
+      "type": "chrome",
+      "request": "launch",
+      "name": "Docker — Panic Ring (localhost:8080)",
+      "url": "http://localhost:8080",
+      "webRoot": "${workspaceFolder}"
+    }
+  ]
+}
