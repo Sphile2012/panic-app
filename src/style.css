@@ -1810,3 +1810,115 @@ details[open] .loc-info-summary::before { transform: rotate(90deg); }
   min-height: 1.2em;
   margin-top: 4px;
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   UX IMPROVEMENTS — auth, app home, empty states
+   ════════════════════════════════════════════════════════════════════ */
+
+/* Auth logo tagline */
+.auth-logo-tagline {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+  text-align: center;
+}
+
+/* Large icon above auth titles */
+.auth-icon-big {
+  font-size: 2.8rem;
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+/* Verify steps list */
+.verify-steps {
+  display: flex; flex-direction: column; gap: 8px;
+  background: var(--surface2);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin: 12px 0;
+}
+.verify-step {
+  font-size: 0.84rem; color: var(--text-muted);
+  padding-left: 4px;
+}
+.verify-step::before {
+  content: '✓ ';
+  color: var(--safe);
+  font-weight: 700;
+}
+
+/* Auth footer grouping */
+.auth-footer {
+  display: flex; flex-direction: column; gap: 4px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.auth-link-muted {
+  color: var(--text-muted) !important;
+  font-size: 0.75rem !important;
+}
+
+/* App greeting */
+.app-greeting {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: 1px;
+}
+.app-header-left {
+  display: flex; align-items: center; gap: 12px;
+}
+
+/* Hold button icon */
+.btn-hold-icon {
+  font-size: 1.6rem;
+  display: block;
+  margin-bottom: 4px;
+  position: relative; z-index: 1;
+}
+
+/* Guest mode strip */
+.app-account-strip--guest {
+  background: color-mix(in srgb, var(--warn) 10%, var(--surface2));
+  border: 1px solid color-mix(in srgb, var(--warn) 30%, transparent);
+}
+
+/* Empty state */
+.app-empty-state {
+  text-align: center;
+  padding: 20px 16px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  border: 1px dashed var(--border);
+}
+.app-empty-icon  { font-size: 2rem; margin-bottom: 6px; }
+.app-empty-title { font-size: 0.92rem; font-weight: 700; margin-bottom: 4px; }
+.app-empty-body  { font-size: 0.78rem; color: var(--text-muted); line-height: 1.55; }
+
+/* Contact ready dot */
+.contact-ready-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--safe);
+  flex-shrink: 0;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--safe) 25%, transparent);
+}
+
+/* Quick bar sublabel */
+.checkin-sheet-sublabel {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  margin-top: 8px;
+}
+
+/* Light theme auth card */
+[data-theme="light"] .auth-card {
+  box-shadow: 0 4px 24px rgba(0,0,0,.08);
+}
+[data-theme="light"] .btn-google {
+  box-shadow: 0 1px 4px rgba(0,0,0,.1);
+}
