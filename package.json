@@ -9,6 +9,7 @@
     "preview":        "vite preview --port 4173",
     "typecheck":      "tsc --noEmit",
     "setup":          "node setup.cjs",
+    "setup:cloud":    "node setup-cloud.cjs",
     "docker:up":      "docker compose --env-file .env.docker.local up -d --build",
     "docker:down":    "docker compose --env-file .env.docker.local down",
     "docker:reset":   "docker compose --env-file .env.docker.local down -v",
