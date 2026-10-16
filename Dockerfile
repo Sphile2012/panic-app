@@ -6,7 +6,7 @@ WORKDIR /app
 
 # Copy manifests first so Docker layer-caches the install step
 COPY package.json package-lock.json ./
-RUN npm ci --prefer-offline --no-audit
+RUN npm install --no-audit --no-fund
 
 # Copy source
 COPY . .

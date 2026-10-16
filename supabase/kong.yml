@@ -1,17 +1,12 @@
 _format_version: "1.1"
 
-###############################################################################
-#  Kong declarative config for self-hosted Supabase
-#  This routes all Supabase service traffic through a single gateway port.
-###############################################################################
-
 consumers:
   - username: anon
     keyauth_credentials:
-      - key: ${SUPABASE_ANON_KEY}
+      - key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNzAwMDAwMDAwLCJleHAiOjIyMDAwMDAwMDB9.9v0fPKAPehgXHjNkrGDW1vIiW5D34wSArkQ5ZWwmG3U
   - username: service_role
     keyauth_credentials:
-      - key: ${SUPABASE_SERVICE_KEY}
+      - key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJvbGUiOiJzZXJ2aWNlX3JvbGUiLCJpYXQiOjE3MDAwMDAwMDAsImV4cCI6MjIwMDAwMDAwMH0.IKYN7y3-IAEalCMmH-A9DNVy1SlQOHL5KJovC07F7Y0
 
 acls:
   - consumer: anon
@@ -20,40 +15,39 @@ acls:
     group:    admin
 
 services:
-  # ── Auth (GoTrue) ──────────────────────────────────────────────────────────
   - name: auth-v1-open
     url:  http://auth:9999/verify
     routes:
-      - name:    auth-v1-open-route
+      - name: auth-v1-open-route
         strip_path: true
-        paths:   [/auth/v1/verify]
+        paths: [/auth/v1/verify]
     plugins:
       - name: cors
 
   - name: auth-v1-open-callback
     url:  http://auth:9999/callback
     routes:
-      - name:    auth-v1-open-callback-route
+      - name: auth-v1-open-callback-route
         strip_path: true
-        paths:   [/auth/v1/callback]
+        paths: [/auth/v1/callback]
     plugins:
       - name: cors
 
   - name: auth-v1-open-authorize
     url:  http://auth:9999/authorize
     routes:
-      - name:    auth-v1-open-authorize-route
+      - name: auth-v1-open-authorize-route
         strip_path: true
-        paths:   [/auth/v1/authorize]
+        paths: [/auth/v1/authorize]
     plugins:
       - name: cors
 
   - name: auth-v1
     url:  http://auth:9999/
     routes:
-      - name:    auth-v1-all
+      - name: auth-v1-all
         strip_path: true
-        paths:   [/auth/v1/]
+        paths: [/auth/v1/]
     plugins:
       - name: cors
       - name: key-auth
@@ -62,17 +56,14 @@ services:
       - name: acl
         config:
           hide_groups_header: true
-          allow:
-            - anon
-            - admin
+          allow: [anon, admin]
 
-  # ── PostgREST ─────────────────────────────────────────────────────────────
   - name: rest-v1
     url:  http://rest:3000/
     routes:
-      - name:    rest-v1-all
+      - name: rest-v1-all
         strip_path: true
-        paths:   [/rest/v1/]
+        paths: [/rest/v1/]
     plugins:
       - name: cors
       - name: key-auth
@@ -81,17 +72,14 @@ services:
       - name: acl
         config:
           hide_groups_header: true
-          allow:
-            - anon
-            - admin
+          allow: [anon, admin]
 
-  # ── Realtime ──────────────────────────────────────────────────────────────
   - name: realtime-v1
     url:  http://realtime:4000/socket/
     routes:
-      - name:    realtime-v1-all
+      - name: realtime-v1-all
         strip_path: true
-        paths:   [/realtime/v1/]
+        paths: [/realtime/v1/]
     plugins:
       - name: cors
       - name: key-auth
@@ -100,17 +88,14 @@ services:
       - name: acl
         config:
           hide_groups_header: true
-          allow:
-            - anon
-            - admin
+          allow: [anon, admin]
 
-  # ── Storage ───────────────────────────────────────────────────────────────
   - name: storage-v1
     url:  http://storage:5000/
     routes:
-      - name:    storage-v1-all
+      - name: storage-v1-all
         strip_path: true
-        paths:   [/storage/v1/]
+        paths: [/storage/v1/]
     plugins:
       - name: cors
       - name: key-auth
@@ -119,17 +104,14 @@ services:
       - name: acl
         config:
           hide_groups_header: true
-          allow:
-            - anon
-            - admin
+          allow: [anon, admin]
 
-  # ── Meta (Studio only) ────────────────────────────────────────────────────
   - name: meta
     url:  http://meta:8080/
     routes:
-      - name:    meta-all
+      - name: meta-all
         strip_path: true
-        paths:   [/pg/]
+        paths: [/pg/]
     plugins:
       - name: key-auth
         config:
@@ -137,5 +119,4 @@ services:
       - name: acl
         config:
           hide_groups_header: true
-          allow:
-            - admin
+          allow: [admin]
