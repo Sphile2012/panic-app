@@ -32,7 +32,7 @@ export function renderApp(root: HTMLElement): void {
         <div class="app-header-left">
           <div class="app-ring-icon" aria-hidden="true">○</div>
           <div>
-            <p class="app-greeting">${greeting}${firstName ? `, ${firstName}` : ''} 👋</p>
+            <p class="app-greeting">${greeting}${firstName ? `, ${firstName}` : ''}</p>
             <h1 class="app-title">Panic Ring</h1>
           </div>
         </div>
@@ -45,12 +45,12 @@ export function renderApp(root: HTMLElement): void {
       
       ${authEmail ? `
         <div class="app-account-strip">
-          <span class="app-account-email">📧 ${authEmail}</span>
+          <span class="app-account-email">${authEmail}</span>
           <button class="app-signout-btn" id="btn-signout">Sign out</button>
         </div>
       ` : `
         <div class="app-account-strip app-account-strip--guest">
-          <span class="app-account-email">👤 Guest mode — data stays on this device</span>
+          <span class="app-account-email">Guest mode — data stays on this device</span>
           <button class="app-signout-btn" id="btn-signin-prompt">Sign in</button>
         </div>
       `}
@@ -60,13 +60,13 @@ export function renderApp(root: HTMLElement): void {
         <button class="btn-hold" id="btn-hold"
           aria-label="Hold to send alert"
           title="Hold for 1.5 seconds to alert your circle">
-          <span class="btn-hold-icon">🚨</span>
+          <span class="btn-hold-icon">Activate</span>
           <span class="btn-hold-label">Hold to activate</span>
           <div class="btn-hold-ring"></div>
         </button>
         <p class="app-activate-hint">
           ${emergencyContacts.length === 0
-            ? '⚠️ Add a Level 1 emergency contact first'
+            ? 'Add a Level 1 emergency contact first'
             : `Hold 1.5 s · alerts ${emergencyContacts.length} emergency contact${emergencyContacts.length !== 1 ? 's' : ''}`}
         </p>
       </div>
@@ -85,7 +85,7 @@ export function renderApp(root: HTMLElement): void {
           <summary>View checklist</summary>
           <ul>
             ${readinessItems.map(([label, complete]) => `
-              <li>${complete ? '✓' : '○'} ${label}</li>
+              <li>${complete ? 'Complete' : 'Pending'} · ${label}</li>
             `).join('')}
           </ul>
         </details>
@@ -113,7 +113,7 @@ export function renderApp(root: HTMLElement): void {
         </div>
         ${contacts.length === 0
           ? `<div class="app-empty-state">
-               <p class="app-empty-icon">👥</p>
+               <p class="app-empty-icon">0</p>
                <p class="app-empty-title">No contacts yet</p>
                <p class="app-empty-body">Add at least one trusted person to send alerts to.</p>
                <button class="btn-primary" id="btn-add-first" style="margin-top:10px">Add a contact</button>
@@ -125,35 +125,39 @@ export function renderApp(root: HTMLElement): void {
       
       <div class="app-quick-bar">
         <button class="app-quick-btn" id="btn-disguise" title="Change disguise screen">
-          <span class="app-quick-icon">${currentDisguise?.preview ?? '🔢'}</span>
+          <span class="app-quick-icon">${currentDisguise?.preview ?? 'Calc'}</span>
           <span class="app-quick-label">${currentDisguise?.label ?? 'Calculator'}</span>
         </button>
         <button class="app-quick-btn" id="btn-theme" title="Toggle theme">
-          <span class="app-quick-icon" id="theme-icon">${appearance.mode === 'light' ? '☀️' : '🌙'}</span>
+          <span class="app-quick-icon" id="theme-icon">${appearance.mode === 'light' ? 'Light' : 'Dark'}</span>
           <span class="app-quick-label">Theme</span>
         </button>
         <button class="app-quick-btn" id="btn-quick-checkin" title="Check-in timer">
-          <span class="app-quick-icon">⏱</span>
+          <span class="app-quick-icon">Timer</span>
           <span class="app-quick-label">Check-in</span>
         </button>
+        <button class="app-quick-btn" id="btn-chatbot-home" title="Guidance bot">
+          <span class="app-quick-icon">Bot</span>
+          <span class="app-quick-label">Guide</span>
+        </button>
         <button class="app-quick-btn" id="btn-safe-word-quick" title="Send a safe-word message">
-          <span class="app-quick-icon">💬</span>
+          <span class="app-quick-icon">Word</span>
           <span class="app-quick-label">Safe word</span>
         </button>
       </div>
 
       
       <nav class="app-nav" aria-label="Main navigation">
-        <button class="app-nav-btn" data-nav="notes">📝<br>Notes</button>
-        <button class="app-nav-btn" data-nav="safety-plan">🗺<br>Safety Plan</button>
-        <button class="app-nav-btn" data-nav="companion">💛<br>Get Help</button>
-        <button class="app-nav-btn" data-nav="settings">⚙<br>Settings</button>
+        <button class="app-nav-btn" data-nav="notes">Notes</button>
+        <button class="app-nav-btn" data-nav="safety-plan">Safety Plan</button>
+        <button class="app-nav-btn" data-nav="companion">Get Help</button>
+        <button class="app-nav-btn" data-nav="settings">Settings</button>
       </nav>
 
       
       <div class="checkin-bar" id="checkin-bar" style="display:none">
         <div class="checkin-bar-inner">
-          <span class="checkin-icon">⏱</span>
+          <span class="checkin-icon">Timer</span>
           <span class="checkin-label" id="checkin-label">Check-in active</span>
           <span class="checkin-countdown" id="checkin-countdown"></span>
           <button class="checkin-cancel" id="checkin-cancel">I'm safe ✓</button>
@@ -162,7 +166,7 @@ export function renderApp(root: HTMLElement): void {
 
       
       <div class="checkin-sheet" id="checkin-sheet" aria-hidden="true">
-        <p class="checkin-sheet-title">⏱ Set a check-in timer</p>
+        <p class="checkin-sheet-title">Set a check-in timer</p>
         <p class="checkin-sheet-body">
           If time runs out, Panic Ring will prompt you to prepare an alert. Messages are never sent automatically.
         </p>
@@ -238,6 +242,18 @@ export function renderApp(root: HTMLElement): void {
   root.querySelector('#btn-add-first')?.addEventListener('click', () => store.navigateTo('contacts'));
 
   root.querySelector('#btn-profile')!.addEventListener('click', () => store.navigateTo('settings'));
+  root.querySelectorAll<HTMLButtonElement>('.contact-delete').forEach(delBtn => {
+    delBtn.addEventListener('click', () => {
+      const id = delBtn.dataset['id'];
+      if (!id) return;
+      const contact = store.getState().contacts.find(c => c.id === id);
+      if (!contact) return;
+      if (confirm(`Remove ${contact.name} from your circle?`)) {
+        store.deleteContact(id);
+        store.navigateTo('app');
+      }
+    });
+  });
   root.querySelector('#btn-signout')?.addEventListener('click', async () => {
     if (confirm('Sign out? The app will lock and you will need to sign in again.')) {
       await store.signOut();
@@ -245,6 +261,7 @@ export function renderApp(root: HTMLElement): void {
   });
   root.querySelector('#btn-signin-prompt')?.addEventListener('click', () => store.navigateTo('login'));
   root.querySelector('#btn-safe-word-quick')!.addEventListener('click', () => store.navigateTo('safe-word'));
+  root.querySelector('#btn-chatbot-home')?.addEventListener('click', () => store.navigateTo('chatbot'));
 
   root.querySelector('#circle-safe')?.addEventListener('click', () => {
     recordCircleCheck();
@@ -265,7 +282,7 @@ export function renderApp(root: HTMLElement): void {
     saveAppearance(ap);
     applyAppearance(ap);
     const icon = root.querySelector<HTMLElement>('#theme-icon')!;
-    icon.textContent = ap.mode === 'light' ? '☀️' : '🌙';
+    icon.textContent = ap.mode === 'light' ? 'Light' : 'Dark';
   });
 
   const sheet = root.querySelector<HTMLElement>('#disguise-sheet')!;
@@ -388,6 +405,7 @@ function contactRow(c: Contact): string {
         <span class="contact-phone">${escapeHtml(c.phone)}</span>
         <span class="contact-phone">${c.level === 'emergency' ? 'Level 1 · Emergency' : c.level === 'referral' ? 'Level 2 · Referrals' : 'Level 3 · Check-ins'}</span>
       </div>
+      <button class="contact-delete" data-id="${c.id}" aria-label="Remove ${escapeHtml(c.name)}">Remove</button>
       <span class="contact-ready-dot" title="Ready to receive alerts"></span>
     </li>`;
 }

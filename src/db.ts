@@ -23,7 +23,7 @@ function safeAuthError(message: string | undefined, fallback: string): string {
 export function getClient() {
     if (!_client) {
         if (!DB_CONFIGURED || !SUPABASE_URL || !SUPABASE_ANON) {
-            throw new Error('Supabase not configured — add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to .env');
+            throw new Error('Secure account service unavailable. The app can continue in offline mode.');
         }
         _client = createClient(SUPABASE_URL, SUPABASE_ANON, {
             auth: {

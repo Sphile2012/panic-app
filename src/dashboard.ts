@@ -91,12 +91,10 @@ function showNoConfig() {
     const gate = document.getElementById('dash-auth-gate');
     gate.innerHTML = `
     <div class="dash-no-config">
-      <h2>Supabase not configured</h2>
-      <p>Add <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code>
-         to your <code>.env</code> file, then rebuild.</p>
-      <p>See <code>.env.example</code> for the format.</p>
+      <h2>Account dashboard unavailable</h2>
+      <p>The dashboard is currently offline. Open the app to manage your safety plan on this device.</p>
       <a class="btn-primary" href="/" style="display:inline-flex;margin-top:16px;text-decoration:none">
-        ← Open app (offline mode)
+        Open app
       </a>
     </div>
   `;

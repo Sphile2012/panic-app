@@ -1,5 +1,6 @@
 import { store } from '../state.js';
 import { getRecoveryQuestionIds, setRecoveryQuestions, loadPublicSync } from '../storage.js';
+import { loadAppearance, saveAppearance, applyAppearance, DISGUISE_OPTIONS } from '../theme.js';
 
 const RECOVERY_QUESTIONS = [
   { id: 'first-school',    label: 'What was the name of your first school?' },
@@ -19,6 +20,9 @@ function validatePin(pin: string): string | null {
 }
 
 export function renderSetupPin(root: HTMLElement) {
+  const appearance = loadAppearance();
+  let selectedDisguise = appearance.disguise;
+
   root.innerHTML = `
     <div class="screen setup-screen">
       <div class="setup-logo">○</div>
@@ -28,6 +32,20 @@ export function renderSetupPin(root: HTMLElement) {
         that opens a harmless notes screen if someone forces you to unlock.
         You choose both PINs right now. They can be 4 to 8 digits, any number you like.
       </p>
+
+      <section class="ap-section">
+        <h2 class="section-label">Choose your cover screen</h2>
+        <div class="ap-disguise-grid">
+          ${DISGUISE_OPTIONS.map(option => `
+            <button type="button" class="ap-disguise-card ${selectedDisguise === option.id ? 'ap-disguise-card--active' : ''}" data-disguise-select="${option.id}">
+              <span class="ap-disguise-icon">${option.preview}</span>
+              <span class="ap-disguise-label">${option.label}</span>
+              <span class="ap-disguise-desc">${option.description}</span>
+              ${selectedDisguise === option.id ? '<span class="ap-disguise-check">✓ Active</span>' : ''}
+            </button>
+          `).join('')}
+        </div>
+      </section>
 
       <form class="setup-form" id="setup-pin-form" autocomplete="off">
 
@@ -65,7 +83,30 @@ export function renderSetupPin(root: HTMLElement) {
     </div>
   `;
 
-  // Password show/hide toggles
+  root.querySelectorAll<HTMLButtonElement>('[data-disguise-select]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      selectedDisguise = btn.dataset['disguiseSelect'] ?? selectedDisguise;
+      const nextAppearance = loadAppearance();
+      nextAppearance.disguise = selectedDisguise;
+      saveAppearance(nextAppearance);
+      applyAppearance(nextAppearance);
+      root.querySelectorAll<HTMLButtonElement>('[data-disguise-select]').forEach(option => {
+        const active = option.dataset['disguiseSelect'] === selectedDisguise;
+        option.classList.toggle('ap-disguise-card--active', active);
+        const badge = option.querySelector('.ap-disguise-check');
+        if (active && !badge) {
+          const node = document.createElement('span');
+          node.className = 'ap-disguise-check';
+          node.textContent = '✓ Active';
+          option.appendChild(node);
+        }
+        else if (!active && badge) {
+          badge.remove();
+        }
+      });
+    });
+  });
+
   root.querySelectorAll<HTMLButtonElement>('.pw-toggle').forEach(btn => {
     btn.addEventListener('click', () => {
       const inp = root.querySelector<HTMLInputElement>(`#${btn.dataset['for']}`)!;
@@ -95,6 +136,10 @@ export function renderSetupPin(root: HTMLElement) {
     }
 
     errorEl.textContent = '';
+    const activeAppearance = loadAppearance();
+    activeAppearance.disguise = selectedDisguise;
+    saveAppearance(activeAppearance);
+    applyAppearance(activeAppearance);
     await store.savePin(pin, decoy);
 
     const pub = loadPublicSync();
@@ -302,7 +347,7 @@ export function renderSetupContacts(root: HTMLElement) {
                 <span class="contact-name">${c.name}</span>
                 <span class="contact-phone">${c.phone}</span>
               </div>
-              <button class="contact-delete" data-id="${c.id}" aria-label="Remove ${c.name}">✕</button>
+              <button class="contact-delete" data-id="${c.id}" aria-label="Remove ${c.name}">Remove</button>
             </li>
           `).join('')}
         </ul>
@@ -356,7 +401,10 @@ export function renderSetupContacts(root: HTMLElement) {
       if (!name)  { errEl.textContent = 'Enter a name.'; return; }
       if (!phone) { errEl.textContent = 'Enter a phone number.'; return; }
       errEl.textContent = '';
-      if (!store.addContact(name, phone)) { store.navigateTo('signup'); return; }
+      if (!store.addContact(name, phone)) {
+        errEl.textContent = 'This person is already in your trusted circle.';
+        return;
+      }
       store.navigateTo('setup-contacts');
     });
   }

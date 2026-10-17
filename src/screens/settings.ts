@@ -1,8 +1,8 @@
 import { store } from '../state.js';
-import { getRecoveryQuestionIds } from '../storage.js';
+import { getRecoveryQuestionIds, LANGUAGES } from '../storage.js';
 import { isLargeControlsEnabled, setLargeControlsEnabled } from '../accessibility.js';
 export function renderSettings(root: HTMLElement) {
-    const { autoLockMinutes, authEmail } = store.getState();
+    const { autoLockMinutes, authEmail, profileName: savedName, profilePhone: savedPhone, profileImei: savedImei, language } = store.getState();
   const hasRecovery = getRecoveryQuestionIds() !== null;
     root.innerHTML = `
     <div class="screen settings-screen">
@@ -33,6 +33,37 @@ export function renderSettings(root: HTMLElement) {
             <button class="btn-secondary-outline" id="btn-create">Create account</button>
           </div>
         `}
+      </section>
+
+      <section class="settings-section">
+        <h3 class="settings-section-title">Profile</h3>
+        <form class="setup-form" id="profile-form" autocomplete="off">
+          <label class="field-label" for="profile-name">Name</label>
+          <input class="text-input" id="profile-name" value="${savedName}" placeholder="Your full name" />
+
+          <label class="field-label" for="profile-phone">Mobile number</label>
+          <input class="text-input" id="profile-phone" value="${savedPhone}" placeholder="+27 82 123 4567" inputmode="tel" />
+
+          <label class="field-label" for="profile-imei">Device IMEI / ID</label>
+          <input class="text-input" id="profile-imei" value="${savedImei}" placeholder="Optional device identifier" />
+
+          <label class="field-label" for="profile-language">Language</label>
+          <select class="text-input" id="profile-language">
+            ${LANGUAGES.map(opt => `<option value="${opt.code}" ${language === opt.code ? 'selected' : ''}>${opt.label}</option>`).join('')}
+          </select>
+
+          <p class="setup-hint" id="profile-status" aria-live="polite"></p>
+          <button class="btn-secondary-outline" type="submit">Save profile</button>
+        </form>
+      </section>
+
+      <section class="settings-section">
+        <h3 class="settings-section-title">Help & guidance</h3>
+        <p class="settings-section-body">Get quick help for technical problems, low battery warnings, and emergency steps.</p>
+        <div class="settings-auth-buttons">
+          <button class="btn-secondary-outline" id="btn-chatbot">Open guidance bot</button>
+          <button class="btn-secondary-outline" id="btn-report-issue">Report an issue</button>
+        </div>
       </section>
 
       <section class="settings-section">
@@ -86,10 +117,10 @@ export function renderSettings(root: HTMLElement) {
         <form class="setup-form" id="change-pin-form" autocomplete="off">
           <label class="field-label" for="new-pin">New secret PIN</label>
           <input class="pin-input" id="new-pin" type="password" inputmode="numeric"
-            maxlength="4" pattern="[0-9]{4}" placeholder="4 digits" autocomplete="new-password" />
+            maxlength="8" pattern="[0-9]{4,8}" placeholder="4–8 digits" autocomplete="new-password" />
           <label class="field-label" for="new-decoy">New decoy PIN</label>
           <input class="pin-input" id="new-decoy" type="password" inputmode="numeric"
-            maxlength="4" pattern="[0-9]{4}" placeholder="4 digits" autocomplete="new-password" />
+            maxlength="8" pattern="[0-9]{4,8}" placeholder="4–8 digits" autocomplete="new-password" />
           <p class="setup-hint" id="pin-change-error" aria-live="polite"></p>
           <button class="btn-secondary-outline" type="submit">Update PINs</button>
         </form>
@@ -131,6 +162,22 @@ export function renderSettings(root: HTMLElement) {
     });
     root.querySelector('#btn-signin')?.addEventListener('click', () => store.navigateTo('login'));
     root.querySelector('#btn-create')?.addEventListener('click', () => store.navigateTo('signup'));
+    root.querySelector('#btn-chatbot')?.addEventListener('click', () => store.navigateTo('chatbot'));
+    root.querySelector('#btn-report-issue')?.addEventListener('click', () => {
+        const profile = store.getState();
+        const body = [
+            'Issue report for Panic Ring',
+            '',
+            `Name: ${profile.profileName || 'Not provided'}`,
+            `Mobile number: ${profile.profilePhone || 'Not provided'}`,
+            `Device IMEI / ID: ${profile.profileImei || 'Not provided'}`,
+            `Language: ${profile.language || 'en'}`,
+            '',
+            'Please describe the problem:',
+            '--------------------------------',
+        ].join('\n');
+        window.location.href = `mailto:support@panicring.app?subject=${encodeURIComponent('Panic Ring support request')}&body=${encodeURIComponent(body)}`;
+    });
     root.querySelector('#btn-appearance').addEventListener('click', () => store.navigateTo('appearance'));
     root.querySelector('#large-controls').addEventListener('change', (event: Event) => {
         setLargeControlsEnabled((event.currentTarget as HTMLInputElement).checked);
@@ -140,6 +187,18 @@ export function renderSettings(root: HTMLElement) {
     root.querySelectorAll('input[name="auto-lock"]').forEach((r: HTMLInputElement) => {
         r.addEventListener('change', () => store.setAutoLock(Number(r.value)));
     });
+    const profileForm = root.querySelector('#profile-form') as HTMLFormElement;
+    const profileNameEl = root.querySelector('#profile-name') as HTMLInputElement;
+    const profilePhoneEl = root.querySelector('#profile-phone') as HTMLInputElement;
+    const profileImeiEl = root.querySelector('#profile-imei') as HTMLInputElement;
+    const profileLanguage = root.querySelector('#profile-language') as HTMLSelectElement;
+    const profileStatus = root.querySelector('#profile-status') as HTMLElement;
+    profileForm.addEventListener('submit', (e: SubmitEvent) => {
+        e.preventDefault();
+        store.saveProfile(profileNameEl.value, profilePhoneEl.value, profileImeiEl.value, profileLanguage.value);
+        profileStatus.textContent = 'Profile saved locally on this device.';
+    });
+
     const pinForm = root.querySelector('#change-pin-form') as HTMLFormElement;
     const newPin = root.querySelector('#new-pin') as HTMLInputElement;
     const newDecoy = root.querySelector('#new-decoy') as HTMLInputElement;
@@ -148,8 +207,8 @@ export function renderSettings(root: HTMLElement) {
         e.preventDefault();
         const p = newPin.value.trim();
         const d = newDecoy.value.trim();
-        if (!/^\d{4}$/.test(p) || !/^\d{4}$/.test(d)) {
-            pinErr.textContent = 'Both PINs must be exactly 4 digits.';
+        if (!/^\d{4,8}$/.test(p) || !/^\d{4,8}$/.test(d)) {
+            pinErr.textContent = 'Both PINs must be between 4 and 8 digits.';
             return;
         }
         if (p === d) {

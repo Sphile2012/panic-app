@@ -10,6 +10,10 @@ type AppState = {
     pinBuffer: string;
     pinHash: string;
     authEmail: string | null;
+    profileName: string;
+    profilePhone: string;
+    profileImei: string;
+    language: string;
     contacts: Contact[];
     notes: Note[];
     safetyPlan: SafetyPlan;
@@ -25,11 +29,16 @@ type AppState = {
 
 function buildInitialState(): AppState {
     const pub = loadPublicSync();
+    const profile = JSON.parse(localStorage.getItem('pr_profile') ?? '{}');
     return {
         screen: pub.pin === '' ? 'setup-pin' : 'calculator',
         pinBuffer: '',
         pinHash: pub.pin,
         authEmail: null,
+        profileName: profile.name ?? '',
+        profilePhone: profile.phone ?? '',
+        profileImei: profile.imei ?? '',
+        language: localStorage.getItem('pr_lang') ?? 'en',
         contacts: [],
         notes: [],
         safetyPlan: {
@@ -146,9 +155,18 @@ class Store {
         await saveVault(vault, this.state.pinHash);
     }
     addContact(name: string, phone: string, level: ContactLevel = 'emergency'): boolean {
+        const trimmedName = name.trim();
+        const trimmedPhone = phone.trim();
+        const duplicate = this.state.contacts.some(c => c.id !== '' && (
+            c.name.trim().toLowerCase() === trimmedName.toLowerCase() &&
+            c.phone.trim().replace(/\D/g, '') === trimmedPhone.replace(/\D/g, '')
+        ));
+        if (!trimmedName || !trimmedPhone || duplicate) {
+            return false;
+        }
         const contact: Contact = {
-            id: uid(), name: name.trim(), phone: phone.trim(),
-            initials: initials(name), level, status: 'pending',
+            id: uid(), name: trimmedName, phone: trimmedPhone,
+            initials: initials(trimmedName), level, status: 'pending',
         };
         const updated = [...this.state.contacts, contact];
         this.state = { ...this.state, contacts: updated };
@@ -157,12 +175,21 @@ class Store {
         this._saveContacts(updated).catch(console.error);
         return true;
     }
-    updateContact(id: string, name: string, phone: string, level: ContactLevel) {
-        const updated = this.state.contacts.map(c => c.id === id ? { ...c, name: name.trim(), phone: phone.trim(), initials: initials(name), level } : c);
+    updateContact(id: string, name: string, phone: string, level: ContactLevel): boolean {
+        const trimmedName = name.trim();
+        const trimmedPhone = phone.trim();
+        const duplicate = this.state.contacts.some(c => c.id !== id &&
+            c.name.trim().toLowerCase() === trimmedName.toLowerCase() &&
+            c.phone.trim().replace(/\D/g, '') === trimmedPhone.replace(/\D/g, ''));
+        if (!trimmedName || !trimmedPhone || duplicate) {
+            return false;
+        }
+        const updated = this.state.contacts.map(c => c.id === id ? { ...c, name: trimmedName, phone: trimmedPhone, initials: initials(trimmedName), level } : c);
         this.state = { ...this.state, contacts: updated };
         this.touch();
         this.notify();
         this._saveContacts(updated).catch(console.error);
+        return true;
     }
     deleteContact(id: string) {
         const updated = this.state.contacts.filter(c => c.id !== id);
@@ -252,7 +279,7 @@ class Store {
         await this.savePin(newPin, newDecoy);
     }
     async recoverPins(answers: string[], newPin: string, newDecoy: string): Promise<boolean> {
-        if (!/^\d{4}$/.test(newPin) || !/^\d{4}$/.test(newDecoy) || newPin === newDecoy)
+        if (!/^\d{4,8}$/.test(newPin) || !/^\d{4,8}$/.test(newDecoy) || newPin === newDecoy)
             return false;
         try {
             const pinHash = await hashPin(newPin);
@@ -302,6 +329,17 @@ class Store {
         else if (!wasNull) {
             this.state = { ...this.state, screen: 'login' };
         }
+        this.notify();
+    }
+    saveProfile(name: string, phone: string, imei: string, language: string) {
+        const normalized = {
+            name: name.trim(),
+            phone: phone.trim(),
+            imei: imei.trim(),
+            language,
+        };
+        localStorage.setItem('pr_profile', JSON.stringify(normalized));
+        this.state = { ...this.state, profileName: normalized.name, profilePhone: normalized.phone, profileImei: normalized.imei, language: normalized.language };
         this.notify();
     }
     async signOut() {

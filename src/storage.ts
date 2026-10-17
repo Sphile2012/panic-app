@@ -65,6 +65,38 @@ export const EMPTY_PLAN: SafetyPlan = {
 
 export const EMPTY_VAULT: VaultData = { contacts: [], notes: [], safetyPlan: { ...EMPTY_PLAN } };
 
+export const LANGUAGES = [
+    { code: 'en', label: 'English' },
+    { code: 'zu', label: 'Zulu' },
+    { code: 'af', label: 'Afrikaans' },
+    { code: 'st', label: 'Sotho' },
+] as const;
+
+export function getPreferredLanguage(): string {
+    const stored = localStorage.getItem('pr_lang');
+    return LANGUAGES.some(lang => lang.code === stored) ? stored! : 'en';
+}
+
+export function setPreferredLanguage(code: string) {
+    const next = LANGUAGES.some(lang => lang.code === code) ? code : 'en';
+    localStorage.setItem('pr_lang', next);
+    return next;
+}
+
+export function normalizePhone(input: string): string {
+    return input.trim().replace(/[^\d+]/g, '').replace(/(\+\d{1,3})(?=\d)/, '$1 ');
+}
+
+export function getBatteryStatus() {
+    const battery = (navigator as Navigator & { getBattery?: () => Promise<{ level: number }> }).getBattery?.();
+    if (!battery) return { level: 100, isLow: false, text: 'Battery status: 100%.' };
+    return battery.then((result) => {
+        const level = Math.max(0, Math.min(100, Math.round((result.level ?? 1) * 100)));
+        const isLow = level <= 20;
+        return { level, isLow, text: isLow ? `Battery status: low (${level}%).` : `Battery status: ${level}%.` };
+    }).catch(() => ({ level: 100, isLow: false, text: 'Battery status: 100%.' }));
+}
+
 function normalizeVault(data: Partial<VaultData> | null): VaultData {
     if (!data) {
         return { ...EMPTY_VAULT, safetyPlan: { ...EMPTY_PLAN } };
@@ -232,13 +264,17 @@ export function uid() {
 export function dialable(phone) {
     return phone.replace(/[\s\-().]/g, '');
 }
-export function buildSmsBody(contactName, locationText, locationShared) {
+export async function buildSmsBody(contactName, locationText, locationShared) {
     const header = `ALERT — ${contactName} may need urgent help.`;
     const loc = locationShared
         ? locationText
         : 'Location was not shared. Please call them immediately.';
+    const battery = await getBatteryStatus();
+    const batteryLine = battery.isLow
+        ? `Battery status: low (${battery.level}%). Please share their location urgently and keep the device on.`
+        : `Battery status: ${battery.level}%.`;
     const footer = `If you cannot reach them: SAPS 10111 | GBV Command Centre 0800 428 428`;
-    return `${header}\n\n${loc}\n\n${footer}`;
+    return `${header}\n\n${loc}\n\n${batteryLine}\n\n${footer}`;
 }
 export function isOnline() {
     return typeof navigator !== 'undefined' ? navigator.onLine : true;

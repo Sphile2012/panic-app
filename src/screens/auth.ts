@@ -28,7 +28,7 @@ function googleBtn(errorId: string): string {
 }
 
 function pwToggle(forId: string): string {
-  return `<button type="button" class="pw-toggle" data-for="${forId}" aria-label="Show password">👁</button>`;
+  return `<button type="button" class="pw-toggle" data-for="${forId}" aria-label="Show password">Show</button>`;
 }
 
 function wireToggles(root: HTMLElement): void {
@@ -36,12 +36,37 @@ function wireToggles(root: HTMLElement): void {
     btn.addEventListener('click', () => {
       const inp = root.querySelector<HTMLInputElement>(`#${btn.dataset['for']}`)!;
       inp.type = inp.type === 'password' ? 'text' : 'password';
-      btn.textContent = inp.type === 'password' ? '👁' : '🙈';
+      btn.textContent = inp.type === 'password' ? 'Show' : 'Hide';
       btn.setAttribute('aria-label', inp.type === 'password' ? 'Show password' : 'Hide password');
     });
   });
 }
 
+const LOCAL_ACCOUNT_KEY = 'pr_local_accounts';
+function normalizeAccountId(value: string): string {
+  return value.trim().toLowerCase().replace(/[^a-z0-9+]/g, '');
+}
+function readLocalAccounts(): Record<string, string> {
+  try {
+    const raw = localStorage.getItem(LOCAL_ACCOUNT_KEY);
+    return raw ? JSON.parse(raw) : {};
+  }
+  catch {
+    return {};
+  }
+}
+function writeLocalAccounts(accounts: Record<string, string>): void {
+  localStorage.setItem(LOCAL_ACCOUNT_KEY, JSON.stringify(accounts));
+}
+function saveLocalAccount(identifier: string, password: string): void {
+  const accounts = readLocalAccounts();
+  accounts[normalizeAccountId(identifier)] = password;
+  writeLocalAccounts(accounts);
+}
+function verifyLocalAccount(identifier: string, password: string): boolean {
+  const accounts = readLocalAccounts();
+  return accounts[normalizeAccountId(identifier)] === password;
+}
 
 export function renderSignup(root: HTMLElement): void {
   root.innerHTML = `
@@ -59,7 +84,11 @@ export function renderSignup(root: HTMLElement): void {
 
           <label class="field-label" for="su-email">Email address</label>
           <input class="text-input" id="su-email" type="email"
-            placeholder="you@example.com" autocomplete="email" required />
+            placeholder="you@example.com" autocomplete="email" />
+
+          <label class="field-label" for="su-phone">Mobile number</label>
+          <input class="text-input" id="su-phone" type="tel"
+            placeholder="+27 82 123 4567" autocomplete="tel" />
 
           <label class="field-label" for="su-password">Password</label>
           <div class="password-wrap">
@@ -80,7 +109,7 @@ export function renderSignup(root: HTMLElement): void {
         </form>
 
         <div class="auth-footer">
-          <p class="auth-switch">Already have an account? <button class="auth-link-btn" id="btn-to-login">Sign in →</button></p>
+          <p class="auth-switch">Already have an account? <button class="auth-link-btn" id="btn-to-login">Sign in</button></p>
           <p class="auth-switch"><button class="auth-link-btn auth-link-muted" id="btn-skip">Skip — use without account</button></p>
         </div>
       </div>
@@ -100,6 +129,7 @@ export function renderSignup(root: HTMLElement): void {
 
   const form      = root.querySelector<HTMLFormElement>('#signup-form')!;
   const emailEl   = root.querySelector<HTMLInputElement>('#su-email')!;
+  const phoneEl   = root.querySelector<HTMLInputElement>('#su-phone')!;
   const pwEl      = root.querySelector<HTMLInputElement>('#su-password')!;
   const cfEl      = root.querySelector<HTMLInputElement>('#su-confirm')!;
   const errEl     = root.querySelector<HTMLElement>('#su-error')!;
@@ -109,14 +139,33 @@ export function renderSignup(root: HTMLElement): void {
     e.preventDefault();
     errEl.textContent = '';
     const email = emailEl.value.trim();
+    const phone = phoneEl.value.trim();
     const pw    = pwEl.value;
     const cf    = cfEl.value;
-    if (!email)        { errEl.textContent = 'Please enter your email address.'; emailEl.focus(); return; }
+    if (!email && !phone) {
+      errEl.textContent = 'Please enter your email address or mobile number.';
+      emailEl.focus();
+      return;
+    }
     if (pw.length < 8) { errEl.textContent = 'Password must be at least 8 characters.'; pwEl.focus(); return; }
     if (pw !== cf)     { errEl.textContent = 'Passwords do not match — please try again.'; cfEl.focus(); return; }
 
+    if (phone) {
+      const phoneKey = normalizeAccountId(phone);
+      const existing = readLocalAccounts();
+      if (existing[phoneKey]) {
+        errEl.textContent = 'This mobile number already has an account. Sign in instead.';
+        return;
+      }
+      saveLocalAccount(phone, pw);
+      if (email) saveLocalAccount(email, pw);
+      store.saveProfile('', phone, '', 'en');
+      store.navigateTo('setup-pin');
+      return;
+    }
+
     submitBtn.disabled    = true;
-    submitBtn.textContent = '⏳ Creating account…';
+    submitBtn.textContent = 'Creating account…';
     const { error, alreadyRegistered } = await signUp(email, pw);
     submitBtn.disabled    = false;
     submitBtn.textContent = 'Create account';
@@ -148,16 +197,16 @@ export function renderLogin(root: HTMLElement): void {
     <div class="screen auth-screen">
       ${logo()}
       <div class="auth-card">
-        <h2 class="auth-title">Welcome back 👋</h2>
+        <h2 class="auth-title">Welcome back</h2>
         <p class="auth-subtitle">Sign in to access your safety circle and alert history.</p>
 
         ${googleBtn('li')}
 
         <form class="auth-form" id="login-form" autocomplete="on" novalidate>
 
-          <label class="field-label" for="li-email">Email address</label>
-          <input class="text-input" id="li-email" type="email"
-            placeholder="you@example.com" autocomplete="email" required />
+          <label class="field-label" for="li-email">Email or mobile number</label>
+          <input class="text-input" id="li-email" type="text"
+            placeholder="you@example.com or +27 82 123 4567" autocomplete="username" required />
 
           <label class="field-label" for="li-password">Password</label>
           <div class="password-wrap">
@@ -172,7 +221,7 @@ export function renderLogin(root: HTMLElement): void {
         </form>
 
         <div class="auth-footer">
-          <p class="auth-switch">No account yet? <button class="auth-link-btn" id="btn-to-signup">Create one — it's free →</button></p>
+          <p class="auth-switch">No account yet? <button class="auth-link-btn" id="btn-to-signup">Create one</button></p>
           <p class="auth-switch"><button class="auth-link-btn auth-link-muted" id="btn-skip">Skip — use without account</button></p>
         </div>
       </div>
@@ -200,23 +249,35 @@ export function renderLogin(root: HTMLElement): void {
   form.addEventListener('submit', async e => {
     e.preventDefault();
     errEl.textContent = '';
-    const email = emailEl.value.trim();
-    const pw    = pwEl.value;
-    if (!email) { errEl.textContent = 'Please enter your email address.'; emailEl.focus(); return; }
+    const identifier = emailEl.value.trim();
+    const pw = pwEl.value;
+    if (!identifier) { errEl.textContent = 'Please enter your email address or mobile number.'; emailEl.focus(); return; }
     if (!pw)    { errEl.textContent = 'Please enter your password.'; pwEl.focus(); return; }
 
+    const isPhone = /^\+?[0-9\s().-]{7,}$/.test(identifier);
+    if (isPhone) {
+      if (!verifyLocalAccount(identifier, pw)) {
+        errEl.textContent = 'Incorrect mobile number or password. Please try again.';
+        return;
+      }
+      store.setAuthEmail(identifier);
+      store.saveProfile('', identifier, '', localStorage.getItem('pr_lang') ?? 'en');
+      store.navigateTo('setup-pin');
+      return;
+    }
+
     submitBtn.disabled    = true;
-    submitBtn.textContent = '⏳ Signing in…';
-    const { error } = await signIn(email, pw);
+    submitBtn.textContent = 'Signing in…';
+    const { error } = await signIn(identifier, pw);
     submitBtn.disabled    = false;
     submitBtn.textContent = 'Sign in';
 
     if (error) {
       if (error.toLowerCase().includes('offline')) { store.navigateTo('setup-pin'); return; }
       if (error.toLowerCase().includes('invalid login') || error.toLowerCase().includes('invalid credentials')) {
-        errEl.textContent = '❌ Incorrect email or password. Please try again.';
+        errEl.textContent = 'Incorrect email or password. Please try again.';
       } else if (error.toLowerCase().includes('email not confirmed')) {
-        errEl.textContent = '📧 Please confirm your email before signing in.';
+        errEl.textContent = 'Please confirm your email before signing in.';
         setTimeout(() => store.navigateTo('verify-email'), 1500);
       } else {
         errEl.textContent = error;
@@ -231,7 +292,7 @@ export function renderForgotPassword(root: HTMLElement): void {
     <div class="screen auth-screen">
       ${logo()}
       <div class="auth-card">
-        <div class="auth-icon-big">🔑</div>
+        <div class="auth-icon-big">Reset</div>
         <h2 class="auth-title">Reset your password</h2>
         <p class="auth-subtitle">
           Enter your email and we’ll send you a one-time reset code.
@@ -271,7 +332,7 @@ export function renderForgotPassword(root: HTMLElement): void {
         </form>
 
         <div class="auth-footer">
-          <p class="auth-switch"><button class="auth-link-btn" id="btn-back">← Back to sign in</button></p>
+          <p class="auth-switch"><button class="auth-link-btn" id="btn-back">Back to sign in</button></p>
         </div>
       </div>
     </div>`;
@@ -371,7 +432,7 @@ export function renderVerifyEmail(root: HTMLElement): void {
     <div class="screen auth-screen">
       ${logo()}
       <div class="auth-card">
-        <div class="auth-icon-big">📬</div>
+        <div class="auth-icon-big">Inbox</div>
         <h2 class="auth-title">Check your inbox</h2>
         <p class="auth-subtitle">
           We sent a confirmation link to your email.
@@ -385,7 +446,7 @@ export function renderVerifyEmail(root: HTMLElement): void {
         </div>
         <button class="btn-primary" id="btn-done">I've confirmed — sign in</button>
         <div class="auth-footer">
-          <p class="auth-switch"><button class="auth-link-btn" id="btn-back">← Back to sign in</button></p>
+          <p class="auth-switch"><button class="auth-link-btn" id="btn-back">Back to sign in</button></p>
         </div>
       </div>
     </div>`;

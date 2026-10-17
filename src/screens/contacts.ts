@@ -30,7 +30,7 @@ export function renderContacts(root) {
               </div>
               <div class="contact-actions">
                 <button class="contact-edit" data-id="${c.id}" aria-label="Edit ${escapeHtml(c.name)}">Edit</button>
-                <button class="contact-delete" data-id="${c.id}" aria-label="Remove ${escapeHtml(c.name)}">✕</button>
+                <button class="contact-delete" data-id="${c.id}" aria-label="Remove ${escapeHtml(c.name)}">Remove</button>
               </div>
             </li>
           `).join('')}
@@ -142,11 +142,14 @@ export function renderContacts(root) {
         errorEl.textContent = '';
         const id = editIdEl.value;
         if (id) {
-            store.updateContact(id, name, phone, level);
+            if (!store.updateContact(id, name, phone, level)) {
+                errorEl.textContent = 'This person is already in your trusted circle.';
+                return;
+            }
         }
         else {
           if (!store.addContact(name, phone, level)) {
-            store.navigateTo('signup');
+            errorEl.textContent = 'This person is already in your trusted circle.';
             return;
           }
         }
