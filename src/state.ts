@@ -102,6 +102,10 @@ class Store {
         const pin = this.state.pinBuffer;
         this.clearPin();
         const pub = loadPublicSync();
+        if (!pub.pin) {
+            this.navigateTo('setup-pin');
+            return null;
+        }
         const hashed = await hashPin(pin);
         if (hashed === pub.pin) {
             const vault: VaultData = await loadVault(hashed);

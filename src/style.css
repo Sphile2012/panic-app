@@ -262,6 +262,12 @@ html[data-photo-background="true"] .phone-screen > .screen { background: transpa
   color: var(--text);
   word-break: break-all;
 }
+.calc-pin-status {
+  min-height: 1.2em;
+  margin: 4px 0 0;
+  color: var(--danger);
+  font-size: 0.75rem;
+}
 .calc-forgot-pin {
   align-self: center;
   border: 0;
