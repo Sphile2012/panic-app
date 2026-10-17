@@ -1,5 +1,6 @@
 import { store } from '../state.js';
 import { getRecoveryQuestionIds } from '../storage.js';
+import { isLargeControlsEnabled, setLargeControlsEnabled } from '../accessibility.js';
 export function renderSettings(root: HTMLElement) {
     const { autoLockMinutes, authEmail } = store.getState();
   const hasRecovery = getRecoveryQuestionIds() !== null;
@@ -45,6 +46,18 @@ export function renderSettings(root: HTMLElement) {
         <h3 class="settings-section-title">Appearance</h3>
         <p class="settings-section-body">Theme, accent colour and disguise screen.</p>
         <button class="btn-secondary-outline" id="btn-appearance">Open appearance settings</button>
+      </section>
+
+      <section class="settings-section">
+        <h3 class="settings-section-title">Accessibility</h3>
+        <p class="settings-section-body">
+          Panic Ring is voice-free by default. Larger controls increase text size
+          and touch targets on this device.
+        </p>
+        <label class="radio-label">
+          <input type="checkbox" id="large-controls" ${isLargeControlsEnabled() ? 'checked' : ''} />
+          Use larger controls
+        </label>
       </section>
 
       
@@ -119,6 +132,9 @@ export function renderSettings(root: HTMLElement) {
     root.querySelector('#btn-signin')?.addEventListener('click', () => store.navigateTo('login'));
     root.querySelector('#btn-create')?.addEventListener('click', () => store.navigateTo('signup'));
     root.querySelector('#btn-appearance').addEventListener('click', () => store.navigateTo('appearance'));
+    root.querySelector('#large-controls').addEventListener('change', (event: Event) => {
+        setLargeControlsEnabled((event.currentTarget as HTMLInputElement).checked);
+    });
     root.querySelector('#btn-recovery-settings').addEventListener('click', () => store.navigateTo('recovery-settings'));
     root.querySelector('#btn-contacts').addEventListener('click', () => store.navigateTo('contacts'));
     root.querySelectorAll('input[name="auto-lock"]').forEach((r: HTMLInputElement) => {

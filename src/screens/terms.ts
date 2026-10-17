@@ -47,6 +47,19 @@ export function renderTerms(root) {
             <strong>0800 428 428</strong> (GBV Command Centre) directly if you
             are able to.
           </p>
+          <p>
+            Level 1 contacts are included in emergency alert drafts. Level 2
+            contacts are only offered for referral requests, and Level 3
+            contacts are only offered for check-in requests. Safe-word messages
+            are manual SMS drafts; the app does not monitor incoming messages
+            or detect a safe word.
+          </p>
+          <p>
+            Circle Check appears only when you open the app. Browser timers and
+            check-ins may be delayed while the app is suspended or closed. The
+            app does not send silent alerts, run background location tracking,
+            or guarantee that a check-in will be noticed.
+          </p>
         </div>
 
         

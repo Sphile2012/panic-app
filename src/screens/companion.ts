@@ -13,6 +13,8 @@ const STEPS = {
             { label: 'Support a friend', next: 'bystander' },
             { label: 'My safety plan', next: 'safetyplan' },
             { label: 'Digital safety tips', next: 'digital' },
+            { label: 'Relationship red flags', next: 'redflags' },
+            { label: 'Ask a Level 2 contact for a referral', next: 'nav:referral-request' },
         ],
     },
     emergency: {
@@ -97,6 +99,16 @@ const STEPS = {
             { label: '← Back', next: 'start' },
         ],
     },
+    redflags: {
+        id: 'redflags',
+        heading: 'Relationship warning signs',
+        body: 'Warning signs can include controlling who you see, monitoring your phone or location, demanding passwords, isolating you from support, threats, intimidation, or controlling money and transport.\n\nOnline warning signs can include unknown account sessions, unexpected location sharing, unfamiliar apps with accessibility or device-admin access, and password-reset messages you did not request.\n\nOne sign alone does not prove abuse. Trust your own judgement, use a device you believe is safe, and choose whether and when to ask for support.',
+        options: [
+            { label: 'Digital safety tips', next: 'digital' },
+            { label: 'Contact support', next: 'emotional' },
+            { label: '← Back', next: 'start' },
+        ],
+    },
 };
 export function renderCompanion(root) {
     let currentStepId = 'start';
@@ -128,8 +140,9 @@ export function renderCompanion(root) {
         </div>
 
         <p class="companion-disclaimer">
-          This assistant uses reviewed content only. It will never diagnose, counsel,
-          give legal advice, say help is on the way, or share anything without your consent.
+          This companion provides general information, not counselling, legal advice,
+          or verified nearby service listings. It will not send messages or share
+          your location without your action.
         </p>
 
       </div>

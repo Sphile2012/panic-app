@@ -172,7 +172,7 @@ export async function getLocation(timeoutMs = 15000, onAccuracy?: (accuracy: num
     });
 }
 export async function runAlertSequence(locationText, locationShared, onStep) {
-    const { contacts } = store.getState();
+    const contacts = store.getState().contacts.filter(contact => contact.level === 'emergency');
     if (contacts.length === 0) {
         store.navigateTo('sent');
         return;

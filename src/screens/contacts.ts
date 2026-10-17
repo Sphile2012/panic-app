@@ -1,4 +1,12 @@
 import { store } from '../state.js';
+import type { ContactLevel } from '../storage.js';
+
+const CONTACT_LEVELS: Record<ContactLevel, string> = {
+  emergency: 'Level 1 · Emergency alerts and location',
+  referral: 'Level 2 · Referral requests only',
+  checkin: 'Level 3 · Check-in requests only',
+};
+
 export function renderContacts(root) {
   const { contacts, authEmail } = store.getState();
     root.innerHTML = `
@@ -16,12 +24,13 @@ export function renderContacts(root) {
             <li class="contact-item contact-item--manage" data-id="${c.id}">
               <div class="contact-avatar">${c.initials}</div>
               <div class="contact-info">
-                <span class="contact-name">${c.name}</span>
-                <span class="contact-phone">${c.phone}</span>
+                <span class="contact-name">${escapeHtml(c.name)}</span>
+                <span class="contact-phone">${escapeHtml(c.phone)}</span>
+                <span class="contact-phone">${CONTACT_LEVELS[c.level]}</span>
               </div>
               <div class="contact-actions">
-                <button class="contact-edit" data-id="${c.id}" aria-label="Edit ${c.name}">Edit</button>
-                <button class="contact-delete" data-id="${c.id}" aria-label="Remove ${c.name}">✕</button>
+                <button class="contact-edit" data-id="${c.id}" aria-label="Edit ${escapeHtml(c.name)}">Edit</button>
+                <button class="contact-delete" data-id="${c.id}" aria-label="Remove ${escapeHtml(c.name)}">✕</button>
               </div>
             </li>
           `).join('')}
@@ -36,6 +45,11 @@ export function renderContacts(root) {
 
         <label class="field-label" for="c-phone">Phone</label>
         <input class="text-input" id="c-phone" type="tel" placeholder="+27 82 123 4567" required />
+
+        <label class="field-label" for="c-level">Contact role</label>
+        <select class="text-input" id="c-level" required>
+          ${Object.entries(CONTACT_LEVELS).map(([value, label]) => `<option value="${value}">${label}</option>`).join('')}
+        </select>
 
         <p class="setup-hint" id="c-error" aria-live="polite"></p>
 
@@ -71,6 +85,7 @@ export function renderContacts(root) {
     const editIdEl = root.querySelector('#edit-id');
     const nameEl = root.querySelector('#c-name');
     const phoneEl = root.querySelector('#c-phone');
+    const levelEl = root.querySelector('#c-level') as HTMLSelectElement;
     const errorEl = root.querySelector('#c-error');
     const formTitle = root.querySelector('#form-title');
     const saveBtn = root.querySelector('#btn-save');
@@ -86,6 +101,7 @@ export function renderContacts(root) {
             editIdEl.value = id;
             nameEl.value = contact.name;
             phoneEl.value = contact.phone;
+            levelEl.value = contact.level;
             formTitle.textContent = 'Edit contact';
             saveBtn.textContent = 'Save';
             cancelBtn.style.display = 'inline-flex';
@@ -105,6 +121,7 @@ export function renderContacts(root) {
     cancelBtn.addEventListener('click', () => {
         editIdEl.value = '';
         form.reset();
+        levelEl.value = 'emergency';
         formTitle.textContent = 'Add contact';
         saveBtn.textContent = 'Add';
         cancelBtn.style.display = 'none';
@@ -113,6 +130,7 @@ export function renderContacts(root) {
         e.preventDefault();
         const name = nameEl.value.trim();
         const phone = phoneEl.value.trim();
+        const level = levelEl.value as ContactLevel;
         if (!name) {
             errorEl.textContent = 'Enter a name.';
             return;
@@ -124,14 +142,23 @@ export function renderContacts(root) {
         errorEl.textContent = '';
         const id = editIdEl.value;
         if (id) {
-            store.updateContact(id, name, phone);
+            store.updateContact(id, name, phone, level);
         }
         else {
-          if (!store.addContact(name, phone)) {
+          if (!store.addContact(name, phone, level)) {
             store.navigateTo('signup');
             return;
           }
         }
         store.navigateTo('contacts');
     });
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }

@@ -9,6 +9,8 @@ import { renderLocation } from './screens/location.js';
 import { renderSending, renderSent, updateSendingList } from './screens/sending.js';
 import { renderNotes, renderNoteEdit } from './screens/notes.js';
 import { renderSafetyPlan } from './screens/safetyPlan.js';
+import { renderSafeWord } from './screens/safeWord.js';
+import { renderContactMessage } from './screens/contactMessage.js';
 import { renderSupport } from './screens/support.js';
 import { renderSettings } from './screens/settings.js';
 import { renderAppearance } from './screens/appearance.js';
@@ -25,12 +27,14 @@ import { runAlertSequence } from './alertService.js';
 import { pruneStaleQueue, watchForReconnect } from './alertQueue.js';
 import { loadAppearance, applyAppearance, watchSystemTheme } from './theme.js';
 import { initPwa, canInstall, isInstalled, isIosSafari, promptInstall, onInstallReady, onInstalled } from './pwa.js';
+import { applyAccessibilitySettings } from './accessibility.js';
 
 const appRoot = document.getElementById('app-root') as HTMLElement | null;
 if (!appRoot) {
     throw new Error('App root element not found.');
 }
 initPwa();
+applyAccessibilitySettings();
 
 let currentScreen: string | null = null;
 
@@ -125,6 +129,15 @@ function render(screen: string) {
             break;
         case 'safety-plan':
             renderSafetyPlan(appRoot);
+            break;
+        case 'safe-word':
+            renderSafeWord(appRoot);
+            break;
+        case 'referral-request':
+            renderContactMessage(appRoot, 'referral');
+            break;
+        case 'checkin-request':
+            renderContactMessage(appRoot, 'checkin');
             break;
         case 'support':
             renderSupport(appRoot);
@@ -238,14 +251,11 @@ onInstalled(() => {
 
 store.initAuth().then(() => {
     pruneStaleQueue();
-    watchForReconnect(({ locationText, locationShared }) => {
-        store.startSending();
-        runAlertSequence(locationText, locationShared, () => {
-            if (store.getState().screen === 'sending')
-                updateSendingList(appRoot);
-        });
-    });
     render(store.getState().screen);
+    watchForReconnect(({ locationText, locationShared }) => {
+        store.setLocationShared(locationShared, locationText);
+        store.startSending();
+    });
     updateInstallBanner();
     const appearance = loadAppearance();
     applyAppearance(appearance);

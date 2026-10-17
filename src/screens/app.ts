@@ -4,12 +4,25 @@ import { isCheckinActive, checkinSecondsLeft, startCheckin, cancelCheckin, resum
 import type { Contact } from '../storage.js';
 
 export function renderApp(root: HTMLElement): void {
-  const { contacts, authEmail } = store.getState();
+  const { contacts, authEmail, safetyPlan, recoveryConfigured } = store.getState();
+  const emergencyContacts = contacts.filter(contact => contact.level === 'emergency');
   const appearance   = loadAppearance();
   const avatarLetter = authEmail ? authEmail[0]!.toUpperCase() : '?';
   const firstName    = authEmail ? authEmail.split('@')[0]!.split('.')[0]! : null;
   const greeting     = getGreeting();
   const currentDisguise = DISGUISE_OPTIONS.find(d => d.id === appearance.disguise);
+  const readinessItems = [
+    ['At least one Level 1 emergency contact', emergencyContacts.length > 0],
+    ['Trusted people are written in your plan', Boolean(safetyPlan.trustedPeople.trim())],
+    ['A safe place is listed', Boolean(safetyPlan.safePlaces.trim())],
+    ['Emergency numbers are recorded', Boolean(safetyPlan.emergencyNumbers.trim())],
+    ['Transport options are recorded', Boolean(safetyPlan.transportOptions.trim())],
+    ['Important documents are noted', Boolean(safetyPlan.importantDocs.trim())],
+    ['PIN recovery is set up', recoveryConfigured],
+  ] as const;
+  const completedReadiness = readinessItems.filter(([, complete]) => complete).length;
+  const readinessPercent = Math.round(completedReadiness / readinessItems.length * 100);
+  const circleCheckDue = localStorage.getItem('pr_circle_check') !== localDateKey();
 
   root.innerHTML = `
     <div class="screen app-screen">
@@ -52,11 +65,43 @@ export function renderApp(root: HTMLElement): void {
           <div class="btn-hold-ring"></div>
         </button>
         <p class="app-activate-hint">
-          ${contacts.length === 0
-            ? '⚠️ Add a trusted contact first'
-            : `Hold 1.5 s · alerts ${contacts.length} contact${contacts.length !== 1 ? 's' : ''}`}
+          ${emergencyContacts.length === 0
+            ? '⚠️ Add a Level 1 emergency contact first'
+            : `Hold 1.5 s · alerts ${emergencyContacts.length} emergency contact${emergencyContacts.length !== 1 ? 's' : ''}`}
         </p>
       </div>
+
+      <section class="readiness-card" aria-labelledby="readiness-title">
+        <div class="readiness-heading">
+          <h2 class="section-label" id="readiness-title">Safety readiness</h2>
+          <span>${readinessPercent}% · ${completedReadiness}/${readinessItems.length}</span>
+        </div>
+        <div class="readiness-track" role="progressbar" aria-label="Safety readiness checklist"
+          aria-valuemin="0" aria-valuemax="${readinessItems.length}" aria-valuenow="${completedReadiness}">
+          <span style="width:${readinessPercent}%"></span>
+        </div>
+        <p class="readiness-note">A preparation checklist, not a prediction or guarantee of safety.</p>
+        <details class="readiness-details">
+          <summary>View checklist</summary>
+          <ul>
+            ${readinessItems.map(([label, complete]) => `
+              <li>${complete ? '✓' : '○'} ${label}</li>
+            `).join('')}
+          </ul>
+        </details>
+      </section>
+
+      ${circleCheckDue ? `
+        <section class="circle-check-card" aria-labelledby="circle-check-title">
+          <h2 id="circle-check-title">Circle Check</h2>
+          <p>Are you safe today? Your answer stays on this device and is not shared.</p>
+          <div class="circle-check-actions">
+            <button class="btn-secondary-outline" id="circle-safe">I’m safe</button>
+            <button class="btn-secondary-outline" id="circle-support">I need support</button>
+            <button class="btn-danger" id="circle-danger">I may be in danger</button>
+          </div>
+        </section>
+      ` : ''}
 
       
       <section class="app-contacts">
@@ -90,6 +135,10 @@ export function renderApp(root: HTMLElement): void {
         <button class="app-quick-btn" id="btn-quick-checkin" title="Check-in timer">
           <span class="app-quick-icon">⏱</span>
           <span class="app-quick-label">Check-in</span>
+        </button>
+        <button class="app-quick-btn" id="btn-safe-word-quick" title="Send a safe-word message">
+          <span class="app-quick-icon">💬</span>
+          <span class="app-quick-label">Safe word</span>
         </button>
       </div>
 
@@ -129,6 +178,9 @@ export function renderApp(root: HTMLElement): void {
         <p class="checkin-form-note">
           Your browser may pause timers in the background. Reopen and unlock Panic Ring to check an expired timer.
         </p>
+        <button class="btn-secondary-outline" id="btn-checkin-request" type="button">
+          Prepare a check-in request for Level 3 contacts
+        </button>
         <p class="checkin-form-hint" id="checkin-form-hint" aria-live="polite"></p>
         <div class="checkin-sheet-actions">
           <button class="btn-primary" id="checkin-start-btn">Start timer</button>
@@ -166,7 +218,7 @@ export function renderApp(root: HTMLElement): void {
   };
 
   const startHold = (): void => {
-    if (store.getState().contacts.length === 0) {
+    if (!store.getState().contacts.some(contact => contact.level === 'emergency')) {
       holdBtn.classList.add('btn-hold--no-contacts');
       setTimeout(() => holdBtn.classList.remove('btn-hold--no-contacts'), 800);
       return;
@@ -192,6 +244,20 @@ export function renderApp(root: HTMLElement): void {
     }
   });
   root.querySelector('#btn-signin-prompt')?.addEventListener('click', () => store.navigateTo('login'));
+  root.querySelector('#btn-safe-word-quick')!.addEventListener('click', () => store.navigateTo('safe-word'));
+
+  root.querySelector('#circle-safe')?.addEventListener('click', () => {
+    recordCircleCheck();
+    root.querySelector('.circle-check-card')?.remove();
+  });
+  root.querySelector('#circle-support')?.addEventListener('click', () => {
+    recordCircleCheck();
+    store.navigateTo('companion');
+  });
+  root.querySelector('#circle-danger')?.addEventListener('click', () => {
+    recordCircleCheck();
+    store.navigateTo(emergencyContacts.length > 0 ? 'location' : 'companion');
+  });
 
   root.querySelector('#btn-theme')!.addEventListener('click', () => {
     const ap = loadAppearance();
@@ -277,6 +343,7 @@ export function renderApp(root: HTMLElement): void {
     checkinSheet.setAttribute('aria-hidden', open ? 'true' : 'false');
     checkinSheet.classList.toggle('checkin-sheet--open', !open);
   });
+  root.querySelector('#btn-checkin-request')!.addEventListener('click', () => store.navigateTo('checkin-request'));
 
   root.querySelector('#checkin-start-btn')!.addEventListener('click', () => {
     const name = checkinName.value.trim() || 'Check-in';
@@ -315,11 +382,30 @@ function getGreeting(): string {
 function contactRow(c: Contact): string {
   return `
     <li class="contact-item" data-id="${c.id}">
-      <div class="contact-avatar">${c.initials}</div>
+      <div class="contact-avatar">${escapeHtml(c.initials)}</div>
       <div class="contact-info">
-        <span class="contact-name">${c.name}</span>
-        <span class="contact-phone">${c.phone}</span>
+        <span class="contact-name">${escapeHtml(c.name)}</span>
+        <span class="contact-phone">${escapeHtml(c.phone)}</span>
+        <span class="contact-phone">${c.level === 'emergency' ? 'Level 1 · Emergency' : c.level === 'referral' ? 'Level 2 · Referrals' : 'Level 3 · Check-ins'}</span>
       </div>
       <span class="contact-ready-dot" title="Ready to receive alerts"></span>
     </li>`;
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function localDateKey(): string {
+  const date = new Date();
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function recordCircleCheck(): void {
+  localStorage.setItem('pr_circle_check', localDateKey());
 }

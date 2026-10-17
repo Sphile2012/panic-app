@@ -1,4 +1,4 @@
-import { loadPublicSync, loadVault, saveVault, savePinHashes, saveAutoLock, clearAll, hashPin, recoverVaultWithAnswers, uid, initials, type Contact as StorageContact, type Note as StorageNote, type SafetyPlan as StorageSafetyPlan, type VaultData } from './storage.js';
+import { loadPublicSync, loadVault, saveVault, savePinHashes, saveAutoLock, clearAll, hashPin, recoverVaultWithAnswers, uid, initials, type Contact as StorageContact, type ContactLevel, type Note as StorageNote, type SafetyPlan as StorageSafetyPlan, type VaultData } from './storage.js';
 import { onAuthStateChange, DB_CONFIGURED, signOut } from './db.js';
 
 type Contact = StorageContact;
@@ -34,7 +34,7 @@ function buildInitialState(): AppState {
         notes: [],
         safetyPlan: {
             trustedPeople: '', safePlaces: '', emergencyNumbers: '',
-            importantDocs: '', transportOptions: '', thingsToRemember: '',
+            importantDocs: '', transportOptions: '', thingsToRemember: '', safeWord: '',
         },
         autoLockMinutes: pub.autoLockMinutes,
         alertLocation: 'Location not shared',
@@ -141,10 +141,10 @@ class Store {
         vault.contacts = contacts;
         await saveVault(vault, this.state.pinHash);
     }
-    addContact(name: string, phone: string): boolean {
+    addContact(name: string, phone: string, level: ContactLevel = 'emergency'): boolean {
         const contact: Contact = {
             id: uid(), name: name.trim(), phone: phone.trim(),
-            initials: initials(name), status: 'pending',
+            initials: initials(name), level, status: 'pending',
         };
         const updated = [...this.state.contacts, contact];
         this.state = { ...this.state, contacts: updated };
@@ -153,8 +153,8 @@ class Store {
         this._saveContacts(updated).catch(console.error);
         return true;
     }
-    updateContact(id: string, name: string, phone: string) {
-        const updated = this.state.contacts.map(c => c.id === id ? { ...c, name: name.trim(), phone: phone.trim(), initials: initials(name) } : c);
+    updateContact(id: string, name: string, phone: string, level: ContactLevel) {
+        const updated = this.state.contacts.map(c => c.id === id ? { ...c, name: name.trim(), phone: phone.trim(), initials: initials(name), level } : c);
         this.state = { ...this.state, contacts: updated };
         this.touch();
         this.notify();
@@ -175,7 +175,10 @@ class Store {
         this.state = {
             ...this.state,
             screen: 'sending',
-            contacts: this.state.contacts.map(c => ({ ...c, status: 'sending' as const })),
+            contacts: this.state.contacts.map(c => ({
+                ...c,
+                status: c.level === 'emergency' ? 'sending' as const : 'pending' as const,
+            })),
         };
         this.notify();
     }

@@ -1373,6 +1373,103 @@ html[data-photo-background="true"] .phone-screen > .screen { background: transpa
 .app-quick-icon { font-size: 1.1rem; }
 .app-quick-label { font-size: 0.72rem; }
 
+.readiness-card,
+.circle-check-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px;
+}
+.readiness-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.readiness-heading > span,
+.readiness-note {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+.readiness-track {
+  height: 8px;
+  margin-top: 10px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: var(--surface2);
+}
+.readiness-track span {
+  display: block;
+  height: 100%;
+  background: var(--safe);
+  transition: width .2s ease;
+}
+.readiness-note { margin: 8px 0 0; }
+.readiness-details {
+  margin-top: 10px;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+.readiness-details summary {
+  cursor: pointer;
+}
+.readiness-details ul {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0 0 18px;
+}
+.readiness-details li { padding-left: 2px; }
+.circle-check-card h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+.circle-check-card p {
+  color: var(--text-muted);
+  font-size: 0.84rem;
+}
+.circle-check-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.safe-word-phrase {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  font-size: 1.1rem;
+  text-align: center;
+}
+.plan-step-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 12px 0;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+.plan-step-nav button { min-width: 96px; }
+.plan-bottom-actions {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.message-link[aria-disabled="true"] {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+html.large-controls {
+  font-size: 112.5%;
+}
+html.large-controls button,
+html.large-controls a.btn-primary,
+html.large-controls a.btn-secondary-outline {
+  min-height: 48px;
+}
+
 
 .disguise-sheet {
   position: absolute;
@@ -1835,6 +1932,9 @@ details[open] .loc-info-summary::before { transform: rotate(90deg); }
   text-align: center;
   z-index: 9999;
   animation: slideDown .3s ease;
+}
+.reconnect-banner--warning {
+  background: var(--danger);
 }
 @keyframes slideDown {
   from { transform: translateY(-100%); }

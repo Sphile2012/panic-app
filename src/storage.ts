@@ -6,8 +6,11 @@ export type Contact = {
     name: string;
     phone: string;
     initials: string;
+    level: ContactLevel;
     status: 'pending' | 'sending' | 'prepared' | 'failed';
 };
+
+export type ContactLevel = 'emergency' | 'referral' | 'checkin';
 
 export type Note = {
     id: string;
@@ -24,6 +27,7 @@ export type SafetyPlan = {
     importantDocs: string;
     transportOptions: string;
     thingsToRemember: string;
+    safeWord: string;
 };
 
 export type VaultData = {
@@ -56,21 +60,35 @@ function savePublic(d) {
 }
 export const EMPTY_PLAN: SafetyPlan = {
     trustedPeople: '', safePlaces: '', emergencyNumbers: '',
-    importantDocs: '', transportOptions: '', thingsToRemember: '',
+    importantDocs: '', transportOptions: '', thingsToRemember: '', safeWord: '',
 };
 
 export const EMPTY_VAULT: VaultData = { contacts: [], notes: [], safetyPlan: { ...EMPTY_PLAN } };
+
+function normalizeVault(data: Partial<VaultData> | null): VaultData {
+    if (!data) {
+        return { ...EMPTY_VAULT, safetyPlan: { ...EMPTY_PLAN } };
+    }
+    return {
+        contacts: Array.isArray(data.contacts) ? data.contacts.map(contact => ({
+            ...contact,
+            level: contact.level === 'referral' || contact.level === 'checkin' ? contact.level : 'emergency',
+        })) : [],
+        notes: Array.isArray(data.notes) ? data.notes : [],
+        safetyPlan: { ...EMPTY_PLAN, ...(data.safetyPlan ?? {}) },
+    };
+}
 
 export async function loadVault(pinHash: string): Promise<VaultData> {
     try {
         const b64 = localStorage.getItem(KEY_VAULT);
         if (!b64)
-            return { ...EMPTY_VAULT };
+            return normalizeVault(null);
         const data = await decryptJson<VaultData>(b64, pinHash);
-        return data ?? { ...EMPTY_VAULT };
+        return normalizeVault(data);
     }
     catch {
-        return { ...EMPTY_VAULT };
+        return normalizeVault(null);
     }
 }
 
@@ -126,6 +144,7 @@ export async function recoverVaultWithAnswers(answers: string[], pinHash: string
     if (!vault)
         return null;
 
+    vault = normalizeVault(vault);
     pub.pinHash = pinHash;
     pub.decoyHash = decoyHash;
     pub.autoLock = autoLock;
