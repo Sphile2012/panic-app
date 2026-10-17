@@ -1,7 +1,7 @@
 import { store } from '../state.js';
 import { loadAppearance, saveAppearance, applyAppearance, DISGUISE_OPTIONS } from '../theme.js';
 import { isCheckinActive, checkinSecondsLeft, startCheckin, cancelCheckin, resumeCheckinIfActive } from '../checkin.js';
-import type { Contact } from '../types.js';
+import type { Contact } from '../storage.js';
 
 export function renderApp(root: HTMLElement): void {
   const { contacts, authEmail } = store.getState();
@@ -14,7 +14,7 @@ export function renderApp(root: HTMLElement): void {
   root.innerHTML = `
     <div class="screen app-screen">
 
-      <!-- ── Header ──────────────────────────────────────────────────── -->
+      
       <header class="app-header">
         <div class="app-header-left">
           <div class="app-ring-icon" aria-hidden="true">○</div>
@@ -29,7 +29,7 @@ export function renderApp(root: HTMLElement): void {
         </button>
       </header>
 
-      <!-- ── Account strip ───────────────────────────────────────────── -->
+      
       ${authEmail ? `
         <div class="app-account-strip">
           <span class="app-account-email">📧 ${authEmail}</span>
@@ -42,7 +42,7 @@ export function renderApp(root: HTMLElement): void {
         </div>
       `}
 
-      <!-- ── Hold to activate ─────────────────────────────────────────── -->
+      
       <div class="app-activate-wrap">
         <button class="btn-hold" id="btn-hold"
           aria-label="Hold to send alert"
@@ -58,7 +58,7 @@ export function renderApp(root: HTMLElement): void {
         </p>
       </div>
 
-      <!-- ── Trusted circle ───────────────────────────────────────────── -->
+      
       <section class="app-contacts">
         <div class="section-header">
           <h2 class="section-label">Trusted circle</h2>
@@ -77,7 +77,7 @@ export function renderApp(root: HTMLElement): void {
         }
       </section>
 
-      <!-- ── Quick bar ────────────────────────────────────────────────── -->
+      
       <div class="app-quick-bar">
         <button class="app-quick-btn" id="btn-disguise" title="Change disguise screen">
           <span class="app-quick-icon">${currentDisguise?.preview ?? '🔢'}</span>
@@ -93,7 +93,7 @@ export function renderApp(root: HTMLElement): void {
         </button>
       </div>
 
-      <!-- ── Bottom nav ───────────────────────────────────────────────── -->
+      
       <nav class="app-nav" aria-label="Main navigation">
         <button class="app-nav-btn" data-nav="notes">📝<br>Notes</button>
         <button class="app-nav-btn" data-nav="safety-plan">🗺<br>Safety Plan</button>
@@ -101,7 +101,7 @@ export function renderApp(root: HTMLElement): void {
         <button class="app-nav-btn" data-nav="settings">⚙<br>Settings</button>
       </nav>
 
-      <!-- ── Check-in active bar ──────────────────────────────────────── -->
+      
       <div class="checkin-bar" id="checkin-bar" style="display:none">
         <div class="checkin-bar-inner">
           <span class="checkin-icon">⏱</span>
@@ -111,11 +111,11 @@ export function renderApp(root: HTMLElement): void {
         </div>
       </div>
 
-      <!-- ── Check-in setup sheet ─────────────────────────────────────── -->
+      
       <div class="checkin-sheet" id="checkin-sheet" aria-hidden="true">
         <p class="checkin-sheet-title">⏱ Set a check-in timer</p>
         <p class="checkin-sheet-body">
-          If you don't check in before time runs out, your trusted circle gets alerted automatically.
+          If time runs out, Panic Ring will prompt you to prepare an alert. Messages are never sent automatically.
         </p>
         <input class="text-input" id="checkin-name" type="text"
           placeholder="e.g. Walking home, Meeting…" maxlength="40" />
@@ -126,13 +126,17 @@ export function renderApp(root: HTMLElement): void {
           <button class="checkin-preset" data-mins="60">1 hour</button>
           <button class="checkin-preset" data-mins="90">90 min</button>
         </div>
+        <p class="checkin-form-note">
+          Your browser may pause timers in the background. Reopen and unlock Panic Ring to check an expired timer.
+        </p>
+        <p class="checkin-form-hint" id="checkin-form-hint" aria-live="polite"></p>
         <div class="checkin-sheet-actions">
           <button class="btn-primary" id="checkin-start-btn">Start timer</button>
           <button class="checkin-sheet-close" id="checkin-close">Cancel</button>
         </div>
       </div>
 
-      <!-- ── Disguise picker sheet ─────────────────────────────────────── -->
+      
       <div class="disguise-sheet" id="disguise-sheet" aria-hidden="true">
         <p class="disguise-sheet-title">Choose your cover screen</p>
         <p class="disguise-sheet-body">This is what the app looks like before you enter your PIN.</p>
@@ -153,7 +157,6 @@ export function renderApp(root: HTMLElement): void {
     </div>
   `;
 
-  // ── Hold button ────────────────────────────────────────────────────────────
   const holdBtn = root.querySelector<HTMLButtonElement>('#btn-hold')!;
   let holdTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -179,11 +182,9 @@ export function renderApp(root: HTMLElement): void {
   holdBtn.addEventListener('touchend', cancelHold);
   holdBtn.addEventListener('touchcancel', cancelHold);
 
-  // ── Contacts ───────────────────────────────────────────────────────────────
   root.querySelector('#btn-manage-contacts')!.addEventListener('click', () => store.navigateTo('contacts'));
   root.querySelector('#btn-add-first')?.addEventListener('click', () => store.navigateTo('contacts'));
 
-  // ── Profile / sign out ─────────────────────────────────────────────────────
   root.querySelector('#btn-profile')!.addEventListener('click', () => store.navigateTo('settings'));
   root.querySelector('#btn-signout')?.addEventListener('click', async () => {
     if (confirm('Sign out? The app will lock and you will need to sign in again.')) {
@@ -192,7 +193,6 @@ export function renderApp(root: HTMLElement): void {
   });
   root.querySelector('#btn-signin-prompt')?.addEventListener('click', () => store.navigateTo('login'));
 
-  // ── Theme toggle ───────────────────────────────────────────────────────────
   root.querySelector('#btn-theme')!.addEventListener('click', () => {
     const ap = loadAppearance();
     ap.mode = ap.mode === 'dark' ? 'light' : 'dark';
@@ -202,7 +202,6 @@ export function renderApp(root: HTMLElement): void {
     icon.textContent = ap.mode === 'light' ? '☀️' : '🌙';
   });
 
-  // ── Disguise sheet ─────────────────────────────────────────────────────────
   const sheet = root.querySelector<HTMLElement>('#disguise-sheet')!;
 
   root.querySelector('#btn-disguise')!.addEventListener('click', () => {
@@ -226,7 +225,6 @@ export function renderApp(root: HTMLElement): void {
     });
   });
 
-  // ── Nav ────────────────────────────────────────────────────────────────────
   const navRoutes: Record<string, () => void> = {
     notes:          () => store.navigateTo('notes'),
     'safety-plan':  () => store.navigateTo('safety-plan'),
@@ -237,12 +235,12 @@ export function renderApp(root: HTMLElement): void {
     btn.addEventListener('click', () => navRoutes[btn.dataset['nav']!]?.());
   });
 
-  // ── Check-in timer ─────────────────────────────────────────────────────────
   const checkinBar       = root.querySelector<HTMLElement>('#checkin-bar')!;
   const checkinLabel     = root.querySelector<HTMLElement>('#checkin-label')!;
   const checkinCountdown = root.querySelector<HTMLElement>('#checkin-countdown')!;
   const checkinSheet     = root.querySelector<HTMLElement>('#checkin-sheet')!;
   const checkinName      = root.querySelector<HTMLInputElement>('#checkin-name')!;
+  const checkinHint      = root.querySelector<HTMLElement>('#checkin-form-hint')!;
   let selectedMins = 15;
 
   function fmtSecs(s: number): string {
@@ -263,8 +261,8 @@ export function renderApp(root: HTMLElement): void {
   if (isCheckinActive()) {
     checkinBar.style.display = 'block';
     checkinCountdown.textContent = fmtSecs(checkinSecondsLeft());
-    resumeCheckinIfActive(onTick, onExpire);
   }
+  resumeCheckinIfActive(onTick, onExpire);
 
   root.querySelectorAll<HTMLButtonElement>('.checkin-preset').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -282,12 +280,17 @@ export function renderApp(root: HTMLElement): void {
 
   root.querySelector('#checkin-start-btn')!.addEventListener('click', () => {
     const name = checkinName.value.trim() || 'Check-in';
-    checkinSheet.setAttribute('aria-hidden', 'true');
-    checkinSheet.classList.remove('checkin-sheet--open');
-    checkinLabel.textContent = name;
-    startCheckin(selectedMins, name, onTick, onExpire);
-    checkinBar.style.display = 'block';
-    checkinCountdown.textContent = fmtSecs(selectedMins * 60);
+    try {
+      startCheckin(selectedMins, name, onTick, onExpire);
+      checkinHint.textContent = '';
+      checkinSheet.setAttribute('aria-hidden', 'true');
+      checkinSheet.classList.remove('checkin-sheet--open');
+      checkinLabel.textContent = name;
+      checkinBar.style.display = 'block';
+      checkinCountdown.textContent = fmtSecs(selectedMins * 60);
+    } catch {
+      checkinHint.textContent = 'Could not save this timer on your device. Check your browser storage settings and try again.';
+    }
   });
 
   root.querySelector('#checkin-cancel')!.addEventListener('click', () => {
@@ -301,7 +304,6 @@ export function renderApp(root: HTMLElement): void {
   });
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function getGreeting(): string {
   const h = new Date().getHours();

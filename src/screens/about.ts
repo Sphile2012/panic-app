@@ -8,7 +8,7 @@ export function renderAbout(root) {
         <h2 class="screen-title">About Panic Ring</h2>
       </header>
 
-      <!-- Logo / tagline -->
+      
       <div class="about-hero">
         <div class="about-logo-ring" aria-hidden="true">○</div>
         <h1 class="about-app-name">Panic Ring</h1>
@@ -19,7 +19,7 @@ export function renderAbout(root) {
         <span class="about-version">Version 1.0</span>
       </div>
 
-      <!-- What the app is -->
+      
       <section class="about-section">
         <h3 class="about-section-title">What Panic Ring does</h3>
         <p class="about-section-body">
@@ -37,7 +37,7 @@ export function renderAbout(root) {
         </ul>
       </section>
 
-      <!-- What it is not -->
+      
       <section class="about-section">
         <h3 class="about-section-title">What Panic Ring is not</h3>
         <p class="about-section-body">
@@ -53,7 +53,7 @@ export function renderAbout(root) {
         </ul>
       </section>
 
-      <!-- Data and privacy -->
+      
       <section class="about-section">
         <h3 class="about-section-title">Your data</h3>
         <p class="about-section-body">
@@ -65,7 +65,7 @@ export function renderAbout(root) {
         </p>
       </section>
 
-      <!-- Design approach -->
+      
       <section class="about-section">
         <h3 class="about-section-title">Design approach</h3>
         <p class="about-section-body">
@@ -79,7 +79,7 @@ export function renderAbout(root) {
         </p>
       </section>
 
-      <!-- Emergency numbers — always accessible -->
+      
       <section class="about-section about-section--emergency">
         <h3 class="about-section-title">Emergency numbers</h3>
         <a class="about-emergency-link" href="tel:10111">
@@ -92,7 +92,7 @@ export function renderAbout(root) {
         </a>
       </section>
 
-      <!-- Links -->
+      
       <div class="about-links">
         <button class="about-link-btn" id="btn-terms">Terms and conditions</button>
         <button class="about-link-btn" id="btn-support-dir">Support services directory</button>

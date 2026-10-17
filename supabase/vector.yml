@@ -1,5 +1,3 @@
-# Minimal Vector config required by Supabase Studio.
-# Collects Docker container logs and exposes them via HTTP.
 
 api:
   enabled: true

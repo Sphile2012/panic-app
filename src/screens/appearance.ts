@@ -10,7 +10,7 @@ export function renderAppearance(root) {
         <h2 class="screen-title">Appearance</h2>
       </header>
 
-      <!-- ── Colour mode ─────────────────────────────────────────────────── -->
+      
       <section class="ap-section">
         <h3 class="ap-section-title">Colour mode</h3>
         <div class="ap-mode-group">
@@ -25,7 +25,7 @@ export function renderAppearance(root) {
         </div>
       </section>
 
-      <!-- ── Accent colour ───────────────────────────────────────────────── -->
+      
       <section class="ap-section">
         <h3 class="ap-section-title">Accent colour</h3>
         <div class="ap-colour-grid">
@@ -57,7 +57,7 @@ export function renderAppearance(root) {
         <p class="ap-colour-name" id="ap-photo-status" aria-live="polite">${current.backgroundImage ? 'A photo is applied.' : 'No photo selected.'}</p>
       </section>
 
-      <!-- ── Disguise screen ─────────────────────────────────────────────── -->
+      
       <section class="ap-section">
         <h3 class="ap-section-title">Disguise screen</h3>
         <p class="ap-section-body">

@@ -11,7 +11,7 @@ export function renderSettings(root: HTMLElement) {
         <h2 class="screen-title">Settings</h2>
       </header>
 
-      <!-- Account -->
+      
       <section class="settings-section">
         <h3 class="settings-section-title">Account</h3>
         ${authEmail ? `
@@ -40,14 +40,14 @@ export function renderSettings(root: HTMLElement) {
         <button class="btn-secondary-outline" id="btn-recovery-settings">${hasRecovery ? 'Change recovery questions' : 'Set recovery questions'}</button>
       </section>
 
-      <!-- Appearance -->
+      
       <section class="settings-section">
         <h3 class="settings-section-title">Appearance</h3>
         <p class="settings-section-body">Theme, accent colour and disguise screen.</p>
         <button class="btn-secondary-outline" id="btn-appearance">Open appearance settings</button>
       </section>
 
-      <!-- Auto-lock -->
+      
       <section class="settings-section">
         <h3 class="settings-section-title">Auto-lock</h3>
         <p class="settings-section-body">Lock after inactivity.</p>
@@ -67,7 +67,7 @@ export function renderSettings(root: HTMLElement) {
         </div>
       </section>
 
-      <!-- Change PINs -->
+      
       <section class="settings-section">
         <h3 class="settings-section-title">Change PINs</h3>
         <form class="setup-form" id="change-pin-form" autocomplete="off">
@@ -82,13 +82,13 @@ export function renderSettings(root: HTMLElement) {
         </form>
       </section>
 
-      <!-- Trusted circle -->
+      
       <section class="settings-section">
         <h3 class="settings-section-title">Trusted circle</h3>
         <button class="btn-secondary-outline" id="btn-contacts">Manage contacts</button>
       </section>
 
-      <!-- About -->
+      
       <section class="settings-section">
         <h3 class="settings-section-title">About</h3>
         <p class="settings-section-body">Panic Ring v1.0 · Data stays encrypted on this device.</p>
@@ -98,7 +98,7 @@ export function renderSettings(root: HTMLElement) {
         </div>
       </section>
 
-      <!-- Danger zone -->
+      
       <section class="settings-section settings-section--danger">
         <h3 class="settings-section-title">Reset app</h3>
         <p class="settings-section-body">

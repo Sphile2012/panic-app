@@ -1,19 +1,5 @@
--- =============================================================================
---  Panic Ring — PostgreSQL schema
---  Runs automatically on first Postgres container boot.
---  Safe to re-run: every statement uses IF NOT EXISTS / OR REPLACE.
--- =============================================================================
-
--- Extensions
 create extension if not exists "pgcrypto";
 create extension if not exists "uuid-ossp";
-
--- =============================================================================
---  DEVICES
---  One row per installed browser instance.
---  Stores only: a hashed PIN, a hashed decoy-PIN, and auto-lock preference.
---  No contacts, notes or safety-plan data ever reaches the database.
--- =============================================================================
 create table if not exists public.devices (
   id           uuid        primary key default gen_random_uuid(),
   user_id      uuid        not null references auth.users(id) on delete cascade,
@@ -24,12 +10,6 @@ create table if not exists public.devices (
   created_at   timestamptz not null default now(),
   updated_at   timestamptz not null default now()
 );
-
--- =============================================================================
---  ALERT LOGS
---  Anonymous audit row written each time an alert fires.
---  Contains ONLY counts — no location coords, no contact names, no message text.
--- =============================================================================
 create table if not exists public.alert_logs (
   id              uuid        primary key default gen_random_uuid(),
   user_id         uuid        not null references auth.users(id) on delete cascade,
@@ -40,11 +20,6 @@ create table if not exists public.alert_logs (
   contacts_opened smallint    not null default 0,
   contacts_failed smallint    not null default 0
 );
-
--- =============================================================================
---  ROW LEVEL SECURITY
---  Every user sees only their own rows.
--- =============================================================================
 alter table public.devices    enable row level security;
 alter table public.alert_logs enable row level security;
 
@@ -65,10 +40,6 @@ do $$ begin
       for all using (auth.uid() = user_id);
   end if;
 end; $$;
-
--- =============================================================================
---  TRIGGERS
--- =============================================================================
 create or replace function public.set_updated_at()
 returns trigger language plpgsql as $$
 begin
@@ -81,11 +52,6 @@ drop trigger if exists devices_updated_at on public.devices;
 create trigger devices_updated_at
   before update on public.devices
   for each row execute function public.set_updated_at();
-
--- =============================================================================
---  ALERT STATS VIEW  (used by the dashboard)
---  security_invoker = true so RLS applies — each user sees only their own rows.
--- =============================================================================
 drop view if exists public.alert_stats;
 create view public.alert_stats
   with (security_invoker = true)
@@ -99,20 +65,10 @@ select
   max(fired_at)                                                              as last_alert_at
 from public.alert_logs
 group by user_id;
-
--- =============================================================================
---  GRANTS
---  anon  — can call auth endpoints; cannot read data (RLS blocks it)
---  authenticated — full CRUD on their own rows via RLS
--- =============================================================================
 grant usage  on schema public              to anon, authenticated;
 grant select on public.alert_stats         to authenticated;
 grant all    on public.devices             to authenticated;
 grant all    on public.alert_logs          to authenticated;
-
--- =============================================================================
---  INDEXES
--- =============================================================================
 create index if not exists devices_user_id_idx    on public.devices    (user_id);
 create index if not exists alertlogs_user_id_idx  on public.alert_logs (user_id);
 create index if not exists alertlogs_fired_at_idx on public.alert_logs (fired_at desc);

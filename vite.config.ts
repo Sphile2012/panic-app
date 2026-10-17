@@ -16,8 +16,8 @@ export default defineConfig({
 
   build: {
     outDir:        'dist',
-    sourcemap:     false,          // no sourcemaps in production build
-    chunkSizeWarningLimit: 500,    // kB — suppress false alarms on Supabase bundle
+    sourcemap:     false,          
+    chunkSizeWarningLimit: 500,    
 
     rollupOptions: {
       input: {
@@ -26,7 +26,6 @@ export default defineConfig({
       },
 
       output: {
-        // Split Supabase into its own chunk so it can be cached separately
         manualChunks: {
           supabase: ['@supabase/supabase-js'],
         },

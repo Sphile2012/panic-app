@@ -3,6 +3,7 @@ import { store } from './state.js';
 import { renderCalculator } from './screens/calculator.js';
 import { renderSetupPin, renderSetupContacts, renderRecoverySetup, renderPinRecovery } from './screens/setup.js';
 import { renderApp } from './screens/app.js';
+import { renderCheckinExpired } from './screens/checkinExpired.js';
 import { renderContacts } from './screens/contacts.js';
 import { renderLocation } from './screens/location.js';
 import { renderSending, renderSent, updateSendingList } from './screens/sending.js';
@@ -106,6 +107,9 @@ function render(screen: string) {
             break;
         case 'app':
             renderApp(appRoot);
+            break;
+        case 'checkin-expired':
+            renderCheckinExpired(appRoot);
             break;
         case 'contacts':
             renderContacts(appRoot);

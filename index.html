@@ -16,20 +16,20 @@
   </head>
   <body>
 
-    <!-- PWA install banner — hidden until beforeinstallprompt fires -->
+    
     <div id="install-banner" class="install-banner" style="display:none" role="banner">
       <span class="install-banner-text">Install Panic Ring for offline use</span>
       <div class="install-banner-actions">
         <button class="install-banner-btn" id="install-btn">Install</button>
         <button class="install-banner-dismiss" id="install-dismiss" aria-label="Dismiss">✕</button>
       </div>
-      <!-- iOS instructions (shown instead of install button on Safari) -->
+      
       <p class="ios-install-msg" id="ios-install-msg" style="display:none">
         Tap <strong>Share ↑</strong> then <strong>Add to Home Screen</strong>
       </p>
     </div>
 
-    <!-- Phone frame -->
+    
     <main class="phone-frame" aria-label="Panic Ring">
       <div id="app-root" class="phone-screen"></div>
     </main>

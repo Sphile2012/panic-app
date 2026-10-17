@@ -16,7 +16,7 @@ export function renderTerms(root) {
         </p>
         <p class="terms-effective">Last updated: October 2026</p>
 
-        <!-- 1 -->
+        
         <div class="terms-section">
           <h3 class="terms-heading">1. What Panic Ring is</h3>
           <p>
@@ -27,19 +27,20 @@ export function renderTerms(root) {
           </p>
         </div>
 
-        <!-- 2 -->
+        
         <div class="terms-section">
           <h3 class="terms-heading">2. No guarantee of delivery</h3>
           <p>
-            Alerts are sent via the SMS application on your device. Delivery
-            depends on your device, your mobile network, and the recipient's
-            network. Panic Ring will always show you the honest delivery
-            status. It will never claim an alert was delivered when it was not.
+            Panic Ring prepares messages using the SMS application on your
+            device. You must review and tap Send for each message. Delivery
+            depends on your device and both mobile networks; Panic Ring cannot
+            confirm that a message was sent or received.
           </p>
           <p>
-            If the app has no network connection, an alert will be queued and
-            retried when connectivity returns, provided you have not closed the
-            app. Queued alerts older than 30 minutes are discarded.
+            If the app has no network connection, the alert handoff is queued
+            and retried when connectivity returns while the app is available.
+            You still need to review and send each SMS. Queued alerts older
+            than 30 minutes are discarded.
           </p>
           <p>
             In an emergency, always call <strong>10111</strong> (SAPS) or
@@ -48,7 +49,7 @@ export function renderTerms(root) {
           </p>
         </div>
 
-        <!-- 3 -->
+        
         <div class="terms-section">
           <h3 class="terms-heading">3. Your data and privacy</h3>
           <p>
@@ -61,20 +62,24 @@ export function renderTerms(root) {
           </p>
           <ul class="terms-list">
             <li>A hashed (one-way) version of your PIN — never the PIN itself</li>
-            <li>Alert counts (how many contacts, how many delivered) — no names, no content, no location</li>
+            <li>Alert handoff counts and failures — not proof of delivery; no names, message content, or location</li>
             <li>A random device identifier, known only to your device</li>
           </ul>
           <p>
             Location is captured only when you actively choose to share it
-            during an alert. It is included in the SMS message to your contacts
-            and is not stored on our servers.
+            during an alert. It is included in the SMS draft prepared for your
+            contacts; it is sent only if you tap Send. It is not stored on
+            Panic Ring's servers. For a readable address, the coordinates are
+            sent to OpenStreetMap for lookup; if configured, they are also sent
+            to what3words. Those providers process location data under their
+            own policies.
           </p>
           <p>
             You can delete all your data at any time in Settings → Reset app.
           </p>
         </div>
 
-        <!-- 4 -->
+        
         <div class="terms-section">
           <h3 class="terms-heading">4. Your responsibility</h3>
           <p>
@@ -88,7 +93,7 @@ export function renderTerms(root) {
           </p>
         </div>
 
-        <!-- 5 -->
+        
         <div class="terms-section">
           <h3 class="terms-heading">5. Support services directory</h3>
           <p>
@@ -105,7 +110,7 @@ export function renderTerms(root) {
           </p>
         </div>
 
-        <!-- 6 -->
+        
         <div class="terms-section">
           <h3 class="terms-heading">6. Safety Companion</h3>
           <p>
@@ -117,18 +122,20 @@ export function renderTerms(root) {
           </p>
         </div>
 
-        <!-- 7 -->
+        
         <div class="terms-section">
           <h3 class="terms-heading">7. Check-in timer</h3>
           <p>
-            The check-in timer sends an SMS alert to your trusted circle if
-            you do not cancel before the timer expires. It is your
-            responsibility to cancel the timer if you are safe. Panic Ring
-            is not liable for alerts sent because a timer was not cancelled.
+            If a check-in timer expires, Panic Ring prompts you to prepare an
+            alert. It does not send SMS messages automatically: you must review
+            and send each message in your messaging app. Browser timers may be
+            delayed while the app is closed or suspended, and an alert prompt
+            may wait until you reopen and unlock the app. Do not rely on this
+            timer as your only safety measure.
           </p>
         </div>
 
-        <!-- 8 -->
+        
         <div class="terms-section">
           <h3 class="terms-heading">8. Limitation of liability</h3>
           <p>
@@ -140,7 +147,7 @@ export function renderTerms(root) {
           </p>
         </div>
 
-        <!-- 9 -->
+        
         <div class="terms-section">
           <h3 class="terms-heading">9. Changes to these terms</h3>
           <p>
@@ -150,7 +157,7 @@ export function renderTerms(root) {
           </p>
         </div>
 
-        <!-- 10 -->
+        
         <div class="terms-section">
           <h3 class="terms-heading">10. Applicable law</h3>
           <p>
@@ -160,7 +167,7 @@ export function renderTerms(root) {
           </p>
         </div>
 
-        <!-- Emergency reminder -->
+        
         <div class="terms-emergency-reminder">
           <p>
             <strong>In an emergency, call 10111 (SAPS) or 0800 428 428

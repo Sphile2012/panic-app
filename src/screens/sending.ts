@@ -8,10 +8,9 @@ export function renderSending(root) {
         <div class="sending-pulse"></div>
         <div class="sending-icon" aria-hidden="true"></div>
       </div>
-      <h2 class="sending-title">Alerting your circle…</h2>
+      <h2 class="sending-title">Preparing your alert…</h2>
       <p class="sending-sub" id="sending-sub">
-        Your Messages app will open for each contact.
-        Send the message, then come back.
+        Your messaging app will open for each contact. Review and send each message there, then return here.
       </p>
       <ul class="sending-list" id="sending-list">
         ${contacts.map(sendingRow).join('')}
@@ -27,22 +26,30 @@ export function updateSendingList(root) {
 }
 export function renderSent(root) {
     const { contacts, alertLocation, locationShared } = store.getState();
-    const opened = contacts.filter(c => c.status === 'delivered').length;
+    const attempted = contacts.filter(c => c.status === 'prepared').length;
     const failed = contacts.filter(c => c.status === 'failed').length;
     const summaryLine = failed > 0
-        ? `${opened} messages opened · ${failed} failed (no network)`
-        : `${opened} message${opened !== 1 ? 's' : ''} opened`;
+        ? `${attempted} SMS handoff${attempted !== 1 ? 's' : ''} attempted · ${failed} could not be opened`
+        : `${attempted} SMS handoff${attempted !== 1 ? 's' : ''} attempted`;
+    const locationLines = alertLocation.split('\n');
+    const locationAddress = escapeHtml(locationLines[0] ?? '');
+    const coordinates = locationLines.find(line => line.startsWith('Coordinates: '));
+    const accuracy = locationLines.find(line => line.startsWith('Reported accuracy: '));
+    const mapsUrl = locationLines.find(line => line.startsWith('Google Maps: '))
+        ?.slice('Google Maps: '.length);
     root.innerHTML = `
     <div class="screen sent-screen">
 
       <div class="sent-hero" aria-hidden="true">${failed > 0 ? '!' : 'OK'}</div>
-      <h2 class="sent-title">Alert sent</h2>
+      <h2 class="sent-title">Alert handoff complete</h2>
       <p class="sent-summary">${summaryLine}</p>
+      <p class="sent-warning">
+        Check your messaging app and tap Send. Panic Ring cannot confirm that a message was sent or received.
+      </p>
 
       ${failed > 0 ? `
         <p class="sent-warning">
-          Some messages could not be opened — check your connection,
-          then call your contacts or emergency services directly.
+      Some message composers could not be opened. Try again, or call your contacts or emergency services directly.
         </p>
       ` : ''}
 
@@ -53,15 +60,17 @@ export function renderSent(root) {
       ${locationShared ? `
         <div class="sent-location-box">
           <span class="sent-location-label">Location shared:</span>
-          <span class="sent-location-text">${alertLocation.split('\n')[0]}</span>
-          ${alertLocation.includes('http')
-        ? `<a class="sent-location-link" href="${alertLocation.split('\n')[1]}"
+          <span class="sent-location-text">${locationAddress}</span>
+          ${coordinates ? `<span class="sent-location-text">${escapeHtml(coordinates)}</span>` : ''}
+          ${accuracy ? `<span class="sent-location-label">${escapeHtml(accuracy)}</span>` : ''}
+          ${mapsUrl?.startsWith('https://maps.google.com/?q=')
+        ? `<a class="sent-location-link" href="${escapeHtml(mapsUrl)}"
                  target="_blank" rel="noopener">Open in Maps</a>`
         : ''}
         </div>
       ` : `<p class="sent-no-location">Location was not shared.</p>`}
 
-      <!-- Always-visible emergency fallback numbers -->
+      
       <div class="emergency-links">
         <p class="emergency-label">If nobody responds, call directly:</p>
         <a class="emergency-call" href="tel:10111">
@@ -122,7 +131,16 @@ function deliveryIcon(status) {
     switch (status) {
         case 'pending': return '–';
         case 'sending': return '<span class="spinner"></span>';
-        case 'delivered': return 'Sent';
+        case 'prepared': return 'Attempted';
         case 'failed': return 'Failed';
     }
+}
+
+function escapeHtml(value) {
+    return value
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }

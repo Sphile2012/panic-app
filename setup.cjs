@@ -1,29 +1,14 @@
 #!/usr/bin/env node
-/**
- * Panic Ring — backend setup script
- *
- * Run once before starting Docker:
- *   node setup.js
- *
- * What it does:
- *   1. Generates a JWT secret, Postgres password, and realtime secret key
- *   2. Signs fresh ANON and SERVICE_ROLE JWTs with that secret
- *   3. Writes .env.docker.local  (Docker secrets — never committed)
- *   4. Writes .env               (Vite dev server — never committed)
- *   5. Prints the next steps
- */
 
 const crypto = require('crypto');
 const fs     = require('fs');
 const path   = require('path');
 
-// ── Generate secrets ──────────────────────────────────────────────────────────
 const jwtSecret    = crypto.randomBytes(40).toString('base64').replace(/[+/=]/g, x => ({'+':'-','/':'_','=':''}[x]));
 const pgPassword   = crypto.randomBytes(20).toString('base64').replace(/[+/=]/g, '');
 const secretKeyBase = crypto.randomBytes(32).toString('hex');
 const dashPassword  = crypto.randomBytes(12).toString('base64').replace(/[+/=]/g, '');
 
-// ── Sign JWTs ─────────────────────────────────────────────────────────────────
 function b64url(obj) {
   return Buffer.from(JSON.stringify(obj)).toString('base64url');
 }
@@ -37,15 +22,11 @@ function signJwt(payload, secret) {
 }
 
 const iat     = 1700000000;
-const exp     = 2200000000; // ~year 2039
+const exp     = 2200000000;
 const anonKey = signJwt({ iss: 'supabase', role: 'anon',         iat, exp }, jwtSecret);
 const svcKey  = signJwt({ iss: 'supabase', role: 'service_role', iat, exp }, jwtSecret);
 
-// ── .env.docker.local ─────────────────────────────────────────────────────────
-const dockerLocal = `# Panic Ring — generated Docker secrets
-# DO NOT commit this file.
-# Start the stack: docker compose --env-file .env.docker.local up -d --build
-
+const dockerLocal = `
 JWT_SECRET=${jwtSecret}
 
 ANON_KEY=${anonKey}
@@ -74,23 +55,18 @@ SMTP_ADMIN_EMAIL=no-reply@panicring.local
 VITE_W3W_API_KEY=
 `;
 
-// ── .env (dev server) ─────────────────────────────────────────────────────────
-const devEnv = `# Panic Ring — dev server environment (npm run dev)
-# Keys match the local Docker stack. Start Docker first.
-
+const devEnv = `
 VITE_SUPABASE_URL=http://localhost:8000
 VITE_SUPABASE_ANON_KEY=${anonKey}
 
 VITE_W3W_API_KEY=
 `;
 
-// ── Write files ───────────────────────────────────────────────────────────────
 const root = path.resolve(__dirname);
 
 fs.writeFileSync(path.join(root, '.env.docker.local'), dockerLocal);
 fs.writeFileSync(path.join(root, '.env'), devEnv);
 
-// ── Print summary ─────────────────────────────────────────────────────────────
 console.log('\n✅  Panic Ring backend setup complete\n');
 console.log('  Generated files:');
 console.log('    .env.docker.local  — Docker secrets (never commit)');

@@ -9,14 +9,14 @@ export function renderClock(root) {
         <button class="clock-tab" id="tab-stopwatch">Stopwatch</button>
       </div>
 
-      <!-- Clock face -->
+      
       <div class="clock-face" id="clock-face">
         <div class="clock-time" id="clock-time">00:00:00</div>
         <div class="clock-date" id="clock-date"></div>
         <div class="clock-tz">Johannesburg · SAST (UTC+2)</div>
       </div>
 
-      <!-- Timer (hidden by default — this is the PIN entry) -->
+      
       <div class="clock-timer-panel" id="timer-panel" style="display:none">
         <p class="clock-timer-hint">Enter time (MM:SS)</p>
         <input
@@ -38,7 +38,7 @@ export function renderClock(root) {
         </div>
       </div>
 
-      <!-- Stopwatch (static, looks real) -->
+      
       <div class="clock-stopwatch-panel" id="stopwatch-panel" style="display:none">
         <div class="clock-time" id="sw-display">00:00.00</div>
         <div class="clock-sw-actions">

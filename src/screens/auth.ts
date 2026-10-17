@@ -1,7 +1,6 @@
 import { store } from '../state.js';
 import { signUp, signIn, signInWithGoogle, resetPassword, DB_CONFIGURED } from '../db.js';
 
-// ── Shared helpers ────────────────────────────────────────────────────────────
 
 function logo(): string {
   return `
@@ -43,7 +42,6 @@ function wireToggles(root: HTMLElement): void {
   });
 }
 
-// ── Sign Up ───────────────────────────────────────────────────────────────────
 
 export function renderSignup(root: HTMLElement): void {
   root.innerHTML = `
@@ -140,7 +138,6 @@ export function renderSignup(root: HTMLElement): void {
   });
 }
 
-// ── Sign In ───────────────────────────────────────────────────────────────────
 
 export function renderLogin(root: HTMLElement): void {
   root.innerHTML = `
@@ -224,7 +221,6 @@ export function renderLogin(root: HTMLElement): void {
   });
 }
 
-// ── Forgot Password ───────────────────────────────────────────────────────────
 
 export function renderForgotPassword(root: HTMLElement): void {
   root.innerHTML = `
@@ -285,7 +281,6 @@ export function renderForgotPassword(root: HTMLElement): void {
   });
 }
 
-// ── Verify Email ──────────────────────────────────────────────────────────────
 
 export function renderVerifyEmail(root: HTMLElement): void {
   root.innerHTML = `

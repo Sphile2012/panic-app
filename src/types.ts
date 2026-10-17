@@ -1,4 +1,3 @@
-// All screen names the router understands
 export type Screen =
   | 'signup'
   | 'login'
@@ -16,6 +15,7 @@ export type Screen =
   | 'location'
   | 'sending'
   | 'sent'
+  | 'checkin-expired'
   | 'notes'
   | 'note-edit'
   | 'safety-plan'
@@ -26,4 +26,4 @@ export type Screen =
   | 'settings'
   | 'appearance';
 
-export type DeliveryStatus = 'pending' | 'sending' | 'delivered' | 'failed';
+export type DeliveryStatus = 'pending' | 'sending' | 'prepared' | 'failed';

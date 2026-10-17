@@ -74,7 +74,6 @@ export function renderSetupPin(root: HTMLElement) {
         }
         errorEl.textContent = '';
         await store.savePin(pin, decoy);
-        // Recovery questions only asked on first account creation, not on subsequent logins
         const pub = loadPublicSync();
         if (!pub.recoveryQuestionIds) {
           store.navigateTo('recovery-setup');
@@ -210,7 +209,7 @@ export function renderSetupContacts(root) {
     <div class="screen setup-screen">
       <h2 class="setup-title">Add trusted contacts</h2>
       <p class="setup-body">
-        These people will receive an SMS alert when you activate the app.
+        Activating an alert opens a message draft for each person. You must review and send each SMS yourself.
         ${authEmail ? 'Add at least one person you trust completely.' : 'Sign in or create an account before adding contacts.'}
       </p>
 

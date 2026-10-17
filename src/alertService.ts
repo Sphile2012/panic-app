@@ -18,7 +18,7 @@ async function nominatimFetch(lat, lng, zoom) {
                 'Accept-Language': 'en-ZA,en;q=0.9',
                 'Accept': 'application/json',
             },
-            signal: AbortSignal.timeout(6000),
+            signal: AbortSignal.timeout(3000),
         });
         if (!res.ok)
             return null;
@@ -65,7 +65,7 @@ async function getWhat3Words(lat, lng) {
     if (!key)
         return null;
     try {
-        const res = await fetch(`https://api.what3words.com/v3/convert-to-3wa?coordinates=${lat},${lng}&language=en&key=${key}`, { signal: AbortSignal.timeout(5000) });
+        const res = await fetch(`https://api.what3words.com/v3/convert-to-3wa?coordinates=${lat},${lng}&language=en&key=${key}`, { signal: AbortSignal.timeout(3000) });
         if (!res.ok)
             return null;
         const data = await res.json();
@@ -75,48 +75,100 @@ async function getWhat3Words(lat, lng) {
         return null;
     }
 }
-export async function getLocation(timeoutMs = 12000) {
+export type LocationResult =
+    | { ok: true; coords: GeolocationCoordinates; address: string; mapsUrl: string; what3words: string | null; accuracy: number; text: string }
+    | { ok: false; reason: string };
+
+function locationErrorMessage(err: GeolocationPositionError): string {
+    if (err.code === 1)
+        return 'Location permission was denied. Enable it in your device settings, then try again.';
+    if (err.code === 2)
+        return 'Your device could not get a location fix. Move near a window or outdoors and try again.';
+    if (err.code === 3)
+        return 'Getting your location took too long. Try again somewhere with a clearer GPS signal.';
+    return 'Location unavailable. Check your device settings and try again.';
+}
+
+export async function getLocation(timeoutMs = 15000, onAccuracy?: (accuracy: number) => void): Promise<LocationResult> {
     if (!('geolocation' in navigator)) {
         return { ok: false, reason: 'Location services are not available on this device.' };
     }
-    return new Promise(resolve => {
-        navigator.geolocation.getCurrentPosition(async (pos) => {
-            const { latitude: lat, longitude: lng, accuracy } = pos.coords;
+    return new Promise<LocationResult>(resolve => {
+        let watchId: number | null = null;
+        let settleTimer: ReturnType<typeof setTimeout> | null = null;
+        let deadlineTimer: ReturnType<typeof setTimeout> | null = null;
+        let bestFix: GeolocationPosition | null = null;
+        let finished = false;
+
+        const finish = async (reason?: string): Promise<void> => {
+            if (finished)
+                return;
+            finished = true;
+            if (settleTimer !== null)
+                clearTimeout(settleTimer);
+            if (deadlineTimer !== null)
+                clearTimeout(deadlineTimer);
+            if (watchId !== null)
+                navigator.geolocation.clearWatch(watchId);
+
+            if (!bestFix) {
+                resolve({ ok: false, reason: reason ?? 'Your device could not get a location fix. Move near a window or outdoors and try again.' });
+                return;
+            }
+
+            const { latitude: lat, longitude: lng, accuracy } = bestFix.coords;
             const [address, w3w] = await Promise.all([
                 reverseGeocode(lat, lng),
                 getWhat3Words(lat, lng),
             ]);
+            const coordinates = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
             const mapsUrl = `https://maps.google.com/?q=${lat.toFixed(7)},${lng.toFixed(7)}`;
-            const accuracyStr = `±${Math.round(accuracy)} m`;
             const lines = [
                 `Location: ${address}`,
-                `Accuracy: ${accuracyStr}`,
+                `Coordinates: ${coordinates}`,
+                `Reported accuracy: ±${Math.round(accuracy)} m`,
                 w3w ? `what3words: ${w3w}` : null,
                 `Google Maps: ${mapsUrl}`,
             ].filter(Boolean).join('\n');
             resolve({
                 ok: true,
-                coords: pos.coords,
+                coords: bestFix.coords,
                 address,
                 mapsUrl,
                 what3words: w3w,
                 accuracy,
                 text: lines,
             });
-        }, err => {
-            let reason = 'Location unavailable.';
-            if (err.code === 1)
-                reason = 'Location permission was denied. Please enable it in your device settings.';
-            if (err.code === 2)
-                reason = 'No GPS signal found. Move to an open area and try again.';
-            if (err.code === 3)
-                reason = 'Location request timed out. Try again in a moment.';
-            resolve({ ok: false, reason });
-        }, {
-            timeout: timeoutMs,
-            maximumAge: 30000,
-            enableHighAccuracy: true,
-        });
+        };
+
+        try {
+            deadlineTimer = setTimeout(() => {
+                void finish();
+            }, timeoutMs);
+            watchId = navigator.geolocation.watchPosition(position => {
+                if (!bestFix || position.coords.accuracy < bestFix.coords.accuracy) {
+                    bestFix = position;
+                    onAccuracy?.(position.coords.accuracy);
+                }
+                if (position.coords.accuracy <= 15) {
+                    void finish();
+                    return;
+                }
+                if (settleTimer !== null)
+                    clearTimeout(settleTimer);
+                settleTimer = setTimeout(() => {
+                    void finish();
+                }, 2500);
+            }, error => {
+                void finish(locationErrorMessage(error));
+            }, {
+                timeout: timeoutMs,
+                maximumAge: 0,
+                enableHighAccuracy: true,
+            });
+        } catch {
+            void finish('Your browser could not access location services. Check your device settings and try again.');
+        }
     });
 }
 export async function runAlertSequence(locationText, locationShared, onStep) {
@@ -134,20 +186,20 @@ export async function runAlertSequence(locationText, locationShared, onStep) {
         store.navigateTo('sent');
         return;
     }
-    let opened = 0;
+    let attempted = 0;
     let failed = 0;
     for (let i = 0; i < contacts.length; i++) {
         const contact = contacts[i];
         const body = buildSmsBody(contact.name, locationText, locationShared);
         window.location.href = smsUri(contact.phone, body);
         await waitForReturn();
-        store.updateContactStatus(contact.id, 'delivered');
-        opened++;
+        store.updateContactStatus(contact.id, 'prepared');
+        attempted++;
         onStep();
         if (i < contacts.length - 1)
             await delay(600);
     }
-    void logAlert(contacts.length, locationShared, opened, failed);
+    void logAlert(contacts.length, locationShared, attempted, failed);
     await delay(500);
     store.navigateTo('sent');
 }
@@ -172,14 +224,14 @@ function waitForReturn() {
         setTimeout(finish, 30000);
     });
 }
-async function logAlert(contactCount, locationShared, opened, failed) {
+async function logAlert(contactCount, locationShared, attempted, failed) {
     const user = await getUser();
     await insertAlertLog({
         user_id: user?.id ?? '',
         device_id: getDeviceId(),
         contact_count: contactCount,
         location_shared: locationShared,
-        contacts_opened: opened,
+        contacts_opened: attempted,
         contacts_failed: failed,
     });
 }

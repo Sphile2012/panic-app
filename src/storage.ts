@@ -6,7 +6,7 @@ export type Contact = {
     name: string;
     phone: string;
     initials: string;
-    status: 'pending' | 'sending' | 'delivered' | 'failed';
+    status: 'pending' | 'sending' | 'prepared' | 'failed';
 };
 
 export type Note = {

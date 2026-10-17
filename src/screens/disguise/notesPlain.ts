@@ -14,7 +14,7 @@ export function renderNotesPlain(root) {
         <button class="notes-plain-new" aria-label="New note" title="New note">＋</button>
       </header>
 
-      <!-- Search bar — doubles as hidden PIN entry -->
+      
       <div class="notes-plain-search-wrap">
         <input
           class="notes-plain-search"
