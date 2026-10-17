@@ -19,15 +19,22 @@ export function getClient() {
     }
     return _client;
 }
-export async function signUp(email, password) {
+export async function signUp(email, password): Promise<{ error: string | null; alreadyRegistered: boolean }> {
     if (!DB_CONFIGURED)
-        return { error: 'Secure account service unavailable. Continue in offline mode.' };
+        return { error: 'Secure account service unavailable. Continue in offline mode.', alreadyRegistered: false };
     try {
-        const { error } = await getClient().auth.signUp({ email, password });
-        return { error: error?.message ?? null };
+        const { data, error } = await getClient().auth.signUp({ email: email.trim(), password });
+        if (
+            error?.code === 'user_already_exists' ||
+            error?.message.toLowerCase().includes('already registered') ||
+            data.user?.identities?.length === 0
+        ) {
+            return { error: null, alreadyRegistered: true };
+        }
+        return { error: error?.message ?? null, alreadyRegistered: false };
     }
     catch {
-        return { error: 'Unable to reach the secure account service. Continue in offline mode.' };
+        return { error: 'Unable to reach the secure account service. Continue in offline mode.', alreadyRegistered: false };
     }
 }
 export async function signIn(email, password) {
@@ -35,7 +42,14 @@ export async function signIn(email, password) {
         return { error: 'Secure account service unavailable. Continue in offline mode.' };
     try {
         const { error } = await getClient().auth.signInWithPassword({ email, password });
-        return { error: error?.message ?? null };
+        if (!error)
+            return { error: null };
+        if (error.code === 'invalid_credentials' || error.message.toLowerCase().includes('invalid login credentials')) {
+            return {
+                error: 'We could not verify this email and password. For security, sign-in does not reveal which one is incorrect. Check the email address, or use “Forgot password?” to set a new password.',
+            };
+        }
+        return { error: error.message };
     }
     catch {
         return { error: 'Unable to reach the secure account service. Continue in offline mode.' };
@@ -68,11 +82,35 @@ export async function resetPassword(email: string): Promise<{ error: string | nu
         return { error: 'Secure account service unavailable.' };
     try {
         const { error } = await getClient().auth.resetPasswordForEmail(email, {
-            redirectTo: window.location.origin + '?reset=true',
+            redirectTo: window.location.origin,
         });
         return { error: error?.message ?? null };
     } catch {
         return { error: 'Unable to send reset email.' };
+    }
+}
+
+export async function verifyPasswordResetOtp(
+    email: string,
+    token: string,
+    password: string,
+): Promise<{ error: string | null }> {
+    if (!DB_CONFIGURED)
+        return { error: 'Secure account service unavailable.' };
+    try {
+        const client = getClient();
+        const { error: verifyError } = await client.auth.verifyOtp({
+            email: email.trim(),
+            token: token.trim(),
+            type: 'recovery',
+        });
+        if (verifyError)
+            return { error: verifyError.message };
+        const { error: updateError } = await client.auth.updateUser({ password });
+        return { error: updateError?.message ?? null };
+    }
+    catch {
+        return { error: 'Unable to verify the reset code. Request a new code and try again.' };
     }
 }
 export async function getSession() {

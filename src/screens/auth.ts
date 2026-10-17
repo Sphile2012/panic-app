@@ -1,5 +1,5 @@
 import { store } from '../state.js';
-import { signUp, signIn, signInWithGoogle, resetPassword, DB_CONFIGURED } from '../db.js';
+import { signUp, signIn, signInWithGoogle, resetPassword, verifyPasswordResetOtp, DB_CONFIGURED } from '../db.js';
 
 
 function logo(): string {
@@ -117,10 +117,14 @@ export function renderSignup(root: HTMLElement): void {
 
     submitBtn.disabled    = true;
     submitBtn.textContent = '⏳ Creating account…';
-    const { error } = await signUp(email, pw);
+    const { error, alreadyRegistered } = await signUp(email, pw);
     submitBtn.disabled    = false;
     submitBtn.textContent = 'Create account';
 
+    if (alreadyRegistered) {
+      errEl.textContent = 'An account with this email already exists. Sign in instead or use “Forgot password?” to reset it.';
+      return;
+    }
     if (error) {
       if (error.toLowerCase().includes('offline')) { store.navigateTo('setup-pin'); return; }
       if (error.toLowerCase().includes('already')) {
@@ -230,7 +234,7 @@ export function renderForgotPassword(root: HTMLElement): void {
         <div class="auth-icon-big">🔑</div>
         <h2 class="auth-title">Reset your password</h2>
         <p class="auth-subtitle">
-          No worries — enter your email and we'll send you a reset link right away.
+          Enter your email and we’ll send you a one-time reset code.
         </p>
 
         <form class="auth-form" id="forgot-form" novalidate>
@@ -238,10 +242,32 @@ export function renderForgotPassword(root: HTMLElement): void {
           <input class="text-input" id="fp-email" type="email"
             placeholder="you@example.com" autocomplete="email" required />
 
+          <div id="fp-reset-fields" hidden>
+            <label class="field-label" for="fp-code">Email code</label>
+            <input class="text-input" id="fp-code" type="text" inputmode="numeric"
+              autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6"
+              placeholder="Enter the 6-digit code" />
+
+            <label class="field-label" for="fp-password">New password</label>
+            <div class="password-wrap">
+              <input class="text-input" id="fp-password" type="password"
+                autocomplete="new-password" minlength="8" placeholder="At least 8 characters" />
+              ${pwToggle('fp-password')}
+            </div>
+
+            <label class="field-label" for="fp-confirm">Confirm new password</label>
+            <div class="password-wrap">
+              <input class="text-input" id="fp-confirm" type="password"
+                autocomplete="new-password" minlength="8" placeholder="Enter it again" />
+              ${pwToggle('fp-confirm')}
+            </div>
+          </div>
+
           <p class="auth-error"   id="fp-error"   aria-live="polite"></p>
           <p class="auth-success" id="fp-success" aria-live="polite"></p>
 
-          <button class="btn-primary" type="submit" id="fp-submit">Send reset link</button>
+          <button class="btn-primary" type="submit" id="fp-submit">Send reset code</button>
+          <button class="auth-forgot-btn" type="button" id="fp-resend" hidden>Send a new code</button>
         </form>
 
         <div class="auth-footer">
@@ -251,33 +277,91 @@ export function renderForgotPassword(root: HTMLElement): void {
     </div>`;
 
   root.querySelector('#btn-back')!.addEventListener('click', () => store.navigateTo('login'));
+  wireToggles(root);
 
   const form      = root.querySelector<HTMLFormElement>('#forgot-form')!;
   const emailEl   = root.querySelector<HTMLInputElement>('#fp-email')!;
+  const resetFields = root.querySelector<HTMLElement>('#fp-reset-fields')!;
+  const codeEl    = root.querySelector<HTMLInputElement>('#fp-code')!;
+  const passwordEl = root.querySelector<HTMLInputElement>('#fp-password')!;
+  const confirmEl = root.querySelector<HTMLInputElement>('#fp-confirm')!;
   const errEl     = root.querySelector<HTMLElement>('#fp-error')!;
   const successEl = root.querySelector<HTMLElement>('#fp-success')!;
   const submitBtn = root.querySelector<HTMLButtonElement>('#fp-submit')!;
+  const resendBtn = root.querySelector<HTMLButtonElement>('#fp-resend')!;
+  let codeSent = false;
 
-  form.addEventListener('submit', async e => {
-    e.preventDefault();
+  async function sendCode(): Promise<void> {
     errEl.textContent     = '';
     successEl.textContent = '';
     const email = emailEl.value.trim();
     if (!email) { errEl.textContent = 'Please enter your email address.'; emailEl.focus(); return; }
 
     submitBtn.disabled    = true;
-    submitBtn.textContent = '⏳ Sending…';
+    resendBtn.disabled = true;
+    submitBtn.textContent = 'Sending…';
     const { error } = await resetPassword(email);
     submitBtn.disabled    = false;
-    submitBtn.textContent = 'Send reset link';
+    resendBtn.disabled = false;
 
     if (error) {
       errEl.textContent = error;
     } else {
-      successEl.textContent = '✅ Reset link sent! Check your inbox (and spam folder).';
-      emailEl.value = '';
-      setTimeout(() => store.navigateTo('login'), 4000);
+      codeSent = true;
+      emailEl.readOnly = true;
+      resetFields.hidden = false;
+      resendBtn.hidden = false;
+      submitBtn.textContent = 'Verify code and update password';
+      successEl.textContent = 'Check your inbox for a 6-digit code. It may take a few minutes to arrive.';
+      codeEl.focus();
     }
+  }
+
+  resendBtn.addEventListener('click', () => void sendCode());
+
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    if (!codeSent) {
+      await sendCode();
+      return;
+    }
+
+    errEl.textContent = '';
+    successEl.textContent = '';
+    if (!/^\d{6}$/.test(codeEl.value.trim())) {
+      errEl.textContent = 'Enter the 6-digit code from your email.';
+      codeEl.focus();
+      return;
+    }
+    if (passwordEl.value.length < 8) {
+      errEl.textContent = 'Your new password must be at least 8 characters.';
+      passwordEl.focus();
+      return;
+    }
+    if (passwordEl.value !== confirmEl.value) {
+      errEl.textContent = 'The new passwords do not match.';
+      confirmEl.focus();
+      return;
+    }
+
+    submitBtn.disabled = true;
+    resendBtn.disabled = true;
+    submitBtn.textContent = 'Updating password…';
+    const { error } = await verifyPasswordResetOtp(emailEl.value, codeEl.value, passwordEl.value);
+    submitBtn.disabled = false;
+    resendBtn.disabled = false;
+    submitBtn.textContent = 'Verify code and update password';
+
+    if (error) {
+      errEl.textContent = error.toLowerCase().includes('expired') || error.toLowerCase().includes('invalid')
+        ? 'That code is invalid or expired. Request a new code and try again.'
+        : error;
+      return;
+    }
+
+    successEl.textContent = 'Password updated. You can now sign in with your new password.';
+    form.hidden = true;
+    setTimeout(() => store.navigateTo('login'), 2500);
   });
 }
 

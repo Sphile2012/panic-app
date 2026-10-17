@@ -22,7 +22,13 @@
    Follow the prompts to provide your Supabase project URL and public anon key.
    The setup script writes the local `.env` file.
 
-3. Start the development server:
+3. To enable password-reset codes, open the Supabase Dashboard and go to
+   **Authentication → Email Templates → Reset Password**. Set the email body
+   to include the one-time code variable `{{ .Token }}` and save the template.
+   The app accepts a six-digit recovery code; use the default six-digit OTP
+   length under **Authentication → Settings**.
+
+4. Start the development server:
 
    ```sh
    npm run dev
