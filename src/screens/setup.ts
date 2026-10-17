@@ -17,7 +17,9 @@ export function renderSetupPin(root: HTMLElement) {
       <h1 class="setup-title">Set up Panic Ring</h1>
       <p class="setup-body">
         Choose a 4-digit PIN to unlock the app, and a separate decoy PIN
-        that opens a plain Notes screen if someone forces you to unlock.
+        that opens a Notes screen with a shopping list if someone forces you to unlock.
+        PINs are not preconfigured: create both here. After setup, answer the
+        recovery questions and choose “Continue without contacts” to open the app.
       </p>
 
       <form class="setup-form" id="setup-pin-form" autocomplete="off">

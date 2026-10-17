@@ -42,6 +42,10 @@ optional.
 
 ## Safety features and PWA limits
 
+- On first use, create a secret PIN and a different decoy PIN; there are no
+  preset PINs. The secret PIN opens the app, while the decoy opens a Notes
+  screen with a shopping list. PINs are stored in that browser, so a new
+  browser or cleared site data requires setup again.
 - Trusted contacts have one role: Level 1 contacts can receive emergency SMS
   drafts with location only when you choose to share it; Level 2 contacts are
   for referral requests; Level 3 contacts are for check-in requests.
