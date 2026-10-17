@@ -4,6 +4,22 @@ const SUPABASE_ANON = import.meta.env['VITE_SUPABASE_ANON_KEY'];
 export const DB_CONFIGURED = Boolean(SUPABASE_URL && SUPABASE_ANON) &&
     SUPABASE_URL !== 'https://your-project-ref.supabase.co';
 let _client = null;
+
+function safeAuthError(message: string | undefined, fallback: string): string {
+    const normalized = message?.toLowerCase() ?? '';
+    if (normalized.includes('rate limit') || normalized.includes('too many requests'))
+        return 'Too many attempts — please wait a moment and try again.';
+    if (normalized.includes('email not confirmed'))
+        return 'Please confirm your email before signing in.';
+    if (normalized.includes('invalid') && (normalized.includes('otp') || normalized.includes('token')))
+        return 'That code is invalid or expired. Request a new code and try again.';
+    if (normalized.includes('password') && (normalized.includes('weak') || normalized.includes('least')))
+        return 'Choose a stronger password and try again.';
+    if (normalized.includes('invalid email') || normalized.includes('email address'))
+        return 'Enter a valid email address and try again.';
+    return fallback;
+}
+
 export function getClient() {
     if (!_client) {
         if (!DB_CONFIGURED || !SUPABASE_URL || !SUPABASE_ANON) {
@@ -31,7 +47,10 @@ export async function signUp(email, password): Promise<{ error: string | null; a
         ) {
             return { error: null, alreadyRegistered: true };
         }
-        return { error: error?.message ?? null, alreadyRegistered: false };
+        return {
+            error: error ? safeAuthError(error.message, 'We could not create your account. Please try again.') : null,
+            alreadyRegistered: false,
+        };
     }
     catch {
         return { error: 'Unable to reach the secure account service. Continue in offline mode.', alreadyRegistered: false };
@@ -49,7 +68,7 @@ export async function signIn(email, password) {
                 error: 'We could not verify this email and password. For security, sign-in does not reveal which one is incorrect. Check the email address, or use “Forgot password?” to set a new password.',
             };
         }
-        return { error: error.message };
+        return { error: safeAuthError(error.message, 'We could not sign you in. Please try again.') };
     }
     catch {
         return { error: 'Unable to reach the secure account service. Continue in offline mode.' };
@@ -71,7 +90,9 @@ export async function signInWithGoogle(): Promise<{ error: string | null }> {
                 redirectTo: window.location.origin,
             },
         });
-        return { error: error?.message ?? null };
+        return {
+            error: error ? safeAuthError(error.message, 'Google sign-in is unavailable right now. Please try again.') : null,
+        };
     } catch {
         return { error: 'Unable to sign in with Google.' };
     }
@@ -84,7 +105,9 @@ export async function resetPassword(email: string): Promise<{ error: string | nu
         const { error } = await getClient().auth.resetPasswordForEmail(email, {
             redirectTo: window.location.origin,
         });
-        return { error: error?.message ?? null };
+        return {
+            error: error ? safeAuthError(error.message, 'We could not send a reset code. Check the address and try again.') : null,
+        };
     } catch {
         return { error: 'Unable to send reset email.' };
     }
@@ -105,9 +128,11 @@ export async function verifyPasswordResetOtp(
             type: 'recovery',
         });
         if (verifyError)
-            return { error: verifyError.message };
+            return { error: safeAuthError(verifyError.message, 'That code is invalid or expired. Request a new code and try again.') };
         const { error: updateError } = await client.auth.updateUser({ password });
-        return { error: updateError?.message ?? null };
+        return {
+            error: updateError ? safeAuthError(updateError.message, 'We could not update your password. Please try again.') : null,
+        };
     }
     catch {
         return { error: 'Unable to verify the reset code. Request a new code and try again.' };
