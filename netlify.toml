@@ -2,10 +2,33 @@
   command = "npm run build"
   publish = "dist"
 
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
+ [build.environment]
+   NODE_VERSION = "20"
+   VITE_AUTH_ENABLED = "true"
 
-[build.environment]
-  NODE_VERSION = "20"
+[[redirects]]
+ from = "/api/what3words"
+ to = "/.netlify/functions/what3words"
+ status = 200
+ force = true
+
+[[redirects]]
+ from = "/api/*"
+ to = "/.netlify/functions/supabase-proxy/:splat"
+ status = 200
+ force = true
+
+[[redirects]]
+ from = "/*"
+ to = "/index.html"
+ status = 200
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "geolocation=(self), camera=(), microphone=(), usb=()"
+    Strict-Transport-Security = "max-age=31536000"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://nominatim.openstreetmap.org; img-src 'self' data: https:; font-src 'self' data:; manifest-src 'self'; worker-src 'self'; frame-ancestors 'none';"

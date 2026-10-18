@@ -1,21 +1,16 @@
 import { createClient } from '@supabase/supabase-js';
-const APP_URL = 'https://panic-ring-app.netlify.app/';
-const SUPABASE_URL = import.meta.env['VITE_SUPABASE_URL'];
-const SUPABASE_ANON = import.meta.env['VITE_SUPABASE_ANON_KEY'];
-const ENABLE_LOCAL_AUTH = import.meta.env['VITE_ENABLE_LOCAL_AUTH'] === 'true';
-const isLocalSupabase = Boolean(SUPABASE_URL && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?(?:\/|$)/i.test(SUPABASE_URL));
-export const DB_CONFIGURED = Boolean(SUPABASE_URL && SUPABASE_ANON) &&
-    SUPABASE_URL !== 'https://your-project-ref.supabase.co' &&
-    (!isLocalSupabase || ENABLE_LOCAL_AUTH);
+import { getFrontendRedirectUrl, resolveIdentifier } from './authConfig.mjs';
+export { resolveIdentifier } from './authConfig.mjs';
+const PROXY_API_KEY = 'panic-ring-public-proxy-key';
+const FRONTEND_URL = import.meta.env['VITE_FRONTEND_URL'];
+export const DB_CONFIGURED = import.meta.env['VITE_AUTH_ENABLED'] === 'true';
 let _client = null;
 export function getClient() {
     if (!_client) {
-        if (!DB_CONFIGURED || !SUPABASE_URL || !SUPABASE_ANON) {
+        if (!DB_CONFIGURED) {
             throw new Error('Account service not configured.');
         }
-        // Static hosts (Netlify) have no /api proxy, so a production build talks to the hosted project directly.
-        const base = import.meta.env.PROD && !isLocalSupabase ? SUPABASE_URL : window.location.origin + '/api';
-        _client = createClient(base, SUPABASE_ANON, {
+        _client = createClient(`${window.location.origin}/api`, PROXY_API_KEY, {
             auth: {
                 persistSession: true,
                 autoRefreshToken: true,
@@ -27,12 +22,11 @@ export function getClient() {
 }
 export type AuthFailure = 'id' | 'invalid' | 'confirm' | 'service' | 'generic';
 const PHONE_DOMAIN = 'phone.panicring.app';
-export function resolveIdentifier(raw: string): string | null {
-    const v = raw.trim();
-    if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v))
-        return v.toLowerCase();
-    return null;
+
+function logAuthFailure(operation: string, code?: string) {
+    console.warn(`[auth] ${operation} failed${code ? ` (${code})` : ''}`);
 }
+
 export function isPhoneIdentity(email: string | null | undefined): boolean {
     return Boolean(email && email.endsWith('@' + PHONE_DOMAIN));
 }
@@ -56,9 +50,15 @@ export async function signUp(identifier: string, password: string): Promise<{ er
     if (!DB_CONFIGURED)
         return { error: 'service' };
     try {
-        const { data, error } = await getClient().auth.signUp({ email, password });
-        if (error)
+        const { data, error } = await getClient().auth.signUp({
+            email,
+            password,
+            options: { emailRedirectTo: getFrontendRedirectUrl(FRONTEND_URL, window.location.origin) },
+        });
+        if (error) {
+            logAuthFailure('sign up', error.code);
             return { error: mapAuthError(error.message) };
+        }
         return {
             error: null,
             needsConfirm: !data.session && !isPhoneIdentity(email),
@@ -66,6 +66,7 @@ export async function signUp(identifier: string, password: string): Promise<{ er
         };
     }
     catch {
+        logAuthFailure('sign up');
         return { error: 'service' };
     }
 }
@@ -77,19 +78,30 @@ export async function signIn(identifier: string, password: string): Promise<{ er
         return { error: 'service' };
     try {
         const { data, error } = await getClient().auth.signInWithPassword({ email, password });
+        if (error)
+            logAuthFailure('sign in', error.code);
         return {
             error: error ? mapAuthError(error.message) : null,
             identity: error ? undefined : data.user.email ?? email,
         };
     }
     catch {
+        logAuthFailure('sign in');
         return { error: 'service' };
     }
 }
 export async function signOut() {
     if (!DB_CONFIGURED)
         return;
-    await getClient().auth.signOut();
+    try {
+        const { error } = await getClient().auth.signOut();
+        if (error)
+            logAuthFailure('sign out', error.code);
+    }
+    catch {
+        logAuthFailure('sign out');
+        throw new Error('Could not sign out.');
+    }
 }
 export async function requestPasswordReset(identifier: string): Promise<{ error: 'id' | 'phone' | 'service' | null }> {
     const email = resolveIdentifier(identifier);
@@ -100,10 +112,15 @@ export async function requestPasswordReset(identifier: string): Promise<{ error:
     if (!DB_CONFIGURED)
         return { error: 'service' };
     try {
-        const { error } = await getClient().auth.resetPasswordForEmail(email, { redirectTo: APP_URL });
+        const { error } = await getClient().auth.resetPasswordForEmail(email, {
+            redirectTo: getFrontendRedirectUrl(FRONTEND_URL, window.location.origin, 'recovery'),
+        });
+        if (error)
+            logAuthFailure('password reset request', error.code);
         return { error: error ? 'service' : null };
     }
     catch {
+        logAuthFailure('password reset request');
         return { error: 'service' };
     }
 }
@@ -112,9 +129,12 @@ export async function updatePassword(password: string): Promise<boolean> {
         return false;
     try {
         const { error } = await getClient().auth.updateUser({ password });
+        if (error)
+            logAuthFailure('password update', error.code);
         return !error;
     }
     catch {
+        logAuthFailure('password update');
         return false;
     }
 }
@@ -122,10 +142,13 @@ export async function getSession() {
     if (!DB_CONFIGURED)
         return null;
     try {
-        const { data } = await getClient().auth.getSession();
+        const { data, error } = await getClient().auth.getSession();
+        if (error)
+            logAuthFailure('get session', error.code);
         return data.session;
     }
     catch {
+        logAuthFailure('get session');
         return null;
     }
 }
@@ -133,20 +156,31 @@ export async function getUser() {
     if (!DB_CONFIGURED)
         return null;
     try {
-        const { data } = await getClient().auth.getUser();
+        const { data, error } = await getClient().auth.getUser();
+        if (error)
+            logAuthFailure('get user', error.code);
         return data.user ?? null;
     }
     catch {
+        logAuthFailure('get user');
         return null;
     }
 }
 export function onAuthStateChange(cb) {
     if (!DB_CONFIGURED)
         return () => { };
-    const { data } = getClient().auth.onAuthStateChange((_event, session) => {
-        cb(session?.user ?? null);
-    });
-    return () => data.subscription.unsubscribe();
+    try {
+        const { data, error } = getClient().auth.onAuthStateChange((_event, session) => {
+            cb(session?.user ?? null);
+        });
+        if (error)
+            logAuthFailure('subscribe to auth changes', error.code);
+        return () => data.subscription.unsubscribe();
+    }
+    catch {
+        logAuthFailure('subscribe to auth changes');
+        return () => { };
+    }
 }
 const DEVICE_KEY = 'pr_device_id';
 export function getDeviceId() {
@@ -161,26 +195,43 @@ export async function upsertDevice(row) {
     if (!DB_CONFIGURED)
         return;
     try {
+        const user = await getUser();
+        if (!user || user.id !== row.user_id) {
+            console.warn('[db] upsertDevice skipped: authenticated user unavailable');
+            return;
+        }
         const { error } = await getClient()
             .from('devices')
-            .upsert(row, { onConflict: 'device_id' });
+            .upsert({
+                user_id: user.id,
+                device_id: row.device_id,
+                auto_lock: row.auto_lock,
+            }, { onConflict: 'user_id,device_id' });
         if (error)
-            console.warn('[db] upsertDevice:', error.message);
+            console.warn('[db] upsertDevice failed:', error.code ?? 'unknown');
     }
-    catch (e) {
-        console.warn('[db] upsertDevice offline:', e);
+    catch {
+        console.warn('[db] upsertDevice failed: request unavailable');
     }
 }
 export async function insertAlertLog(row) {
     if (!DB_CONFIGURED)
         return;
     try {
-        const { error } = await getClient().from('alert_logs').insert(row);
+        const user = await getUser();
+        if (!user) {
+            console.warn('[db] insertAlertLog skipped: authenticated user unavailable');
+            return;
+        }
+        const { error } = await getClient().from('alert_logs').insert({
+            ...row,
+            user_id: user.id,
+        });
         if (error)
-            console.warn('[db] insertAlertLog:', error.message);
+            console.warn('[db] insertAlertLog failed:', error.code ?? 'unknown');
     }
-    catch (e) {
-        console.warn('[db] insertAlertLog offline:', e);
+    catch {
+        console.warn('[db] insertAlertLog failed: request unavailable');
     }
 }
 export async function fetchAlertStats() {
@@ -196,12 +247,13 @@ export async function fetchAlertStats() {
             .eq('user_id', user.id)
             .maybeSingle();
         if (error) {
-            console.warn('[db] fetchAlertStats:', error.message);
+            console.warn('[db] fetchAlertStats failed:', error.code ?? 'unknown');
             return null;
         }
         return data;
     }
     catch {
+        console.warn('[db] fetchAlertStats failed: request unavailable');
         return null;
     }
 }
@@ -218,12 +270,14 @@ export async function fetchRecentAlerts(limit = 10) {
             .eq('user_id', user.id)
             .order('fired_at', { ascending: false })
             .limit(limit);
-        if (error)
+        if (error) {
+            console.warn('[db] fetchRecentAlerts failed:', error.code ?? 'unknown');
             return [];
+        }
         return (data ?? []);
     }
     catch {
+        console.warn('[db] fetchRecentAlerts failed: request unavailable');
         return [];
     }
 }
-

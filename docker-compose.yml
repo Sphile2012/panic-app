@@ -43,7 +43,7 @@ services:
     volumes:
       - db_data:/var/lib/postgresql/data
 
-      - ./supabase/init.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./supabase/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
     healthcheck:
       <<: *hc
       test: ["CMD-SHELL", "pg_isready -U postgres -h localhost"]
@@ -250,8 +250,10 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        VITE_SUPABASE_URL:      ${API_URL}
-        VITE_SUPABASE_ANON_KEY: ${ANON_KEY}
+        VITE_FRONTEND_URL:      ${FRONTEND_URL:-}
+    environment:
+      SUPABASE_ANON_KEY:   ${ANON_KEY}
+      WHAT3WORDS_API_KEY:  ${WHAT3WORDS_API_KEY:-}
     restart: unless-stopped
     depends_on:
       kong:

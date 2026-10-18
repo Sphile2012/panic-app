@@ -1,4 +1,4 @@
-import { getClient } from './db.js';
+import { DB_CONFIGURED, getClient } from './db.js';
 
 export interface TrackSnapshot {
     lat: number;
@@ -18,7 +18,7 @@ const LOW_LEVELS = [0.2, 0.1];
 
 let timer: number | null = null;
 let last: TrackSnapshot | null = null;
-let error: 'denied' | 'unsupported' | 'unavailable' | null = null;
+let error: 'denied' | 'unsupported' | 'unavailable' | 'network' | null = null;
 let batteryRef: any = null;
 let alertedLevel: number | null = null;
 let lowPct: number | null = null;
@@ -35,7 +35,7 @@ export function onTrackChange(l: TrackListener): () => void {
 
 export function getToken(): string {
     let tok = localStorage.getItem(TOKEN_KEY);
-    if (!tok) {
+    if (!tok || !/^[0-9a-f]{32}$/.test(tok)) {
         const bytes = new Uint8Array(16);
         crypto.getRandomValues(bytes);
         tok = Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
@@ -117,7 +117,6 @@ function getPosition(): Promise<GeolocationPosition> {
 async function tick() {
     try {
         const pos = await getPosition();
-        error = null;
         last = {
             lat: pos.coords.latitude,
             lng: pos.coords.longitude,
@@ -127,10 +126,9 @@ async function tick() {
             at: Date.now(),
         };
         checkBattery();
-        const client = getClient();
-        if (client) {
+        if (DB_CONFIGURED) {
             try {
-                await client.rpc('push_track', {
+                const { data, error: syncError } = await getClient().rpc('push_track', {
                     p_token: getToken(),
                     p_lat: last.lat,
                     p_lng: last.lng,
@@ -138,9 +136,20 @@ async function tick() {
                     p_battery: last.battery,
                     p_charging: last.charging,
                 });
+                if (syncError || data !== true) {
+                    error = 'network';
+                    console.warn('[tracking] Location sync failed:', syncError?.code ?? 'not-owner');
+                }
+                else {
+                    error = null;
+                }
             } catch {
-                // keep local tracking running when the network drops
+                error = 'network';
+                console.warn('[tracking] Location sync unavailable.');
             }
+        }
+        else {
+            error = null;
         }
     } catch (e: any) {
         error = e && e.code === 1 ? 'denied' : 'unavailable';
@@ -178,18 +187,28 @@ export function wasTracking(): boolean {
 }
 
 export async function fetchTrack(token: string): Promise<(TrackSnapshot & { updated: string }) | null> {
-    const client = getClient();
-    if (!client) return null;
-    const { data, error: err } = await client.rpc('get_track', { p_token: token });
-    if (err || !data || !data.length) return null;
-    const r = data[0];
-    return {
-        lat: r.lat,
-        lng: r.lng,
-        accuracy: r.accuracy,
-        battery: r.battery,
-        charging: r.charging,
-        at: new Date(r.updated_at).getTime(),
-        updated: r.updated_at,
-    };
+    if (!DB_CONFIGURED || !/^[0-9a-f]{32}$/.test(token))
+        return null;
+    try {
+        const { data, error: err } = await getClient().rpc('get_track', { p_token: token });
+        if (err || !data || !data.length) {
+            if (err)
+                console.warn('[tracking] Shared location lookup failed:', err.code ?? 'unknown');
+            return null;
+        }
+        const r = data[0];
+        return {
+            lat: r.lat,
+            lng: r.lng,
+            accuracy: r.accuracy,
+            battery: r.battery,
+            charging: r.charging,
+            at: new Date(r.updated_at).getTime(),
+            updated: r.updated_at,
+        };
+    }
+    catch {
+        console.warn('[tracking] Shared location service unavailable.');
+        return null;
+    }
 }

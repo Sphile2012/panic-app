@@ -63,11 +63,9 @@ function formatCoords(lat, lng) {
     return `${Math.abs(lat).toFixed(6)}° ${latDir}, ${Math.abs(lng).toFixed(6)}° ${lngDir}`;
 }
 async function getWhat3Words(lat, lng) {
-    const key = import.meta.env['VITE_W3W_API_KEY'];
-    if (!key)
-        return null;
     try {
-        const res = await fetch(`https://api.what3words.com/v3/convert-to-3wa?coordinates=${lat},${lng}&language=en&key=${key}`, { signal: AbortSignal.timeout(5000) });
+        const coordinates = encodeURIComponent(`${lat},${lng}`);
+        const res = await fetch(`/api/what3words?coordinates=${coordinates}&language=en`, { signal: AbortSignal.timeout(5000) });
         if (!res.ok)
             return null;
         const data = await res.json();
@@ -176,8 +174,12 @@ function waitForReturn() {
 }
 async function logAlert(contactCount, locationShared, opened, failed) {
     const user = await getUser();
+    if (!user) {
+        console.warn('[alert] Alert history not saved: no authenticated user.');
+        return;
+    }
     await insertAlertLog({
-        user_id: user?.id ?? '',
+        user_id: user.id,
         device_id: getDeviceId(),
         contact_count: contactCount,
         location_shared: locationShared,

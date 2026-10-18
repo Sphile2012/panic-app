@@ -3,14 +3,37 @@ import { resolve } from 'path';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
-  const backend = env.VITE_SUPABASE_URL || 'http://localhost:8000';
-  // The browser only talks to /api on this origin; the backend address stays server-side.
-  const proxy = {
+  const backend = env.SUPABASE_URL || 'http://localhost:8000';
+  const anonKey = env.SUPABASE_ANON_KEY;
+  const proxyApiKey = 'panic-ring-public-proxy-key';
+  const serverProxy = {
+    '/api/what3words': {
+      target: 'https://api.what3words.com',
+      changeOrigin: true,
+      rewrite: (path: string) => path.replace(/^\/api\/what3words/, '/v3/convert-to-3wa'),
+      configure: (server: any) => {
+        server.on('proxyReq', (proxyReq, req) => {
+          const requestUrl = new URL(req.url ?? '/', 'http://localhost');
+          if (env.WHAT3WORDS_API_KEY)
+            requestUrl.searchParams.set('key', env.WHAT3WORDS_API_KEY);
+          proxyReq.path = `/v3/convert-to-3wa${requestUrl.search}`;
+        });
+      },
+    },
     '/api': {
       target: backend,
       changeOrigin: true,
       ws: true,
-      rewrite: (p: string) => p.replace(/^\/api/, ''),
+      rewrite: (path: string) => path.replace(/^\/api/, ''),
+      configure: (server: any) => {
+        server.on('proxyReq', (proxyReq, req) => {
+          if (!anonKey)
+            return;
+          proxyReq.setHeader('apikey', anonKey);
+          if (proxyReq.getHeader('authorization') === `Bearer ${proxyApiKey}`)
+            proxyReq.setHeader('authorization', `Bearer ${anonKey}`);
+        });
+      },
     },
   };
 
@@ -20,13 +43,13 @@ export default defineConfig(({ mode }) => {
       host: '0.0.0.0',
       port: 5173,
       strictPort: true,
-      proxy,
+      proxy: serverProxy,
     },
     preview: {
       host: '0.0.0.0',
       port: 4173,
       strictPort: true,
-      proxy,
+      proxy: serverProxy,
     },
 
     build: {

@@ -28,8 +28,8 @@ export function renderSignup(root) {
         <p class="auth-subtitle">${t('auth.signup.sub')}</p>
         <form class="auth-form" id="signup-form" autocomplete="on" novalidate>
           <label class="field-label" for="su-email">${t('auth.id.label')}</label>
-          <input class="text-input" id="su-email" type="text" inputmode="email"
-            placeholder="${t('auth.id.placeholder')}" autocomplete="username" required />
+          <input class="text-input" id="su-email" type="email" inputmode="email"
+            placeholder="${t('auth.id.placeholder')}" autocomplete="email" required />
 
           <label class="field-label" for="su-password">${t('auth.password')}</label>
           <div class="password-wrap">
@@ -133,8 +133,8 @@ export function renderLogin(root) {
         <h2 class="auth-title">${t('auth.signin')}</h2>
         <form class="auth-form" id="login-form" autocomplete="on" novalidate>
           <label class="field-label" for="li-email">${t('auth.id.label')}</label>
-          <input class="text-input" id="li-email" type="text" inputmode="email"
-            placeholder="${t('auth.id.placeholder')}" autocomplete="username" required />
+          <input class="text-input" id="li-email" type="email" inputmode="email"
+            placeholder="${t('auth.id.placeholder')}" autocomplete="email" required />
 
           <label class="field-label" for="li-password">${t('auth.password')}</label>
           <div class="password-wrap">
@@ -210,8 +210,8 @@ export function renderForgotPassword(root) {
         <p class="auth-subtitle">${t('auth.forgot.body')}</p>
         <form class="auth-form" id="fp-form" novalidate>
           <label class="field-label" for="fp-email">${t('auth.id.label')}</label>
-          <input class="text-input" id="fp-email" type="text" inputmode="email"
-            placeholder="${t('auth.id.placeholder')}" autocomplete="username" required />
+          <input class="text-input" id="fp-email" type="email" inputmode="email"
+            placeholder="${t('auth.id.placeholder')}" autocomplete="email" required />
           <p class="auth-error" id="fp-msg" aria-live="polite"></p>
           <button class="btn-primary" type="submit" id="fp-submit">${t('auth.forgot.send')}</button>
         </form>
@@ -224,46 +224,90 @@ export function renderForgotPassword(root) {
     bindLanguageBar(root, () => renderForgotPassword(root));
     root.querySelector('#btn-back').addEventListener('click', () => store.navigateTo('login'));
     const msg = root.querySelector('#fp-msg');
+    const submitBtn = root.querySelector('#fp-submit');
     root.querySelector('#fp-form').addEventListener('submit', async (e) => {
         e.preventDefault();
+        msg.textContent = '';
         msg.style.color = '';
-        const { error } = await requestPasswordReset(root.querySelector('#fp-email').value);
-        if (error) {
-            msg.textContent = t(error === 'id' ? 'auth.err.id' : error === 'phone' ? 'auth.forgot.phone' : 'auth.err.service');
+        const email = root.querySelector('#fp-email').value.trim();
+        if (!email) {
+            msg.textContent = t('auth.err.id');
             return;
         }
-        msg.style.color = 'var(--safe)';
-        msg.textContent = t('auth.forgot.sent');
+        submitBtn.disabled = true;
+        submitBtn.textContent = t('auth.busy.reset');
+        try {
+            const { error } = await requestPasswordReset(email);
+            if (error) {
+                msg.textContent = t(error === 'id' ? 'auth.err.id' : error === 'phone' ? 'auth.forgot.phone' : 'auth.err.service');
+                return;
+            }
+            msg.style.color = 'var(--safe)';
+            msg.textContent = t('auth.forgot.sent');
+        }
+        finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = t('auth.forgot.send');
+        }
     });
 }
-export function renderResetPassword(root) {
+export function renderResetPassword(root, invalidLink = false) {
     root.innerHTML = `
     <div class="screen auth-screen">
       ${logoHtml()}
       <div class="auth-card">
         <h2 class="auth-title">${t('auth.reset.title')}</h2>
-        <form class="auth-form" id="rp-form" novalidate>
-          <label class="field-label" for="rp-pw">${t('auth.password')}</label>
-          <input class="text-input" id="rp-pw" type="password" placeholder="${t('auth.password.new')}" autocomplete="new-password" />
-          <p class="auth-error" id="rp-msg" aria-live="polite"></p>
-          <button class="btn-primary" type="submit">${t('auth.reset.save')}</button>
-        </form>
+        ${invalidLink ? `
+          <p class="auth-error" role="alert">${t('auth.reset.expired')}</p>
+          <button class="auth-link-btn" id="rp-request-new" type="button">${t('auth.forgot.send')}</button>
+        ` : `
+          <form class="auth-form" id="rp-form" novalidate>
+            <label class="field-label" for="rp-pw">${t('auth.password')}</label>
+            <input class="text-input" id="rp-pw" type="password" placeholder="${t('auth.password.new')}" autocomplete="new-password" minlength="8" required />
+            <label class="field-label" for="rp-confirm">${t('auth.confirm')}</label>
+            <input class="text-input" id="rp-confirm" type="password" placeholder="${t('auth.confirm.placeholder')}" autocomplete="new-password" required />
+            <p class="auth-error" id="rp-msg" aria-live="polite"></p>
+            <button class="btn-primary" id="rp-submit" type="submit">${t('auth.reset.save')}</button>
+          </form>
+        `}
       </div>
     </div>
   `;
-    bindLanguageBar(root, () => renderResetPassword(root));
+    bindLanguageBar(root, () => renderResetPassword(root, invalidLink));
+    if (invalidLink) {
+        root.querySelector('#rp-request-new').addEventListener('click', () => store.navigateTo('forgot-password'));
+        return;
+    }
     const msg = root.querySelector('#rp-msg');
+    const submitBtn = root.querySelector('#rp-submit');
     root.querySelector('#rp-form').addEventListener('submit', async (e) => {
         e.preventDefault();
+        msg.textContent = '';
         const pw = root.querySelector('#rp-pw').value;
+        const confirmation = root.querySelector('#rp-confirm').value;
         if (pw.length < 8) {
-            msg.textContent = t('auth.password.new');
+            msg.textContent = t('auth.err.pwshort');
             return;
         }
-        if (await updatePassword(pw))
-            store.navigateTo('calculator');
-        else
-            msg.textContent = t('auth.err.service');
+        if (pw !== confirmation) {
+            msg.textContent = t('auth.err.pwmatch');
+            return;
+        }
+        submitBtn.disabled = true;
+        submitBtn.textContent = t('auth.busy.save');
+        try {
+            if (await updatePassword(pw)) {
+                window.history.replaceState(null, '', window.location.pathname);
+                store.navigateTo('calculator');
+            }
+            else {
+                msg.textContent = t('auth.err.reset');
+            }
+        }
+        finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = t('auth.reset.save');
+        }
     });
 }
 export function renderVerifyEmail(root) {

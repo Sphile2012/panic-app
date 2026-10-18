@@ -151,15 +151,7 @@ export async function savePinHashes(pinHash, decoyHash, autoLock, oldPinHash?: s
     savePublic(pub);
     if (vault)
         await saveVault(vault, pinHash);
-    getUser().then(user => {
-        upsertDevice({
-            user_id: user?.id ?? '',
-            device_id: getDeviceId(),
-            pin_hash: pinHash,
-            decoy_hash: decoyHash,
-            auto_lock: autoLock,
-        }).catch(() => { });
-    }).catch(() => { });
+    void syncDeviceSettings(autoLock);
 }
 export function saveAutoLock(minutes) {
     const pub = loadPublic();
@@ -167,15 +159,22 @@ export function saveAutoLock(minutes) {
         return;
     pub.autoLock = minutes;
     savePublic(pub);
-    getUser().then(user => {
-        upsertDevice({
-            user_id: user?.id ?? '',
+    void syncDeviceSettings(minutes);
+}
+async function syncDeviceSettings(autoLock: number) {
+    try {
+        const user = await getUser();
+        if (!user)
+            return;
+        await upsertDevice({
+            user_id: user.id,
             device_id: getDeviceId(),
-            pin_hash: pub.pinHash,
-            decoy_hash: pub.decoyHash,
-            auto_lock: minutes,
-        }).catch(() => { });
-    }).catch(() => { });
+            auto_lock: autoLock,
+        });
+    }
+    catch {
+        console.warn('[storage] Could not synchronize device settings.');
+    }
 }
 export function clearAll() {
     localStorage.removeItem(KEY_PUBLIC);
@@ -224,4 +223,3 @@ export async function hashPin(pin) {
         .map(b => b.toString(16).padStart(2, '0'))
         .join('');
 }
-

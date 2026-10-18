@@ -11,14 +11,9 @@ RUN npm install --no-audit --no-fund
 # Copy source
 COPY . .
 
-# Supabase credentials are baked into the JS bundle at build time.
-# They are the anon/public key — safe to embed.  RLS enforces security server-side.
-ARG VITE_SUPABASE_URL
-ARG VITE_SUPABASE_ANON_KEY
-ARG VITE_W3W_API_KEY=""
-ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
-ENV VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
-ENV VITE_W3W_API_KEY=$VITE_W3W_API_KEY
+ARG VITE_FRONTEND_URL=""
+ENV VITE_FRONTEND_URL=$VITE_FRONTEND_URL
+ENV VITE_AUTH_ENABLED=true
 
 RUN npm run build
 
@@ -35,7 +30,8 @@ RUN rm -f /etc/nginx/conf.d/default.conf
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
 # Copy our nginx config
-COPY nginx.conf /etc/nginx/conf.d/panic-ring.conf
+COPY nginx.conf /etc/nginx/templates/panic-ring.conf.template
+ENV NGINX_ENVSUBST_FILTER=^(SUPABASE_ANON_KEY|WHAT3WORDS_API_KEY)$
 
 # Copy built app from builder stage
 COPY --from=builder /app/dist /usr/share/nginx/html

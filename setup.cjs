@@ -39,6 +39,7 @@ SECRET_KEY_BASE=${secretKeyBase}
 
 API_URL=http://localhost:8000
 SITE_URL=http://localhost:8080
+FRONTEND_URL=http://localhost:8080
 
 GOTRUE_MAILER_AUTOCONFIRM=true
 ADDITIONAL_REDIRECT_URLS=
@@ -52,14 +53,15 @@ SMTP_USER=
 SMTP_PASS=
 SMTP_ADMIN_EMAIL=no-reply@panicring.local
 
-VITE_W3W_API_KEY=
+WHAT3WORDS_API_KEY=
 `;
 
 const devEnv = `
-VITE_SUPABASE_URL=http://localhost:8000
-VITE_SUPABASE_ANON_KEY=${anonKey}
-
-VITE_W3W_API_KEY=
+VITE_AUTH_ENABLED=true
+SUPABASE_URL=http://localhost:8000
+SUPABASE_ANON_KEY=${anonKey}
+VITE_FRONTEND_URL=http://localhost:5173
+WHAT3WORDS_API_KEY=
 `;
 
 const root = path.resolve(__dirname);

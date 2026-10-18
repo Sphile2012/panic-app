@@ -20,6 +20,7 @@ import { renderSupport } from './screens/support.js';
 import { renderSettings } from './screens/settings.js';
 import { renderAppearance } from './screens/appearance.js';
 import { renderSignup, renderLogin, renderVerifyEmail, renderForgotPassword, renderResetPassword } from './screens/auth.js';
+import { getSession } from './db.js';
 import { renderChatbot } from './screens/chatbot.js';
 import { renderBudget } from './screens/disguise/budget.js';
 import { renderWeather } from './screens/disguise/weather.js';
@@ -33,6 +34,7 @@ import { runAlertSequence } from './alertService.js';
 import { pruneStaleQueue, watchForReconnect } from './alertQueue.js';
 import { loadAppearance, applyAppearance, watchSystemTheme } from './theme.js';
 import { initPwa, canInstall, isInstalled, isIosSafari, promptInstall, onInstallReady, onInstalled } from './pwa.js';
+import { isRecoverySessionValid, parseRecoveryLink } from './authConfig.mjs';
 
 const appRoot = document.getElementById('app-root') as HTMLElement | null;
 if (!appRoot) {
@@ -41,6 +43,7 @@ if (!appRoot) {
 initPwa();
 
 let currentScreen: string | null = null;
+let recoveryLinkInvalid = false;
 
 function updateInstallBanner() {
     const banner = document.getElementById('install-banner') as HTMLElement | null;
@@ -90,7 +93,7 @@ function render(screen: string) {
             renderForgotPassword(appRoot);
             break;
         case 'reset-password':
-            renderResetPassword(appRoot);
+            renderResetPassword(appRoot, recoveryLinkInvalid);
             break;
         case 'verify-email':
             renderVerifyEmail(appRoot);
@@ -282,9 +285,14 @@ applyAppearance(appearance);
 render(store.getState().screen);
 updateInstallBanner();
 
-store.initAuth().then(() => {
-    if (/type=recovery/.test(window.location.hash))
+store.initAuth().then(async () => {
+    const recoveryLink = parseRecoveryLink(window.location.search, window.location.hash);
+    if (recoveryLink.isRecoveryLink) {
+        const session = await getSession();
+        recoveryLinkInvalid = !isRecoverySessionValid(recoveryLink, Boolean(session));
+        window.history.replaceState(null, '', window.location.pathname);
         store.navigateTo('reset-password');
+    }
     pruneStaleQueue();
     watchForReconnect(({ locationText, locationShared }) => {
         store.startSending();

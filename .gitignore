@@ -10,6 +10,13 @@ node_modules/
 .env.local
 .env.docker.local
 *.local
+.env.*
+!.env.example
+!.env.docker.example
+
+# Database dumps and exports contain user data and must never enter Git.
+*.dump
+database-backups/
 
 # OS / editor artefacts
 .DS_Store

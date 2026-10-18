@@ -31,6 +31,8 @@ export function renderLive(root: HTMLElement) {
         let status = t('trk.off');
         if (err === 'denied') status = t('trk.denied');
         else if (err === 'unsupported') status = t('trk.unsupported');
+        else if (err === 'unavailable') status = t('trk.unavailable');
+        else if (err === 'network') status = t('trk.network');
         else if (on) status = t('trk.live');
 
         root.innerHTML = `
@@ -80,4 +82,3 @@ export function renderLive(root: HTMLElement) {
         paint();
     });
 }
-
