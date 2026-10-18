@@ -13,8 +13,6 @@ const STEPS = {
             { label: 'Support a friend', next: 'bystander' },
             { label: 'My safety plan', next: 'safetyplan' },
             { label: 'Digital safety tips', next: 'digital' },
-            { label: 'Relationship red flags', next: 'redflags' },
-            { label: 'Ask a Level 2 contact for a referral', next: 'nav:referral-request' },
         ],
     },
     emergency: {
@@ -25,7 +23,7 @@ const STEPS = {
             { label: 'Call SAPS — 10111', next: 'call:10111' },
             { label: 'GBV Command Centre — 0800 428 428', next: 'call:0800428428' },
             { label: 'GBV (free code) — *120*7867#', next: 'call:*120*7867#' },
-            { label: '← Back', next: 'start' },
+            { label: 'Back', next: 'start' },
         ],
     },
     medical: {
@@ -35,7 +33,7 @@ const STEPS = {
         options: [
             { label: 'Find a Thuthuzela Centre', next: 'open:https://www.npa.gov.za/content/thuthuzela-care-centres' },
             { label: 'GBV Command Centre', next: 'call:0800428428' },
-            { label: '← Back', next: 'start' },
+            { label: 'Back', next: 'start' },
         ],
     },
     legal: {
@@ -45,7 +43,7 @@ const STEPS = {
         options: [
             { label: 'Legal Aid SA — 0800 110 110', next: 'call:0800110110' },
             { label: 'POWA — 011 642 4345', next: 'call:0116424345' },
-            { label: '← Back', next: 'start' },
+            { label: 'Back', next: 'start' },
         ],
     },
     emotional: {
@@ -55,7 +53,7 @@ const STEPS = {
         options: [
             { label: 'POWA — 011 642 4345', next: 'call:0116424345' },
             { label: 'GBV Command Centre — 0800 428 428', next: 'call:0800428428' },
-            { label: '← Back', next: 'start' },
+            { label: 'Back', next: 'start' },
         ],
     },
     shelter: {
@@ -65,7 +63,7 @@ const STEPS = {
         options: [
             { label: 'National Shelter Helpline — 0800 001 005', next: 'call:0800001005' },
             { label: 'POWA — 011 642 4345', next: 'call:0116424345' },
-            { label: '← Back', next: 'start' },
+            { label: 'Back', next: 'start' },
         ],
     },
     bystander: {
@@ -74,7 +72,7 @@ const STEPS = {
         body: 'If someone has told you they are experiencing abuse:\n\n• Listen without judgement\n• Do not pressure them to act before they are ready\n• Ask what they need from you\n• Do not contact the abuser\n• Help them access the GBV Command Centre if they choose\n\nYour support matters — but their safety and control come first.',
         options: [
             { label: 'GBV Command Centre — 0800 428 428', next: 'call:0800428428' },
-            { label: '← Back', next: 'start' },
+            { label: 'Back', next: 'start' },
         ],
     },
     safetyplan: {
@@ -83,7 +81,7 @@ const STEPS = {
         body: 'Your safety plan stores trusted people, safe places, emergency numbers, documents and transport options. Fill it in now so it is ready when you need it.',
         options: [
             { label: 'Open my safety plan', next: 'nav:safety-plan' },
-            { label: '← Back', next: 'start' },
+            { label: 'Back', next: 'start' },
         ],
     },
     digital: {
@@ -96,17 +94,7 @@ const STEPS = {
             '• This app\'s notes are encrypted — only you can read them\n' +
             '• The cover screen hides the app\'s purpose',
         options: [
-            { label: '← Back', next: 'start' },
-        ],
-    },
-    redflags: {
-        id: 'redflags',
-        heading: 'Relationship warning signs',
-        body: 'Warning signs can include controlling who you see, monitoring your phone or location, demanding passwords, isolating you from support, threats, intimidation, or controlling money and transport.\n\nOnline warning signs can include unknown account sessions, unexpected location sharing, unfamiliar apps with accessibility or device-admin access, and password-reset messages you did not request.\n\nOne sign alone does not prove abuse. Trust your own judgement, use a device you believe is safe, and choose whether and when to ask for support.',
-        options: [
-            { label: 'Digital safety tips', next: 'digital' },
-            { label: 'Contact support', next: 'emotional' },
-            { label: '← Back', next: 'start' },
+            { label: 'Back', next: 'start' },
         ],
     },
 };
@@ -121,7 +109,7 @@ export function renderCompanion(root) {
       <div class="screen companion-screen">
 
         <header class="screen-header">
-          <button class="btn-back-small" id="btn-back" aria-label="Back to app">←</button>
+          <button class="btn-back-small" id="btn-back" aria-label="Back to app">Back</button>
           <h2 class="screen-title">Safety Companion</h2>
           <span class="companion-badge">Automated</span>
         </header>
@@ -140,9 +128,8 @@ export function renderCompanion(root) {
         </div>
 
         <p class="companion-disclaimer">
-          This companion provides general information, not counselling, legal advice,
-          or verified nearby service listings. It will not send messages or share
-          your location without your action.
+          This guide uses reviewed content only. It will never diagnose, counsel,
+          give legal advice, say help is on the way, or share anything without your consent.
         </p>
 
       </div>

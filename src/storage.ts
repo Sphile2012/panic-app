@@ -1,16 +1,24 @@
 import { upsertDevice, getDeviceId, getUser } from './db.js';
-import { createRecoverySalt, createRecoverySecret, deriveRecoveryHash, encrypt, decrypt, encryptJson, decryptJson } from './crypto.js';
+import { encryptJson, decryptJson } from './crypto.js';
 
 export type Contact = {
     id: string;
     name: string;
     phone: string;
     initials: string;
-    level: ContactLevel;
-    status: 'pending' | 'sending' | 'prepared' | 'failed';
+    relationship?: string;
+    status: 'pending' | 'sending' | 'delivered' | 'failed';
 };
 
-export type ContactLevel = 'emergency' | 'referral' | 'checkin';
+export type Profile = {
+    name: string;
+    phone: string;
+    photo: string;
+};
+
+export const EMPTY_PROFILE: Profile = { name: '', phone: '', photo: '' };
+
+export const RELATIONSHIPS = ['partner', 'parent', 'child', 'sibling', 'relative', 'friend', 'neighbour', 'colleague', 'other'] as const;
 
 export type Note = {
     id: string;
@@ -27,21 +35,13 @@ export type SafetyPlan = {
     importantDocs: string;
     transportOptions: string;
     thingsToRemember: string;
-    safeWord: string;
 };
 
 export type VaultData = {
     contacts: Contact[];
     notes: Note[];
     safetyPlan: SafetyPlan;
-};
-
-export type RecoveryRecord = {
-    questionIds: string[];
-    salt: string;
-    answerWrap: string;
-    pinWrap: string;
-    encryptedVault: string;
+    profile?: Profile;
 };
 
 const KEY_PUBLIC = 'pr_public';
@@ -49,7 +49,19 @@ const KEY_VAULT = 'pr_vault';
 function loadPublic() {
     try {
         const raw = localStorage.getItem(KEY_PUBLIC);
-        return raw ? JSON.parse(raw) : null;
+        if (!raw)
+            return null;
+        const data = JSON.parse(raw);
+        if (data && typeof data === 'object' && 'recovery' in data) {
+            delete data.recovery;
+            try {
+                localStorage.setItem(KEY_PUBLIC, JSON.stringify(data));
+            }
+            catch (error) {
+                console.warn('[storage] Could not remove legacy PIN recovery data:', error);
+            }
+        }
+        return data;
     }
     catch {
         return null;
@@ -60,103 +72,27 @@ function savePublic(d) {
 }
 export const EMPTY_PLAN: SafetyPlan = {
     trustedPeople: '', safePlaces: '', emergencyNumbers: '',
-    importantDocs: '', transportOptions: '', thingsToRemember: '', safeWord: '',
+    importantDocs: '', transportOptions: '', thingsToRemember: '',
 };
 
 export const EMPTY_VAULT: VaultData = { contacts: [], notes: [], safetyPlan: { ...EMPTY_PLAN } };
-
-function normalizeVault(data: Partial<VaultData> | null): VaultData {
-    if (!data) {
-        return { ...EMPTY_VAULT, safetyPlan: { ...EMPTY_PLAN } };
-    }
-    return {
-        contacts: Array.isArray(data.contacts) ? data.contacts.map(contact => ({
-            ...contact,
-            level: contact.level === 'referral' || contact.level === 'checkin' ? contact.level : 'emergency',
-        })) : [],
-        notes: Array.isArray(data.notes) ? data.notes : [],
-        safetyPlan: { ...EMPTY_PLAN, ...(data.safetyPlan ?? {}) },
-    };
-}
 
 export async function loadVault(pinHash: string): Promise<VaultData> {
     try {
         const b64 = localStorage.getItem(KEY_VAULT);
         if (!b64)
-            return normalizeVault(null);
+            return { ...EMPTY_VAULT };
         const data = await decryptJson<VaultData>(b64, pinHash);
-        return normalizeVault(data);
+        return data ?? { ...EMPTY_VAULT };
     }
     catch {
-        return normalizeVault(null);
+        return { ...EMPTY_VAULT };
     }
 }
 
 export async function saveVault(data: VaultData, pinHash: string) {
     const encryptedVault = await encryptJson(data, pinHash);
-    const pub = loadPublic();
-    if (pub?.recovery) {
-        const recoverySecret = await decrypt(pub.recovery.pinWrap, pinHash);
-        pub.recovery.encryptedVault = await encryptJson(data, recoverySecret);
-        savePublic(pub);
-    }
     localStorage.setItem(KEY_VAULT, encryptedVault);
-}
-
-export async function setRecoveryQuestions(pinHash: string, questionIds: string[], answers: string[]) {
-    const pub = loadPublic();
-    if (!pub || pub.pinHash !== pinHash)
-        throw new Error('Unlock with your current PIN before setting recovery questions.');
-    if (new Set(questionIds).size !== 2 || answers.some(answer => answer.trim().length < 8))
-        throw new Error('Choose two different questions and enter both answers.');
-
-    const salt = createRecoverySalt();
-    const recoverySecret = createRecoverySecret();
-    const answerHash = await deriveRecoveryHash(questionIds, answers, salt);
-    const vault = await loadVault(pinHash);
-    const recovery: RecoveryRecord = {
-        questionIds,
-        salt,
-        answerWrap: await encrypt(recoverySecret, answerHash),
-        pinWrap: await encrypt(recoverySecret, pinHash),
-        encryptedVault: await encryptJson(vault, recoverySecret),
-    };
-    pub.recovery = recovery;
-    savePublic(pub);
-}
-
-export async function recoverVaultWithAnswers(answers: string[], pinHash: string, decoyHash: string, autoLock: number) {
-    const pub = loadPublic();
-    const recovery = pub?.recovery as RecoveryRecord | undefined;
-    if (!pub || !recovery)
-        return null;
-
-    let recoverySecret: string;
-    let vault: VaultData | null;
-    try {
-        const answerHash = await deriveRecoveryHash(recovery.questionIds, answers, recovery.salt);
-        recoverySecret = await decrypt(recovery.answerWrap, answerHash);
-        vault = await decryptJson<VaultData>(recovery.encryptedVault, recoverySecret);
-    }
-    catch {
-        return null;
-    }
-    if (!vault)
-        return null;
-
-    vault = normalizeVault(vault);
-    pub.pinHash = pinHash;
-    pub.decoyHash = decoyHash;
-    pub.autoLock = autoLock;
-    recovery.pinWrap = await encrypt(recoverySecret, pinHash);
-    savePublic(pub);
-    await saveVault(vault, pinHash);
-    return vault;
-}
-
-export function getRecoveryQuestionIds(): string[] | null {
-    const ids = loadPublic()?.recovery?.questionIds;
-    return Array.isArray(ids) && ids.length === 2 ? ids : null;
 }
 export function loadPublicSync() {
     const pub = loadPublic();
@@ -164,7 +100,6 @@ export function loadPublicSync() {
         pin: pub?.pinHash ?? '',
         decoyPin: pub?.decoyHash ?? '',
         autoLockMinutes: pub?.autoLock ?? 5,
-        recoveryQuestionIds: Array.isArray(pub?.recovery?.questionIds) ? pub.recovery.questionIds : null,
         contacts: [],
         notes: [],
         safetyPlan: { ...EMPTY_PLAN },
@@ -175,11 +110,6 @@ export async function savePinHashes(pinHash, decoyHash, autoLock, oldPinHash?: s
     let vault: VaultData | null = null;
     if (oldPinHash && oldPinHash !== pinHash) {
         vault = await loadVault(oldPinHash);
-        if (pub.recovery) {
-            const recoverySecret = await decrypt(pub.recovery.pinWrap, oldPinHash);
-            pub.recovery.pinWrap = await encrypt(recoverySecret, pinHash);
-            pub.recovery.encryptedVault = await encryptJson(vault, recoverySecret);
-        }
     }
     pub.pinHash = pinHash;
     pub.decoyHash = decoyHash;

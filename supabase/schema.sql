@@ -27,6 +27,40 @@ create policy "devices_owner" on devices
 
 create policy "alertlogs_owner" on alert_logs
   for all using (auth.uid() = user_id);
+
+-- Live location sharing: access only through the token-based functions below.
+create table if not exists live_tracks (
+  token text primary key check (length(token) between 16 and 64),
+  lat double precision not null,
+  lng double precision not null,
+  accuracy real,
+  battery smallint,
+  charging boolean not null default false,
+  updated_at timestamptz not null default now()
+);
+alter table live_tracks enable row level security;
+
+create or replace function push_track(
+  p_token text, p_lat double precision, p_lng double precision,
+  p_accuracy real, p_battery smallint, p_charging boolean
+) returns void language sql security definer set search_path = public as $$
+  insert into live_tracks (token, lat, lng, accuracy, battery, charging, updated_at)
+  values (p_token, p_lat, p_lng, p_accuracy, p_battery, p_charging, now())
+  on conflict (token) do update set
+    lat = excluded.lat, lng = excluded.lng, accuracy = excluded.accuracy,
+    battery = excluded.battery, charging = excluded.charging, updated_at = now();
+$$;
+
+create or replace function get_track(p_token text)
+returns table (lat double precision, lng double precision, accuracy real,
+               battery smallint, charging boolean, updated_at timestamptz)
+language sql security definer set search_path = public as $$
+  select lat, lng, accuracy, battery, charging, updated_at
+  from live_tracks where token = p_token;
+$$;
+
+grant execute on function push_track(text, double precision, double precision, real, smallint, boolean) to anon, authenticated;
+grant execute on function get_track(text) to anon, authenticated;
 create or replace function set_updated_at()
 returns trigger language plpgsql as $$
 begin new.updated_at = now(); return new; end; $$;

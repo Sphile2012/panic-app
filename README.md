@@ -40,6 +40,22 @@ To configure the environment manually, copy `.env.example` to `.env` and set
 `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`. `VITE_W3W_API_KEY` is
 optional.
 
+## Sign-in, languages and live location
+
+- Users sign in with a phone number or an email address. Phone numbers are
+  mapped to a private account address, so **email confirmation must be
+  disabled** in the backend authentication settings for phone sign-in to work.
+- The interface is available in English, isiZulu, Sesotho and Afrikaans
+  (language buttons on the sign-in screen and in Settings).
+- Run `supabase/schema.sql` again to add the `live_tracks` table and the
+  `push_track` and `get_track` functions used by live location.
+- The Live screen asks for location permission, updates every 10 seconds and
+  gives a tracking link (`/track.html#token`) to share with beneficiaries. At
+  20% and 10% battery (when not charging) the app prompts the user to message
+  their beneficiaries; the tracking page also shows the battery level.
+  Browsers can only do this while the app stays open, and SMS always needs a
+  tap to send.
+
 ## Safety features and PWA limits
 
 - On first use, create a secret PIN and a different decoy PIN; there are no
@@ -71,9 +87,9 @@ safe-place maps, OS/device-compromise checks, trusted-device sign-in alerts,
 custom hardware accessibility triggers, and self-destructing private notes are
 not implemented. They require native OS capabilities, verified service data,
 backend support, or a separately reviewed data-erasure design. In particular,
-notes currently share an encrypted vault and recovery record with contacts and
-the safety plan, so deleting only notes after failed PIN attempts needs a
-separate encryption and recovery migration. Do not rely on these deferred
+notes currently share a PIN-encrypted vault with contacts and the safety plan,
+so deleting only notes after failed PIN attempts needs a separate encryption
+migration. Do not rely on these deferred
 features for safety.
 
 ## Run with Docker

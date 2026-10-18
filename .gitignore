@@ -5,20 +5,19 @@ dist-ssr/
 # Dependencies
 node_modules/
 
-# Local secrets — NEVER commit these
+# Local environment files — contain secrets, never commit
 .env
 .env.local
 .env.docker.local
 *.local
 
-# OS / editor
+# OS / editor artefacts
 .DS_Store
 Thumbs.db
 .vscode/settings.json
 
-# TypeScript
+# TypeScript cache
 *.tsbuildinfo
-src/**/*.js
 
 # Logs
 npm-debug.log*

@@ -1,20 +1,24 @@
 import './style.css';
 import { store } from './state.js';
 import { renderCalculator } from './screens/calculator.js';
-import { renderSetupPin, renderSetupContacts, renderRecoverySetup, renderPinRecovery } from './screens/setup.js';
+import { renderSetupPin, renderSetupContacts } from './screens/setup.js';
 import { renderApp } from './screens/app.js';
-import { renderCheckinExpired } from './screens/checkinExpired.js';
 import { renderContacts } from './screens/contacts.js';
 import { renderLocation } from './screens/location.js';
+import { renderLive } from './screens/live.js';
+import { renderChat } from './screens/chat.js';
+import { renderProfile } from './screens/profile.js';
+import { renderRecords } from './screens/records.js';
+import { startEvidenceCapture } from './evidence.js';
+import { renderHistory, renderJourney, renderFakeCall, renderWatch, renderGuide, renderFaq } from './screens/pages.js';
+import { onTrackChange, getLowBattery } from './tracking.js';
 import { renderSending, renderSent, updateSendingList } from './screens/sending.js';
 import { renderNotes, renderNoteEdit } from './screens/notes.js';
 import { renderSafetyPlan } from './screens/safetyPlan.js';
-import { renderSafeWord } from './screens/safeWord.js';
-import { renderContactMessage } from './screens/contactMessage.js';
 import { renderSupport } from './screens/support.js';
 import { renderSettings } from './screens/settings.js';
 import { renderAppearance } from './screens/appearance.js';
-import { renderSignup, renderLogin, renderVerifyEmail, renderForgotPassword } from './screens/auth.js';
+import { renderSignup, renderLogin, renderVerifyEmail, renderForgotPassword, renderResetPassword } from './screens/auth.js';
 import { renderBudget } from './screens/disguise/budget.js';
 import { renderWeather } from './screens/disguise/weather.js';
 import { renderNotesPlain } from './screens/disguise/notesPlain.js';
@@ -27,14 +31,12 @@ import { runAlertSequence } from './alertService.js';
 import { pruneStaleQueue, watchForReconnect } from './alertQueue.js';
 import { loadAppearance, applyAppearance, watchSystemTheme } from './theme.js';
 import { initPwa, canInstall, isInstalled, isIosSafari, promptInstall, onInstallReady, onInstalled } from './pwa.js';
-import { applyAccessibilitySettings } from './accessibility.js';
 
 const appRoot = document.getElementById('app-root') as HTMLElement | null;
 if (!appRoot) {
     throw new Error('App root element not found.');
 }
 initPwa();
-applyAccessibilitySettings();
 
 let currentScreen: string | null = null;
 
@@ -82,11 +84,14 @@ function render(screen: string) {
         case 'login':
             renderLogin(appRoot);
             break;
-        case 'verify-email':
-            renderVerifyEmail(appRoot);
-            break;
         case 'forgot-password':
             renderForgotPassword(appRoot);
+            break;
+        case 'reset-password':
+            renderResetPassword(appRoot);
+            break;
+        case 'verify-email':
+            renderVerifyEmail(appRoot);
             break;
         case 'calculator':
             renderDisguise();
@@ -100,26 +105,41 @@ function render(screen: string) {
         case 'setup-contacts':
             renderSetupContacts(appRoot);
             break;
-        case 'recovery-setup':
-            renderRecoverySetup(appRoot, 'setup-contacts');
-            break;
-        case 'recovery-settings':
-            renderRecoverySetup(appRoot, 'settings');
-            break;
-        case 'pin-recovery':
-            renderPinRecovery(appRoot);
-            break;
         case 'app':
             renderApp(appRoot);
-            break;
-        case 'checkin-expired':
-            renderCheckinExpired(appRoot);
             break;
         case 'contacts':
             renderContacts(appRoot);
             break;
         case 'location':
             renderLocation(appRoot);
+            break;
+        case 'live':
+            renderLive(appRoot);
+            break;
+        case 'chat':
+            renderChat(appRoot);
+            break;
+        case 'profile':
+            renderProfile(appRoot);
+            break;
+        case 'history':
+            renderHistory(appRoot);
+            break;
+        case 'journey':
+            renderJourney(appRoot);
+            break;
+        case 'fakecall':
+            renderFakeCall(appRoot);
+            break;
+        case 'watch':
+            renderWatch(appRoot);
+            break;
+        case 'guide':
+            renderGuide(appRoot);
+            break;
+        case 'faq':
+            renderFaq(appRoot);
             break;
         case 'notes':
             renderNotes(appRoot);
@@ -129,15 +149,6 @@ function render(screen: string) {
             break;
         case 'safety-plan':
             renderSafetyPlan(appRoot);
-            break;
-        case 'safe-word':
-            renderSafeWord(appRoot);
-            break;
-        case 'referral-request':
-            renderContactMessage(appRoot, 'referral');
-            break;
-        case 'checkin-request':
-            renderContactMessage(appRoot, 'checkin');
             break;
         case 'support':
             renderSupport(appRoot);
@@ -159,6 +170,7 @@ function render(screen: string) {
             break;
         case 'sending':
             renderSending(appRoot);
+            startEvidenceCapture();
             runAlertSequence(
                 store.getState().alertLocation,
                 store.getState().locationShared,
@@ -171,20 +183,26 @@ function render(screen: string) {
         case 'sent':
             renderSent(appRoot);
             break;
+        case 'records':
+            renderRecords(appRoot);
+            break;
         default:
             renderCalculator(appRoot);
             break;
     }
 }
 
+let currentRev = -1;
 store.subscribe((state) => {
-    if (state.screen !== currentScreen)
+    if (state.screen !== currentScreen || state.rev !== currentRev) {
+        currentRev = state.rev;
         render(state.screen);
+    }
 });
 
 document.addEventListener('keydown', (event: KeyboardEvent) => {
     if (event.key === 'Escape') {
-        const safe = ['calculator', 'decoy', 'setup-pin', 'setup-contacts', 'signup', 'login', 'verify-email', 'forgot-password'];
+        const safe = ['calculator', 'decoy', 'setup-pin', 'setup-contacts', 'signup', 'login', 'verify-email'];
         if (!safe.includes(store.getState().screen)) {
             window.location.href = 'https://www.google.com';
         }
@@ -232,6 +250,11 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(() => { });
 }
 
+onTrackChange(() => {
+    if (getLowBattery() !== null && store.getState().screen === 'app')
+        store.navigateTo('live');
+});
+
 document.getElementById('install-btn')?.addEventListener('click', async () => {
     if (isIosSafari()) {
         const msg = document.getElementById('ios-install-msg');
@@ -249,15 +272,23 @@ onInstalled(() => {
         banner.style.display = 'none';
 });
 
+const appearance = loadAppearance();
+applyAppearance(appearance);
+render(store.getState().screen);
+updateInstallBanner();
+
 store.initAuth().then(() => {
+    if (/type=recovery/.test(window.location.hash))
+        store.navigateTo('reset-password');
     pruneStaleQueue();
-    render(store.getState().screen);
     watchForReconnect(({ locationText, locationShared }) => {
-        store.setLocationShared(locationShared, locationText);
         store.startSending();
+        startEvidenceCapture();
+        runAlertSequence(locationText, locationShared, () => {
+            if (store.getState().screen === 'sending')
+                updateSendingList(appRoot);
+        });
     });
-    updateInstallBanner();
-    const appearance = loadAppearance();
-    applyAppearance(appearance);
+
     watchSystemTheme(() => loadAppearance().mode);
 });

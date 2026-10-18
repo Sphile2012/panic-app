@@ -1,47 +1,26 @@
 import { store } from '../state.js';
-import { getRecoveryQuestionIds } from '../storage.js';
-import { isLargeControlsEnabled, setLargeControlsEnabled } from '../accessibility.js';
+import { t, languageBarHtml, bindLanguageBar } from '../i18n.js';
+import { displayIdentity } from '../db.js';
+import { evidenceEnabled, setEvidenceEnabled, requestCameraAccess } from '../evidence.js';
 export function renderSettings(root: HTMLElement) {
     const { autoLockMinutes, authEmail } = store.getState();
-  const hasRecovery = getRecoveryQuestionIds() !== null;
+    const who = displayIdentity(authEmail);
     root.innerHTML = `
     <div class="screen settings-screen">
 
       <header class="screen-header">
-        <button class="btn-back-small" id="btn-back" aria-label="Back">←</button>
+        <button class="btn-back-small" id="btn-back" aria-label="Back">Back</button>
         <h2 class="screen-title">Settings</h2>
       </header>
 
-      
       <section class="settings-section">
-        <h3 class="settings-section-title">Account</h3>
-        ${authEmail ? `
-          <div class="settings-account-row">
-            <div class="settings-avatar">${authEmail[0].toUpperCase()}</div>
-            <div class="settings-account-info">
-              <span class="settings-account-email">${authEmail}</span>
-              <span class="settings-account-sub">Signed in</span>
-            </div>
-          </div>
-          <button class="btn-secondary-outline" id="btn-signout" style="margin-top:10px">
-            Sign out
-          </button>
-        ` : `
-          <p class="settings-section-body">Not signed in.</p>
-          <div class="settings-auth-buttons">
-            <button class="btn-primary" id="btn-signin">Sign in</button>
-            <button class="btn-secondary-outline" id="btn-create">Create account</button>
-          </div>
-        `}
+        <h3 class="settings-section-title">${t('set.language')}</h3>
+        ${languageBarHtml()}
       </section>
 
-      <section class="settings-section">
-        <h3 class="settings-section-title">PIN recovery</h3>
-        <p class="settings-section-body">${hasRecovery ? 'Recovery questions are set up.' : 'Set recovery questions to restore your encrypted data if you forget your PINs.'}</p>
-        <button class="btn-secondary-outline" id="btn-recovery-settings">${hasRecovery ? 'Change recovery questions' : 'Set recovery questions'}</button>
-      </section>
+      <!-- Account -->
 
-      
+      <!-- Appearance -->
       <section class="settings-section">
         <h3 class="settings-section-title">Appearance</h3>
         <p class="settings-section-body">Theme, accent colour and disguise screen.</p>
@@ -49,18 +28,13 @@ export function renderSettings(root: HTMLElement) {
       </section>
 
       <section class="settings-section">
-        <h3 class="settings-section-title">Accessibility</h3>
-        <p class="settings-section-body">
-          Panic Ring is voice-free by default. Larger controls increase text size
-          and touch targets on this device.
-        </p>
-        <label class="radio-label">
-          <input type="checkbox" id="large-controls" ${isLargeControlsEnabled() ? 'checked' : ''} />
-          Use larger controls
-        </label>
+        <h3 class="settings-section-title">Alert photos</h3>
+        <p class="settings-section-body">When an alert starts, take a few photos at random moments and keep them in Records on this device. Your phone shows its camera indicator while this runs.</p>
+        <label class="settings-radio"><input type="checkbox" id="evidence-toggle" ${evidenceEnabled() ? 'checked' : ''}> Take photos during alerts</label>
+        <p class="settings-section-body" id="evidence-msg"></p>
       </section>
 
-      
+      <!-- Auto-lock -->
       <section class="settings-section">
         <h3 class="settings-section-title">Auto-lock</h3>
         <p class="settings-section-body">Lock after inactivity.</p>
@@ -80,7 +54,7 @@ export function renderSettings(root: HTMLElement) {
         </div>
       </section>
 
-      
+      <!-- Change PINs -->
       <section class="settings-section">
         <h3 class="settings-section-title">Change PINs</h3>
         <form class="setup-form" id="change-pin-form" autocomplete="off">
@@ -95,23 +69,23 @@ export function renderSettings(root: HTMLElement) {
         </form>
       </section>
 
-      
+      <!-- Trusted circle -->
       <section class="settings-section">
         <h3 class="settings-section-title">Trusted circle</h3>
         <button class="btn-secondary-outline" id="btn-contacts">Manage contacts</button>
       </section>
 
-      
+      <!-- About -->
       <section class="settings-section">
         <h3 class="settings-section-title">About</h3>
-        <p class="settings-section-body">Panic Ring v1.0 · Data stays encrypted on this device.</p>
+        <p class="settings-section-body">Panic Ring v1.0. Data stays encrypted on this device.</p>
         <div class="settings-auth-buttons" style="margin-top:8px">
           <button class="btn-secondary-outline" id="btn-about">About the app</button>
           <button class="btn-secondary-outline" id="btn-terms">Terms</button>
         </div>
       </section>
 
-      
+      <!-- Danger zone -->
       <section class="settings-section settings-section--danger">
         <h3 class="settings-section-title">Reset app</h3>
         <p class="settings-section-body">
@@ -123,6 +97,7 @@ export function renderSettings(root: HTMLElement) {
     </div>
   `;
     root.querySelector('#btn-back').addEventListener('click', () => store.navigateTo('app'));
+    bindLanguageBar(root, () => renderSettings(root));
     root.querySelector('#btn-about').addEventListener('click', () => store.navigateTo('about'));
     root.querySelector('#btn-terms').addEventListener('click', () => store.navigateTo('terms'));
     root.querySelector('#btn-signout')?.addEventListener('click', async () => {
@@ -132,11 +107,21 @@ export function renderSettings(root: HTMLElement) {
     root.querySelector('#btn-signin')?.addEventListener('click', () => store.navigateTo('login'));
     root.querySelector('#btn-create')?.addEventListener('click', () => store.navigateTo('signup'));
     root.querySelector('#btn-appearance').addEventListener('click', () => store.navigateTo('appearance'));
-    root.querySelector('#large-controls').addEventListener('change', (event: Event) => {
-        setLargeControlsEnabled((event.currentTarget as HTMLInputElement).checked);
-    });
-    root.querySelector('#btn-recovery-settings').addEventListener('click', () => store.navigateTo('recovery-settings'));
     root.querySelector('#btn-contacts').addEventListener('click', () => store.navigateTo('contacts'));
+    const evToggle = root.querySelector('#evidence-toggle') as HTMLInputElement;
+    evToggle.addEventListener('change', async () => {
+        const msg = root.querySelector('#evidence-msg') as HTMLElement;
+        if (evToggle.checked) {
+            const ok = await requestCameraAccess();
+            if (!ok) {
+                evToggle.checked = false;
+                msg.textContent = 'Camera access was not allowed, so alert photos stay off.';
+                return;
+            }
+        }
+        setEvidenceEnabled(evToggle.checked);
+        msg.textContent = evToggle.checked ? 'Alert photos are on.' : 'Alert photos are off.';
+    });
     root.querySelectorAll('input[name="auto-lock"]').forEach((r: HTMLInputElement) => {
         r.addEventListener('change', () => store.setAutoLock(Number(r.value)));
     });
@@ -159,7 +144,7 @@ export function renderSettings(root: HTMLElement) {
         pinErr.textContent = '';
         await store.changePins(p, d);
         pinErr.style.color = 'var(--safe)';
-        pinErr.textContent = '✓ PINs updated';
+        pinErr.textContent = 'PINs updated';
         pinForm.reset();
         setTimeout(() => { pinErr.textContent = ''; pinErr.style.color = ''; }, 3000);
     });

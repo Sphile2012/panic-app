@@ -1,31 +1,18 @@
 import { createClient } from '@supabase/supabase-js';
 const SUPABASE_URL = import.meta.env['VITE_SUPABASE_URL'];
 const SUPABASE_ANON = import.meta.env['VITE_SUPABASE_ANON_KEY'];
+const ENABLE_LOCAL_AUTH = import.meta.env['VITE_ENABLE_LOCAL_AUTH'] === 'true';
+const isLocalSupabase = Boolean(SUPABASE_URL && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?(?:\/|$)/i.test(SUPABASE_URL));
 export const DB_CONFIGURED = Boolean(SUPABASE_URL && SUPABASE_ANON) &&
-    SUPABASE_URL !== 'https://your-project-ref.supabase.co';
+    SUPABASE_URL !== 'https://your-project-ref.supabase.co' &&
+    (!isLocalSupabase || ENABLE_LOCAL_AUTH);
 let _client = null;
-
-function safeAuthError(message: string | undefined, fallback: string): string {
-    const normalized = message?.toLowerCase() ?? '';
-    if (normalized.includes('rate limit') || normalized.includes('too many requests'))
-        return 'Too many attempts — please wait a moment and try again.';
-    if (normalized.includes('email not confirmed'))
-        return 'Please confirm your email before signing in.';
-    if (normalized.includes('invalid') && (normalized.includes('otp') || normalized.includes('token')))
-        return 'That code is invalid or expired. Request a new code and try again.';
-    if (normalized.includes('password') && (normalized.includes('weak') || normalized.includes('least')))
-        return 'Choose a stronger password and try again.';
-    if (normalized.includes('invalid email') || normalized.includes('email address'))
-        return 'Enter a valid email address and try again.';
-    return fallback;
-}
-
 export function getClient() {
     if (!_client) {
         if (!DB_CONFIGURED || !SUPABASE_URL || !SUPABASE_ANON) {
-            throw new Error('Supabase not configured — add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to .env');
+            throw new Error('Account service not configured.');
         }
-        _client = createClient(SUPABASE_URL, SUPABASE_ANON, {
+        _client = createClient(window.location.origin + '/api', SUPABASE_ANON, {
             auth: {
                 persistSession: true,
                 autoRefreshToken: true,
@@ -35,43 +22,71 @@ export function getClient() {
     }
     return _client;
 }
-export async function signUp(email, password): Promise<{ error: string | null; alreadyRegistered: boolean }> {
+export type AuthFailure = 'id' | 'invalid' | 'confirm' | 'service' | 'generic';
+const PHONE_DOMAIN = 'phone.panicring.app';
+export function resolveIdentifier(raw: string): string | null {
+    const v = raw.trim();
+    if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v))
+        return v.toLowerCase();
+    let digits = v.replace(/[\s\-().]/g, '');
+    if (!/^\+?\d{9,15}$/.test(digits))
+        return null;
+    digits = digits.replace(/^\+/, '');
+    if (digits.startsWith('0'))
+        digits = '27' + digits.slice(1);
+    return `${digits}@${PHONE_DOMAIN}`;
+}
+export function isPhoneIdentity(email: string | null | undefined): boolean {
+    return Boolean(email && email.endsWith('@' + PHONE_DOMAIN));
+}
+export function displayIdentity(email: string | null | undefined): string {
+    if (!email)
+        return '';
+    return isPhoneIdentity(email) ? '+' + email.split('@')[0] : email;
+}
+function mapAuthError(message: string | undefined): AuthFailure {
+    const m = (message ?? '').toLowerCase();
+    if (m.includes('not confirmed'))
+        return 'confirm';
+    if (m.includes('invalid') || m.includes('already registered'))
+        return 'invalid';
+    return 'generic';
+}
+export async function signUp(identifier: string, password: string): Promise<{ error: AuthFailure | null; needsConfirm?: boolean; identity?: string }> {
+    const email = resolveIdentifier(identifier);
+    if (!email)
+        return { error: 'id' };
     if (!DB_CONFIGURED)
-        return { error: 'Secure account service unavailable. Continue in offline mode.', alreadyRegistered: false };
+        return { error: 'service' };
     try {
-        const { data, error } = await getClient().auth.signUp({ email: email.trim(), password });
-        if (
-            error?.code === 'user_already_exists' ||
-            error?.message.toLowerCase().includes('already registered') ||
-            data.user?.identities?.length === 0
-        ) {
-            return { error: null, alreadyRegistered: true };
-        }
+        const { data, error } = await getClient().auth.signUp({ email, password });
+        if (error)
+            return { error: mapAuthError(error.message) };
         return {
-            error: error ? safeAuthError(error.message, 'We could not create your account. Please try again.') : null,
-            alreadyRegistered: false,
+            error: null,
+            needsConfirm: !data.session && !isPhoneIdentity(email),
+            identity: data.session ? data.user?.email ?? email : undefined,
         };
     }
     catch {
-        return { error: 'Unable to reach the secure account service. Continue in offline mode.', alreadyRegistered: false };
+        return { error: 'service' };
     }
 }
-export async function signIn(email, password) {
+export async function signIn(identifier: string, password: string): Promise<{ error: AuthFailure | null; identity?: string }> {
+    const email = resolveIdentifier(identifier);
+    if (!email)
+        return { error: 'id' };
     if (!DB_CONFIGURED)
-        return { error: 'Secure account service unavailable. Continue in offline mode.' };
+        return { error: 'service' };
     try {
-        const { error } = await getClient().auth.signInWithPassword({ email, password });
-        if (!error)
-            return { error: null };
-        if (error.code === 'invalid_credentials' || error.message.toLowerCase().includes('invalid login credentials')) {
-            return {
-                error: 'We could not verify this email and password. For security, sign-in does not reveal which one is incorrect. Check the email address, or use “Forgot password?” to set a new password.',
-            };
-        }
-        return { error: safeAuthError(error.message, 'We could not sign you in. Please try again.') };
+        const { data, error } = await getClient().auth.signInWithPassword({ email, password });
+        return {
+            error: error ? mapAuthError(error.message) : null,
+            identity: error ? undefined : data.user.email ?? email,
+        };
     }
     catch {
-        return { error: 'Unable to reach the secure account service. Continue in offline mode.' };
+        return { error: 'service' };
     }
 }
 export async function signOut() {
@@ -79,63 +94,31 @@ export async function signOut() {
         return;
     await getClient().auth.signOut();
 }
-
-export async function signInWithGoogle(): Promise<{ error: string | null }> {
+export async function requestPasswordReset(identifier: string): Promise<{ error: 'id' | 'phone' | 'service' | null }> {
+    const email = resolveIdentifier(identifier);
+    if (!email)
+        return { error: 'id' };
+    if (isPhoneIdentity(email))
+        return { error: 'phone' };
     if (!DB_CONFIGURED)
-        return { error: 'Secure account service unavailable.' };
+        return { error: 'service' };
     try {
-        const { error } = await getClient().auth.signInWithOAuth({
-            provider: 'google',
-            options: {
-                redirectTo: window.location.origin,
-            },
-        });
-        return {
-            error: error ? safeAuthError(error.message, 'Google sign-in is unavailable right now. Please try again.') : null,
-        };
-    } catch {
-        return { error: 'Unable to sign in with Google.' };
-    }
-}
-
-export async function resetPassword(email: string): Promise<{ error: string | null }> {
-    if (!DB_CONFIGURED)
-        return { error: 'Secure account service unavailable.' };
-    try {
-        const { error } = await getClient().auth.resetPasswordForEmail(email, {
-            redirectTo: window.location.origin,
-        });
-        return {
-            error: error ? safeAuthError(error.message, 'We could not send a reset code. Check the address and try again.') : null,
-        };
-    } catch {
-        return { error: 'Unable to send reset email.' };
-    }
-}
-
-export async function verifyPasswordResetOtp(
-    email: string,
-    token: string,
-    password: string,
-): Promise<{ error: string | null }> {
-    if (!DB_CONFIGURED)
-        return { error: 'Secure account service unavailable.' };
-    try {
-        const client = getClient();
-        const { error: verifyError } = await client.auth.verifyOtp({
-            email: email.trim(),
-            token: token.trim(),
-            type: 'recovery',
-        });
-        if (verifyError)
-            return { error: safeAuthError(verifyError.message, 'That code is invalid or expired. Request a new code and try again.') };
-        const { error: updateError } = await client.auth.updateUser({ password });
-        return {
-            error: updateError ? safeAuthError(updateError.message, 'We could not update your password. Please try again.') : null,
-        };
+        const { error } = await getClient().auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '/' });
+        return { error: error ? 'service' : null };
     }
     catch {
-        return { error: 'Unable to verify the reset code. Request a new code and try again.' };
+        return { error: 'service' };
+    }
+}
+export async function updatePassword(password: string): Promise<boolean> {
+    if (!DB_CONFIGURED)
+        return false;
+    try {
+        const { error } = await getClient().auth.updateUser({ password });
+        return !error;
+    }
+    catch {
+        return false;
     }
 }
 export async function getSession() {

@@ -6,24 +6,16 @@ export function renderNotes(root) {
     <div class="screen notes-screen">
 
       <header class="screen-header">
-        <button class="btn-back-small" id="btn-back" aria-label="Back">←</button>
+        <button class="btn-back-small" id="btn-back" aria-label="Back">Back</button>
         <h2 class="screen-title">Notes</h2>
         <button class="btn-icon-action" id="btn-export" aria-label="Export notes" title="Export">Export</button>
-        <button class="btn-icon-action" id="btn-new-note" aria-label="New note">＋</button>
+        <button class="btn-icon-action" id="btn-new-note" aria-label="New note">New</button>
       </header>
 
       <p class="notes-info">
         Notes are stored on this device only. They are not shared
         unless you choose to include them in an alert.
       </p>
-
-      <label class="notes-info" for="scrub-export-metadata">
-        <input id="scrub-export-metadata" type="checkbox" />
-        Remove note IDs and timestamps from the export. This also removes export time
-        and chronology. Note text itself is unchanged; location and device identifiers
-        are not included in this export.
-      </label>
-      <p class="notes-info" id="export-status" aria-live="polite"></p>
 
       <ul class="note-list" id="note-list">
         ${notes.length === 0
@@ -42,19 +34,7 @@ export function renderNotes(root) {
             alert('No notes to export.');
             return;
         }
-        const scrubMetadata = root.querySelector('#scrub-export-metadata').checked;
-        const status = root.querySelector('#export-status');
-        try {
-            await exportNotes(notes, scrubMetadata);
-            status.textContent = scrubMetadata
-                ? 'A metadata-reduced export was created. Its timestamps and chronology cannot be used as evidence.'
-                : 'Export created with note timestamps and integrity hash.';
-        }
-        catch (error) {
-            status.textContent = error instanceof Error
-                ? `Export failed: ${error.message}`
-                : 'Export failed. Please try again.';
-        }
+        await exportNotes(notes);
     });
     root.querySelector('#btn-new-note').addEventListener('click', () => {
         store.setEditingNote(null);
@@ -85,7 +65,7 @@ export function renderNoteEdit(root) {
     <div class="screen note-edit-screen">
 
       <header class="screen-header">
-        <button class="btn-back-small" id="btn-back" aria-label="Cancel">←</button>
+        <button class="btn-back-small" id="btn-back" aria-label="Cancel">Back</button>
         <h2 class="screen-title">${existing ? 'Edit note' : 'New note'}</h2>
         <button class="btn-text-action" id="btn-save-note">Save</button>
       </header>

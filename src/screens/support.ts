@@ -68,11 +68,11 @@ export function renderSupport(root) {
     <div class="screen support-screen">
 
       <header class="support-header">
-        <button class="btn-back-small" id="btn-back-support" aria-label="Back">←</button>
+        <button class="btn-back-small" id="btn-back-support" aria-label="Back">Back</button>
         <h2 class="support-title">Support services</h2>
       </header>
 
-      
+      <!-- Category filter tabs -->
       <div class="support-filters" role="tablist" aria-label="Filter by category">
         ${Object.entries(FILTER_LABELS).map(([key, label]) => `
           <button
@@ -85,12 +85,12 @@ export function renderSupport(root) {
         `).join('')}
       </div>
 
-      
+      <!-- Service list -->
       <ul class="service-list" id="service-list">
         ${SERVICES.map(serviceCard).join('')}
       </ul>
 
-      
+      <!-- Footer note — honest about verification status -->
       <p class="support-footer">
         All entries are Listed (public information verified).
         No organisation is called a Partner without a written agreement.

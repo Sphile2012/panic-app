@@ -1,4 +1,4 @@
-import { loadPublicSync, loadVault, saveVault, savePinHashes, saveAutoLock, clearAll, hashPin, recoverVaultWithAnswers, uid, initials, type Contact as StorageContact, type ContactLevel, type Note as StorageNote, type SafetyPlan as StorageSafetyPlan, type VaultData } from './storage.js';
+import { EMPTY_PROFILE, type Profile, loadPublicSync, loadVault, saveVault, savePinHashes, saveAutoLock, clearAll, hashPin, uid, initials, type Contact as StorageContact, type Note as StorageNote, type SafetyPlan as StorageSafetyPlan, type VaultData } from './storage.js';
 import { onAuthStateChange, DB_CONFIGURED, signOut } from './db.js';
 
 type Contact = StorageContact;
@@ -7,6 +7,8 @@ type SafetyPlan = StorageSafetyPlan;
 
 type AppState = {
     screen: string;
+    rev: number;
+    profile: Profile;
     pinBuffer: string;
     pinHash: string;
     authEmail: string | null;
@@ -18,7 +20,6 @@ type AppState = {
     locationShared: boolean;
     editingNoteId: string | null;
     isFirstRun: boolean;
-    recoveryConfigured: boolean;
     pinFailures: number;
     lastActivityAt: number;
 };
@@ -27,6 +28,8 @@ function buildInitialState(): AppState {
     const pub = loadPublicSync();
     return {
         screen: pub.pin === '' ? 'setup-pin' : 'calculator',
+        rev: 0,
+        profile: { ...EMPTY_PROFILE },
         pinBuffer: '',
         pinHash: pub.pin,
         authEmail: null,
@@ -34,14 +37,13 @@ function buildInitialState(): AppState {
         notes: [],
         safetyPlan: {
             trustedPeople: '', safePlaces: '', emergencyNumbers: '',
-            importantDocs: '', transportOptions: '', thingsToRemember: '', safeWord: '',
+            importantDocs: '', transportOptions: '', thingsToRemember: '',
         },
         autoLockMinutes: pub.autoLockMinutes,
         alertLocation: 'Location not shared',
         locationShared: false,
         editingNoteId: null,
         isFirstRun: pub.pin === '',
-        recoveryConfigured: pub.recoveryQuestionIds !== null,
         pinFailures: 0,
         lastActivityAt: Date.now(),
     };
@@ -80,12 +82,8 @@ class Store {
         }, mins * 60 * 1000);
     }
     navigateTo(screen: string) {
-        this.state = { ...this.state, screen };
+        this.state = { ...this.state, screen, rev: this.state.rev + 1 };
         this.touch();
-        this.notify();
-    }
-    markRecoveryConfigured() {
-        this.state = { ...this.state, recoveryConfigured: true };
         this.notify();
     }
     appendPin(digit: string) {
@@ -102,10 +100,6 @@ class Store {
         const pin = this.state.pinBuffer;
         this.clearPin();
         const pub = loadPublicSync();
-        if (!pub.pin) {
-            this.navigateTo('setup-pin');
-            return null;
-        }
         const hashed = await hashPin(pin);
         if (hashed === pub.pin) {
             const vault: VaultData = await loadVault(hashed);
@@ -116,6 +110,7 @@ class Store {
                 contacts: vault.contacts.map(c => ({ ...c, status: 'pending' as const })),
                 notes: vault.notes,
                 safetyPlan: vault.safetyPlan,
+                profile: { ...EMPTY_PROFILE, ...(vault.profile ?? {}) },
                 pinFailures: 0,
             };
             this.touch();
@@ -145,10 +140,20 @@ class Store {
         vault.contacts = contacts;
         await saveVault(vault, this.state.pinHash);
     }
-    addContact(name: string, phone: string, level: ContactLevel = 'emergency'): boolean {
+    saveProfile(profile: Profile) {
+        this.state = { ...this.state, profile };
+        this.touch();
+        this.notify();
+        (async () => {
+            const vault: VaultData = await loadVault(this.state.pinHash);
+            vault.profile = profile;
+            await saveVault(vault, this.state.pinHash);
+        })().catch(console.error);
+    }
+    addContact(name: string, phone: string, relationship = 'other'): boolean {
         const contact: Contact = {
-            id: uid(), name: name.trim(), phone: phone.trim(),
-            initials: initials(name), level, status: 'pending',
+            id: uid(), name: name.trim(), phone: phone.trim(), relationship,
+            initials: initials(name), status: 'pending',
         };
         const updated = [...this.state.contacts, contact];
         this.state = { ...this.state, contacts: updated };
@@ -157,8 +162,8 @@ class Store {
         this._saveContacts(updated).catch(console.error);
         return true;
     }
-    updateContact(id: string, name: string, phone: string, level: ContactLevel) {
-        const updated = this.state.contacts.map(c => c.id === id ? { ...c, name: name.trim(), phone: phone.trim(), initials: initials(name), level } : c);
+    updateContact(id: string, name: string, phone: string, relationship = 'other') {
+        const updated = this.state.contacts.map(c => c.id === id ? { ...c, name: name.trim(), phone: phone.trim(), relationship, initials: initials(name) } : c);
         this.state = { ...this.state, contacts: updated };
         this.touch();
         this.notify();
@@ -179,10 +184,7 @@ class Store {
         this.state = {
             ...this.state,
             screen: 'sending',
-            contacts: this.state.contacts.map(c => ({
-                ...c,
-                status: c.level === 'emergency' ? 'sending' as const : 'pending' as const,
-            })),
+            contacts: this.state.contacts.map(c => ({ ...c, status: 'sending' as const })),
         };
         this.notify();
     }
@@ -251,35 +253,6 @@ class Store {
     async changePins(newPin: string, newDecoy: string) {
         await this.savePin(newPin, newDecoy);
     }
-    async recoverPins(answers: string[], newPin: string, newDecoy: string): Promise<boolean> {
-        if (!/^\d{4}$/.test(newPin) || !/^\d{4}$/.test(newDecoy) || newPin === newDecoy)
-            return false;
-        try {
-            const pinHash = await hashPin(newPin);
-            const decoyHash = await hashPin(newDecoy);
-            const vault = await recoverVaultWithAnswers(answers, pinHash, decoyHash, this.state.autoLockMinutes);
-            if (!vault)
-                return false;
-            await savePinHashes(pinHash, decoyHash, this.state.autoLockMinutes);
-            this.state = {
-                ...this.state,
-                screen: 'app',
-                pinHash,
-                contacts: vault.contacts.map(c => ({ ...c, status: 'pending' as const })),
-                notes: vault.notes,
-                safetyPlan: vault.safetyPlan,
-                isFirstRun: false,
-                recoveryConfigured: true,
-                pinFailures: 0,
-            };
-            this.touch();
-            this.notify();
-            return true;
-        }
-        catch {
-            return false;
-        }
-    }
     async factoryReset() {
         if (this.lockTimer)
             clearTimeout(this.lockTimer);
@@ -289,8 +262,14 @@ class Store {
         this.notify();
     }
     setAuthEmail(email: string | null) {
+        if (this.state.authEmail === email)
+            return;
         const wasNull = this.state.authEmail === null;
-        this.state = { ...this.state, authEmail: email };
+        this.state = { ...this.state, authEmail: email, rev: this.state.rev + 1 };
+        if (email && this.state.screen === 'reset-password') {
+            this.notify();
+            return;
+        }
         if (email) {
             if (this.state.isFirstRun) {
                 this.state = { ...this.state, screen: 'setup-pin' };

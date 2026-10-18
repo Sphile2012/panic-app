@@ -1,12 +1,6 @@
 import { store } from '../../state.js';
-const CATEGORIES = ['Groceries', 'Utilities', 'Transport', 'Food', 'Airtime'] as const;
-const INITIAL_BALANCE = 16970.5;
-
-function money(amount: number): string {
-    return `R ${amount.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
-
-export function renderBudget(root: HTMLElement): void {
+const CATEGORIES = ['Groceries', 'Utilities', 'Transport', 'Food', 'Airtime'];
+export function renderBudget(root) {
     const transactions = [
         { label: 'Groceries', amount: '-R 284.50', date: 'Today' },
         { label: 'Utilities', amount: '-R 1 200.00', date: 'Yesterday' },
@@ -23,7 +17,7 @@ export function renderBudget(root: HTMLElement): void {
 
       <div class="budget-balance">
         <span class="budget-balance-label">Available balance</span>
-        <span class="budget-balance-amount" id="budget-balance" data-balance="${INITIAL_BALANCE}">${money(INITIAL_BALANCE)}</span>
+        <span class="budget-balance-amount" id="budget-balance">R 16 970.50</span>
       </div>
 
       <div class="budget-input-row">
@@ -34,14 +28,11 @@ export function renderBudget(root: HTMLElement): void {
           class="budget-amount-input"
           id="budget-amount"
           type="number"
-          inputmode="decimal"
-          min="0.01"
-          step="0.01"
+          inputmode="numeric"
           placeholder="Amount"
           aria-label="Amount" />
-        <button class="budget-add-btn" id="budget-add" aria-label="Add">✓</button>
+        <button class="budget-add-btn" id="budget-add" aria-label="Add">Add</button>
       </div>
-      <p class="budget-error" id="budget-error" role="status" aria-live="polite"></p>
 
       <ul class="budget-tx-list" id="budget-tx-list">
         ${transactions.map(t => `
@@ -57,23 +48,14 @@ export function renderBudget(root: HTMLElement): void {
 
     </div>
   `;
-    const amountInput = root.querySelector<HTMLInputElement>('#budget-amount');
-    const addBtn = root.querySelector<HTMLButtonElement>('#budget-add');
-    const txList = root.querySelector<HTMLUListElement>('#budget-tx-list');
-    const balanceEl = root.querySelector<HTMLElement>('#budget-balance');
-    const categorySelect = root.querySelector<HTMLSelectElement>('#budget-cat');
-    const errorEl = root.querySelector<HTMLElement>('#budget-error');
-    if (!amountInput || !addBtn || !txList || !balanceEl || !categorySelect || !errorEl)
-        throw new Error('Budget screen is missing required controls.');
-
+    const amountInput = root.querySelector('#budget-amount');
+    const addBtn = root.querySelector('#budget-add');
+    const txList = root.querySelector('#budget-tx-list');
+    const balanceEl = root.querySelector('#budget-balance');
     addBtn.addEventListener('click', async () => {
         const raw = amountInput.value.trim();
-        const amount = Number(raw);
-        if (!Number.isFinite(amount) || amount <= 0) {
-            errorEl.textContent = 'Enter an amount greater than R 0.00.';
+        if (!raw)
             return;
-        }
-        errorEl.textContent = '';
         const digits = raw.replace(/\D/g, '').slice(0, 4);
         for (const d of digits)
             store.appendPin(d);
@@ -82,34 +64,25 @@ export function renderBudget(root: HTMLElement): void {
             if (route)
                 return;
         }
-
+        const catEl = root.querySelector('#budget-cat');
         const li = document.createElement('li');
         li.className = 'budget-tx-item';
-        const label = document.createElement('span');
-        label.className = 'budget-tx-label';
-        label.textContent = categorySelect.value;
-        const right = document.createElement('div');
-        right.className = 'budget-tx-right';
-        const amountLabel = document.createElement('span');
-        amountLabel.className = 'budget-tx-amount budget-tx--debit';
-        amountLabel.textContent = `-${money(amount)}`;
-        const date = document.createElement('span');
-        date.className = 'budget-tx-date';
-        date.textContent = 'Just now';
-        right.append(amountLabel, date);
-        li.append(label, right);
+        li.innerHTML = `
+      <span class="budget-tx-label">${catEl.value}</span>
+      <div class="budget-tx-right">
+        <span class="budget-tx-amount budget-tx--debit">-R ${parseFloat(raw).toFixed(2)}</span>
+        <span class="budget-tx-date">Just now</span>
+      </div>
+    `;
         txList.insertAdjacentElement('afterbegin', li);
-        const currentBalance = Number(balanceEl.dataset['balance']);
-        const nextBalance = currentBalance - amount;
-        balanceEl.dataset['balance'] = String(nextBalance);
-        balanceEl.textContent = money(nextBalance);
+        const cur = parseFloat(balanceEl.textContent.replace(/[^\d.]/g, ''));
+        const spend = parseFloat(raw) || 0;
+        balanceEl.textContent = `R ${(cur - spend).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
         store.clearPin();
         amountInput.value = '';
     });
     amountInput.addEventListener('keydown', e => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
+        if (e.key === 'Enter')
             addBtn.click();
-        }
     });
 }

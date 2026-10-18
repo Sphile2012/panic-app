@@ -1,5 +1,6 @@
-import { getClient, DB_CONFIGURED, signUp, signIn, signOut, getUser, onAuthStateChange, fetchAlertStats, fetchRecentAlerts, resetPassword, verifyPasswordResetOtp, } from './db.js';
+import { getClient, DB_CONFIGURED, signUp, signIn, signOut, getUser, onAuthStateChange, fetchAlertStats, fetchRecentAlerts, } from './db.js';
 import { loadAppearance, applyAppearance } from './theme.js';
+import { t, authErrorKey } from './i18n.js';
 import './style.css';
 applyAppearance(loadAppearance());
 let installPrompt = null;
@@ -91,12 +92,10 @@ function showNoConfig() {
     const gate = document.getElementById('dash-auth-gate');
     gate.innerHTML = `
     <div class="dash-no-config">
-      <h2>Supabase not configured</h2>
-      <p>Add <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code>
-         to your <code>.env</code> file, then rebuild.</p>
-      <p>See <code>.env.example</code> for the format.</p>
+      <h2>Account service not available</h2>
+      <p>Sign-in is not set up on this installation. You can still use the app without an account.</p>
       <a class="btn-primary" href="/" style="display:inline-flex;margin-top:16px;text-decoration:none">
-        ← Open app (offline mode)
+        Open app (offline mode)
       </a>
     </div>
   `;
@@ -114,20 +113,17 @@ function wireAuthForms() {
     const tabSignup = document.getElementById('tab-signup');
     const loginWrap = document.getElementById('login-wrap');
     const signupWrap = document.getElementById('signup-wrap');
-    const resetWrap = document.getElementById('dash-reset-wrap');
     tabLogin.addEventListener('click', () => {
         tabLogin.classList.add('dash-tab--active');
         tabSignup.classList.remove('dash-tab--active');
         loginWrap.style.display = 'block';
         signupWrap.style.display = 'none';
-        resetWrap.style.display = 'none';
     });
     tabSignup.addEventListener('click', () => {
         tabSignup.classList.add('dash-tab--active');
         tabLogin.classList.remove('dash-tab--active');
         signupWrap.style.display = 'block';
         loginWrap.style.display = 'none';
-        resetWrap.style.display = 'none';
     });
     const loginForm = document.getElementById('dash-login-form');
     const liEmailEl = document.getElementById('d-li-email') as HTMLInputElement | null;
@@ -135,16 +131,6 @@ function wireAuthForms() {
     const liErrEl = document.getElementById('d-li-error');
     const liSubmitBtn = document.getElementById('d-li-submit') as HTMLButtonElement | null;
     if (!loginForm || !liEmailEl || !liPwEl || !liErrEl || !liSubmitBtn) return;
-    document.getElementById('dash-forgot-open')?.addEventListener('click', () => {
-        const resetEmail = document.getElementById('d-rp-email') as HTMLInputElement | null;
-        if (resetEmail)
-            resetEmail.value = liEmailEl.value.trim();
-        loginWrap.style.display = 'none';
-        signupWrap.style.display = 'none';
-        resetWrap.style.display = 'block';
-    });
-    document.getElementById('d-rp-back')?.addEventListener('click', () => tabLogin.click());
-    wireDashboardPasswordReset();
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         liErrEl.textContent = '';
@@ -155,12 +141,12 @@ function wireAuthForms() {
             return;
         }
         liSubmitBtn.disabled = true;
-        liSubmitBtn.textContent = 'Signing in…';
+        liSubmitBtn.textContent = 'Signing in...';
         const { error } = await signIn(email, pw);
         liSubmitBtn.disabled = false;
         liSubmitBtn.textContent = 'Sign in';
         if (error) {
-            liErrEl.textContent = error;
+            liErrEl.textContent = t(authErrorKey(error));
         }
     });
     const signupForm = document.getElementById('dash-signup-form');
@@ -189,110 +175,17 @@ function wireAuthForms() {
             return;
         }
         suSubmitBtn.disabled = true;
-        suSubmitBtn.textContent = 'Creating…';
-        const { error, alreadyRegistered } = await signUp(email, pw);
+        suSubmitBtn.textContent = 'Creating...';
+        const { error } = await signUp(email, pw);
         suSubmitBtn.disabled = false;
         suSubmitBtn.textContent = 'Create account';
-        if (alreadyRegistered) {
-            const message = 'An account with this email already exists. Sign in instead or use “Forgot password?” to reset it.';
-            tabLogin.click();
-            liEmailEl.value = email;
-            liErrEl.textContent = message;
-            return;
-        }
         if (error) {
-            suErrEl.textContent = error;
+            suErrEl.textContent = t(authErrorKey(error));
             return;
         }
         suErrEl.style.color = 'var(--safe)';
-        suErrEl.textContent = '✓ Check your email to confirm your account, then sign in.';
+        suErrEl.textContent = 'Account created. If asked, confirm your email, then sign in.';
         tabLogin.click();
-    });
-}
-
-function wireDashboardPasswordReset(): void {
-    const form = document.getElementById('dash-reset-form') as HTMLFormElement | null;
-    const emailEl = document.getElementById('d-rp-email') as HTMLInputElement | null;
-    const fields = document.getElementById('d-rp-fields');
-    const codeEl = document.getElementById('d-rp-code') as HTMLInputElement | null;
-    const passwordEl = document.getElementById('d-rp-password') as HTMLInputElement | null;
-    const confirmEl = document.getElementById('d-rp-confirm') as HTMLInputElement | null;
-    const errorEl = document.getElementById('d-rp-error');
-    const successEl = document.getElementById('d-rp-success');
-    const submitBtn = document.getElementById('d-rp-submit') as HTMLButtonElement | null;
-    const resendBtn = document.getElementById('d-rp-resend') as HTMLButtonElement | null;
-    if (!form || !emailEl || !fields || !codeEl || !passwordEl || !confirmEl || !errorEl || !successEl || !submitBtn || !resendBtn)
-        return;
-
-    let codeSent = false;
-    async function sendCode(): Promise<void> {
-        errorEl.textContent = '';
-        successEl.textContent = '';
-        const email = emailEl.value.trim();
-        if (!email) {
-            errorEl.textContent = 'Enter the email address for your account.';
-            emailEl.focus();
-            return;
-        }
-        submitBtn.disabled = true;
-        resendBtn.disabled = true;
-        submitBtn.textContent = 'Sending…';
-        const { error } = await resetPassword(email);
-        submitBtn.disabled = false;
-        resendBtn.disabled = false;
-        if (error) {
-            errorEl.textContent = error;
-            submitBtn.textContent = codeSent ? 'Verify code and update password' : 'Send reset code';
-            return;
-        }
-        codeSent = true;
-        emailEl.readOnly = true;
-        fields.hidden = false;
-        resendBtn.hidden = false;
-        submitBtn.textContent = 'Verify code and update password';
-        successEl.textContent = 'Check your inbox for a 6-digit code. It may take a few minutes to arrive.';
-        codeEl.focus();
-    }
-
-    resendBtn.addEventListener('click', () => void sendCode());
-    form.addEventListener('submit', async event => {
-        event.preventDefault();
-        if (!codeSent) {
-            await sendCode();
-            return;
-        }
-        errorEl.textContent = '';
-        successEl.textContent = '';
-        if (!/^\d{6}$/.test(codeEl.value.trim())) {
-            errorEl.textContent = 'Enter the 6-digit code from your email.';
-            codeEl.focus();
-            return;
-        }
-        if (passwordEl.value.length < 8) {
-            errorEl.textContent = 'Your new password must be at least 8 characters.';
-            passwordEl.focus();
-            return;
-        }
-        if (passwordEl.value !== confirmEl.value) {
-            errorEl.textContent = 'The new passwords do not match.';
-            confirmEl.focus();
-            return;
-        }
-        submitBtn.disabled = true;
-        resendBtn.disabled = true;
-        submitBtn.textContent = 'Updating password…';
-        const { error } = await verifyPasswordResetOtp(emailEl.value, codeEl.value, passwordEl.value);
-        submitBtn.disabled = false;
-        resendBtn.disabled = false;
-        submitBtn.textContent = 'Verify code and update password';
-        if (error) {
-            errorEl.textContent = error.toLowerCase().includes('expired') || error.toLowerCase().includes('invalid')
-                ? 'That code is invalid or expired. Request a new code and try again.'
-                : error;
-            return;
-        }
-        successEl.textContent = 'Password updated. You can now sign in with your new password.';
-        form.hidden = true;
     });
 }
 async function showDashboard(email) {

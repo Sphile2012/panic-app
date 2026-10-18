@@ -6,11 +6,11 @@ export function renderAppearance(root) {
     <div class="screen appearance-screen">
 
       <header class="screen-header">
-        <button class="btn-back-small" id="btn-back" aria-label="Back">←</button>
+        <button class="btn-back-small" id="btn-back" aria-label="Back">Back</button>
         <h2 class="screen-title">Appearance</h2>
       </header>
 
-      
+      <!-- ── Colour mode ─────────────────────────────────────────────────── -->
       <section class="ap-section">
         <h3 class="ap-section-title">Colour mode</h3>
         <div class="ap-mode-group">
@@ -25,7 +25,7 @@ export function renderAppearance(root) {
         </div>
       </section>
 
-      
+      <!-- ── Accent colour ───────────────────────────────────────────────── -->
       <section class="ap-section">
         <h3 class="ap-section-title">Accent colour</h3>
         <div class="ap-colour-grid">
@@ -37,7 +37,7 @@ export function renderAppearance(root) {
               title="${c.label}"
               aria-pressed="${current.accentId === c.id}"
               aria-label="${c.label}${current.accentId === c.id ? ' (selected)' : ''}">
-              ${current.accentId === c.id ? '✓' : ''}
+              ${current.accentId === c.id ? '&bull;' : ''}
             </button>
           `).join('')}
         </div>
@@ -57,7 +57,7 @@ export function renderAppearance(root) {
         <p class="ap-colour-name" id="ap-photo-status" aria-live="polite">${current.backgroundImage ? 'A photo is applied.' : 'No photo selected.'}</p>
       </section>
 
-      
+      <!-- ── Disguise screen ─────────────────────────────────────────────── -->
       <section class="ap-section">
         <h3 class="ap-section-title">Disguise screen</h3>
         <p class="ap-section-body">
@@ -72,7 +72,7 @@ export function renderAppearance(root) {
               <span class="ap-disguise-label">${d.label}</span>
               <span class="ap-disguise-desc">${d.description}</span>
               ${current.disguise === d.id
-        ? '<span class="ap-disguise-check">✓ Active</span>'
+        ? '<span class="ap-disguise-check">Active</span>'
         : ''}
             </button>
           `).join('')}
@@ -147,7 +147,7 @@ export function renderAppearance(root) {
                 const active = b.dataset['accent'] === ap.accentId;
                 b.classList.toggle('ap-colour-swatch--active', active);
                 b.setAttribute('aria-pressed', String(active));
-                b.textContent = active ? '✓' : '';
+                b.textContent = active ? '\u2022' : '';
                 b.setAttribute('aria-label', ACCENT_COLOURS.find(c => c.id === b.dataset['accent'])?.label ?? '');
                 if (active)
                     b.setAttribute('aria-label', b.getAttribute('aria-label') + ' (selected)');
@@ -175,7 +175,7 @@ export function renderAppearance(root) {
                 if (active && !existing) {
                     const badge = document.createElement('span');
                     badge.className = 'ap-disguise-check';
-                    badge.textContent = '✓ Active';
+                    badge.textContent = 'Active';
                     b.appendChild(badge);
                 }
                 else if (!active && existing) {

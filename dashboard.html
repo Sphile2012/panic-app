@@ -12,10 +12,10 @@
 
     <div class="dash-layout">
 
-      
+      <!-- Sidebar -->
       <aside class="dash-sidebar">
         <div class="dash-brand">
-          <div class="dash-brand-icon">○</div>
+          <div class="dash-brand-icon"></div>
           <span class="dash-brand-name">Panic Ring</span>
         </div>
         <nav class="dash-nav">
@@ -30,10 +30,10 @@
         </div>
       </aside>
 
-      
+      <!-- Main content -->
       <main class="dash-main">
 
-        
+        <!-- Header -->
         <header class="dash-header">
           <div>
             <h1 class="dash-page-title">Dashboard</h1>
@@ -44,7 +44,7 @@
           </button>
         </header>
 
-        
+        <!-- Auth gate — shown when not signed in -->
         <section class="dash-auth-gate" id="dash-auth-gate">
 
           <div class="dash-auth-tabs">
@@ -52,7 +52,7 @@
             <button class="dash-tab" id="tab-signup">Create account</button>
           </div>
 
-          
+          <!-- Login form -->
           <div class="dash-auth-form-wrap" id="login-wrap">
             <form class="dash-auth-form" id="dash-login-form" novalidate>
               <label class="field-label" for="d-li-email">Email</label>
@@ -63,35 +63,10 @@
                 placeholder="Your password" autocomplete="current-password" required />
               <p class="auth-error" id="d-li-error" aria-live="polite"></p>
               <button class="btn-primary" type="submit" id="d-li-submit">Sign in</button>
-              <button class="auth-forgot-btn" type="button" id="dash-forgot-open">Forgot password?</button>
             </form>
           </div>
 
-          <div class="dash-auth-form-wrap" id="dash-reset-wrap" style="display:none">
-            <form class="dash-auth-form" id="dash-reset-form" novalidate>
-              <p class="dash-page-sub">Enter your email and we’ll send you a one-time reset code.</p>
-              <label class="field-label" for="d-rp-email">Email</label>
-              <input class="text-input" id="d-rp-email" type="email" autocomplete="email" required />
-              <div id="d-rp-fields" hidden>
-                <label class="field-label" for="d-rp-code">Email code</label>
-                <input class="text-input" id="d-rp-code" type="text" inputmode="numeric"
-                  autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" placeholder="6-digit code" />
-                <label class="field-label" for="d-rp-password">New password</label>
-                <input class="text-input" id="d-rp-password" type="password"
-                  autocomplete="new-password" minlength="8" placeholder="At least 8 characters" />
-                <label class="field-label" for="d-rp-confirm">Confirm new password</label>
-                <input class="text-input" id="d-rp-confirm" type="password"
-                  autocomplete="new-password" minlength="8" placeholder="Enter it again" />
-              </div>
-              <p class="auth-error" id="d-rp-error" aria-live="polite"></p>
-              <p class="auth-success" id="d-rp-success" aria-live="polite"></p>
-              <button class="btn-primary" type="submit" id="d-rp-submit">Send reset code</button>
-              <button class="auth-forgot-btn" type="button" id="d-rp-resend" hidden>Send a new code</button>
-              <button class="auth-forgot-btn" type="button" id="d-rp-back">Back to sign in</button>
-            </form>
-          </div>
-
-          
+          <!-- Signup form -->
           <div class="dash-auth-form-wrap" id="signup-wrap" style="display:none">
             <form class="dash-auth-form" id="dash-signup-form" novalidate>
               <label class="field-label" for="d-su-email">Email</label>
@@ -111,28 +86,28 @@
 
         </section>
 
-        
+        <!-- Dashboard content — shown when signed in -->
         <div class="dash-content" id="dash-content" style="display:none">
 
-          
+          <!-- Stats grid -->
           <section class="dash-section" id="overview">
             <h2 class="dash-section-title">Overview</h2>
             <div class="dash-stats-grid" id="dash-stats">
               <div class="dash-stat-card">
                 <span class="dash-stat-value" id="stat-total">—</span>
-                <span class="dash-stat-label">Alert flows started</span>
+                <span class="dash-stat-label">Total alerts sent</span>
               </div>
               <div class="dash-stat-card">
                 <span class="dash-stat-value" id="stat-opened">—</span>
-                <span class="dash-stat-label">SMS handoffs attempted</span>
+                <span class="dash-stat-label">Messages opened</span>
               </div>
               <div class="dash-stat-card">
                 <span class="dash-stat-value" id="stat-failed">—</span>
-                <span class="dash-stat-label">Handoff failures</span>
+                <span class="dash-stat-label">Failed deliveries</span>
               </div>
               <div class="dash-stat-card">
                 <span class="dash-stat-value" id="stat-location">—</span>
-                <span class="dash-stat-label">Prepared with location</span>
+                <span class="dash-stat-label">Sent with location</span>
               </div>
               <div class="dash-stat-card dash-stat-card--wide">
                 <span class="dash-stat-label">Last alert</span>
@@ -141,7 +116,7 @@
             </div>
           </section>
 
-          
+          <!-- Recent alerts -->
           <section class="dash-section" id="alerts">
             <h2 class="dash-section-title">Recent alerts</h2>
             <div class="dash-table-wrap">
@@ -150,8 +125,8 @@
                   <tr>
                     <th>Date &amp; time</th>
                     <th>Contacts</th>
-                    <th>Handoffs attempted</th>
-                    <th>Handoffs failed</th>
+                    <th>Opened</th>
+                    <th>Failed</th>
                     <th>Location</th>
                   </tr>
                 </thead>
@@ -162,7 +137,7 @@
             </div>
           </section>
 
-          
+          <!-- Install section -->
           <section class="dash-section" id="install">
             <h2 class="dash-section-title">Install the app</h2>
             <div class="dash-install-card">
@@ -189,7 +164,7 @@
             </div>
           </section>
 
-          
+          <!-- Account section -->
           <section class="dash-section" id="account">
             <h2 class="dash-section-title">Account</h2>
             <div class="dash-account-card">
@@ -202,7 +177,7 @@
             </div>
           </section>
 
-        </div>
+        </div><!-- /dash-content -->
 
       </main>
     </div>

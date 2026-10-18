@@ -48,15 +48,12 @@ const KEYS = [
     ['C', 'C'], ['0', '0'], ['=', '='], ['+', '+'],
 ];
 export function renderCalculator(root) {
-        const recoveryConfigured = store.getState().recoveryConfigured;
     root.innerHTML = `
     <div class="screen calculator-screen">
       <div class="calc-display">
         <div class="calc-expression" id="calc-expression">&nbsp;</div>
         <div class="calc-result" id="calc-result">0</div>
-        <p class="calc-pin-status" id="calc-pin-status" role="status" aria-live="polite"></p>
       </div>
-            ${recoveryConfigured ? '<button class="calc-forgot-pin" id="btn-forgot-pin" type="button" hidden>Forgot PIN?</button>' : ''}
       <div class="calc-keys">
         ${KEYS.map(([label, value]) => `
           <button
@@ -71,9 +68,6 @@ export function renderCalculator(root) {
   `;
     const display = root.querySelector('#calc-result');
     const expression = root.querySelector('#calc-expression');
-    const pinStatus = root.querySelector('#calc-pin-status') as HTMLElement;
-    const recoveryButton = root.querySelector('#btn-forgot-pin') as HTMLButtonElement | null;
-    recoveryButton?.addEventListener('click', () => store.navigateTo('pin-recovery'));
     let calcBuffer = '';
     root.querySelector('.calc-keys').addEventListener('click', e => {
         const btn = e.target.closest('.calc-key');
@@ -87,40 +81,20 @@ export function renderCalculator(root) {
             calcBuffer = '';
             display.textContent = '0';
             expression.innerHTML = '&nbsp;';
-            pinStatus.textContent = '';
             return;
         }
         if (v === '=') {
-            // Only evaluate if 4+ digits have been typed
-            if (store.getState().pinBuffer.length >= 4) {
-                store.evaluatePin().then(route => {
-                    if (!route) {
-                        display.textContent = safeEval(calcBuffer || '0');
-                        expression.textContent = calcBuffer + ' =';
-                        if (/^\d{4,8}$/.test(calcBuffer)) {
-                            pinStatus.textContent = 'PIN not recognised. Try again.';
-                        }
-                        calcBuffer = '';
-                        if (store.getState().pinFailures >= 3 && recoveryButton)
-                            recoveryButton.hidden = false;
-                    }
-                }).catch(() => {
-                    pinStatus.textContent = 'Could not check the PIN. Reload the page and try again.';
-                });
-            } else {
-                // Fewer than 4 digits — treat as pure arithmetic
-                display.textContent = safeEval(calcBuffer || '0');
-                expression.textContent = calcBuffer + ' =';
-                calcBuffer = '';
-            }
+            store.evaluatePin().then(route => {
+                if (!route) {
+                    display.textContent = safeEval(calcBuffer || '0');
+                    expression.textContent = calcBuffer + ' =';
+                    calcBuffer = '';
+                }
+            });
             return;
         }
         if (/\d/.test(v)) {
-            pinStatus.textContent = '';
-            // Allow up to 8 PIN digits
-            if (store.getState().pinBuffer.length < 8) {
-                store.appendPin(v);
-            }
+            store.appendPin(v);
             expression.textContent = '•'.repeat(store.getState().pinBuffer.length);
             calcBuffer += v;
             display.textContent = calcBuffer;

@@ -4,7 +4,7 @@ export function renderTerms(root) {
     <div class="screen terms-screen">
 
       <header class="screen-header">
-        <button class="btn-back-small" id="btn-back" aria-label="Back">←</button>
+        <button class="btn-back-small" id="btn-back" aria-label="Back">Back</button>
         <h2 class="screen-title">Terms and conditions</h2>
       </header>
 
@@ -88,7 +88,7 @@ export function renderTerms(root) {
             own policies.
           </p>
           <p>
-            You can delete all your data at any time in Settings → Reset app.
+            You can delete all your data at any time in Settings, then Reset app.
           </p>
         </div>
 

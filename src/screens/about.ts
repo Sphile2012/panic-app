@@ -4,13 +4,13 @@ export function renderAbout(root) {
     <div class="screen about-screen">
 
       <header class="screen-header">
-        <button class="btn-back-small" id="btn-back" aria-label="Back">←</button>
+        <button class="btn-back-small" id="btn-back" aria-label="Back">Back</button>
         <h2 class="screen-title">About Panic Ring</h2>
       </header>
 
       
       <div class="about-hero">
-        <div class="about-logo-ring" aria-hidden="true">○</div>
+        <div class="about-logo-ring" aria-hidden="true"></div>
         <h1 class="about-app-name">Panic Ring</h1>
         <p class="about-tagline">
           A privacy-first bridge between a person in an unsafe situation
@@ -47,7 +47,7 @@ export function renderAbout(root) {
         </p>
         <ul class="about-list">
           <li>Not a replacement for emergency services</li>
-          <li>Not an AI counsellor — the Safety Companion uses reviewed content only</li>
+          <li>Not an automated counsellor: the Safety Companion uses reviewed content only</li>
           <li>Not a guarantee that help will arrive</li>
           <li>Not a surveillance tool — no continuous location history</li>
         </ul>
