@@ -10,6 +10,20 @@ export function renderSetupPin(root: HTMLElement) {
         that opens a plain Notes screen if someone forces you to unlock.
       </p>
 
+      <section class="ap-section">
+        <h2 class="section-label">Choose your cover screen</h2>
+        <div class="ap-disguise-grid">
+          ${DISGUISE_OPTIONS.map(option => `
+            <button type="button" class="ap-disguise-card ${selectedDisguise === option.id ? 'ap-disguise-card--active' : ''}" data-disguise-select="${option.id}">
+              <span class="ap-disguise-icon">${option.preview}</span>
+              <span class="ap-disguise-label">${option.label}</span>
+              <span class="ap-disguise-desc">${option.description}</span>
+              ${selectedDisguise === option.id ? '<span class="ap-disguise-check">✓ Active</span>' : ''}
+            </button>
+          `).join('')}
+        </div>
+      </section>
+
       <form class="setup-form" id="setup-pin-form" autocomplete="off">
 
         <label class="field-label" for="pin-input">Your secret PIN</label>

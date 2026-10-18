@@ -60,10 +60,10 @@ export function renderSettings(root: HTMLElement) {
         <form class="setup-form" id="change-pin-form" autocomplete="off">
           <label class="field-label" for="new-pin">New secret PIN</label>
           <input class="pin-input" id="new-pin" type="password" inputmode="numeric"
-            maxlength="4" pattern="[0-9]{4}" placeholder="4 digits" autocomplete="new-password" />
+            maxlength="8" pattern="[0-9]{4,8}" placeholder="4–8 digits" autocomplete="new-password" />
           <label class="field-label" for="new-decoy">New decoy PIN</label>
           <input class="pin-input" id="new-decoy" type="password" inputmode="numeric"
-            maxlength="4" pattern="[0-9]{4}" placeholder="4 digits" autocomplete="new-password" />
+            maxlength="8" pattern="[0-9]{4,8}" placeholder="4–8 digits" autocomplete="new-password" />
           <p class="setup-hint" id="pin-change-error" aria-live="polite"></p>
           <button class="btn-secondary-outline" type="submit">Update PINs</button>
         </form>
@@ -106,6 +106,22 @@ export function renderSettings(root: HTMLElement) {
     });
     root.querySelector('#btn-signin')?.addEventListener('click', () => store.navigateTo('login'));
     root.querySelector('#btn-create')?.addEventListener('click', () => store.navigateTo('signup'));
+    root.querySelector('#btn-chatbot')?.addEventListener('click', () => store.navigateTo('chatbot'));
+    root.querySelector('#btn-report-issue')?.addEventListener('click', () => {
+        const profile = store.getState();
+        const body = [
+            'Issue report for Panic Ring',
+            '',
+            `Name: ${profile.profileName || 'Not provided'}`,
+            `Mobile number: ${profile.profilePhone || 'Not provided'}`,
+            `Device IMEI / ID: ${profile.profileImei || 'Not provided'}`,
+            `Language: ${profile.language || 'en'}`,
+            '',
+            'Please describe the problem:',
+            '--------------------------------',
+        ].join('\n');
+        window.location.href = `mailto:support@panicring.app?subject=${encodeURIComponent('Panic Ring support request')}&body=${encodeURIComponent(body)}`;
+    });
     root.querySelector('#btn-appearance').addEventListener('click', () => store.navigateTo('appearance'));
     root.querySelector('#btn-contacts').addEventListener('click', () => store.navigateTo('contacts'));
     const evToggle = root.querySelector('#evidence-toggle') as HTMLInputElement;
@@ -125,6 +141,18 @@ export function renderSettings(root: HTMLElement) {
     root.querySelectorAll('input[name="auto-lock"]').forEach((r: HTMLInputElement) => {
         r.addEventListener('change', () => store.setAutoLock(Number(r.value)));
     });
+    const profileForm = root.querySelector('#profile-form') as HTMLFormElement;
+    const profileNameEl = root.querySelector('#profile-name') as HTMLInputElement;
+    const profilePhoneEl = root.querySelector('#profile-phone') as HTMLInputElement;
+    const profileImeiEl = root.querySelector('#profile-imei') as HTMLInputElement;
+    const profileLanguage = root.querySelector('#profile-language') as HTMLSelectElement;
+    const profileStatus = root.querySelector('#profile-status') as HTMLElement;
+    profileForm.addEventListener('submit', (e: SubmitEvent) => {
+        e.preventDefault();
+        store.saveProfile(profileNameEl.value, profilePhoneEl.value, profileImeiEl.value, profileLanguage.value);
+        profileStatus.textContent = 'Profile saved locally on this device.';
+    });
+
     const pinForm = root.querySelector('#change-pin-form') as HTMLFormElement;
     const newPin = root.querySelector('#new-pin') as HTMLInputElement;
     const newDecoy = root.querySelector('#new-decoy') as HTMLInputElement;
@@ -133,8 +161,8 @@ export function renderSettings(root: HTMLElement) {
         e.preventDefault();
         const p = newPin.value.trim();
         const d = newDecoy.value.trim();
-        if (!/^\d{4}$/.test(p) || !/^\d{4}$/.test(d)) {
-            pinErr.textContent = 'Both PINs must be exactly 4 digits.';
+        if (!/^\d{4,8}$/.test(p) || !/^\d{4,8}$/.test(d)) {
+            pinErr.textContent = 'Both PINs must be between 4 and 8 digits.';
             return;
         }
         if (p === d) {

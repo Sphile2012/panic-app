@@ -162,13 +162,17 @@ export function uid() {
 export function dialable(phone) {
     return phone.replace(/[\s\-().]/g, '');
 }
-export function buildSmsBody(contactName, locationText, locationShared) {
+export async function buildSmsBody(contactName, locationText, locationShared) {
     const header = `ALERT — ${contactName} may need urgent help.`;
     const loc = locationShared
         ? locationText
         : 'Location was not shared. Please call them immediately.';
+    const battery = await getBatteryStatus();
+    const batteryLine = battery.isLow
+        ? `Battery status: low (${battery.level}%). Please share their location urgently and keep the device on.`
+        : `Battery status: ${battery.level}%.`;
     const footer = `If you cannot reach them: SAPS 10111 | GBV Command Centre 0800 428 428`;
-    return `${header}\n\n${loc}\n\n${footer}`;
+    return `${header}\n\n${loc}\n\n${batteryLine}\n\n${footer}`;
 }
 export function isOnline() {
     return typeof navigator !== 'undefined' ? navigator.onLine : true;

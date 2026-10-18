@@ -165,6 +165,9 @@ function render(screen: string) {
         case 'settings':
             renderSettings(appRoot);
             break;
+        case 'chatbot':
+            renderChatbot(appRoot);
+            break;
         case 'appearance':
             renderAppearance(appRoot);
             break;

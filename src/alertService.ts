@@ -138,7 +138,7 @@ export async function runAlertSequence(locationText, locationShared, onStep) {
     let failed = 0;
     for (let i = 0; i < contacts.length; i++) {
         const contact = contacts[i];
-        const body = buildSmsBody(contact.name, locationText, locationShared);
+        const body = await buildSmsBody(contact.name, locationText, locationShared);
         window.location.href = smsUri(contact.phone, body);
         await waitForReturn();
         store.updateContactStatus(contact.id, 'delivered');

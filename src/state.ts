@@ -12,6 +12,10 @@ type AppState = {
     pinBuffer: string;
     pinHash: string;
     authEmail: string | null;
+    profileName: string;
+    profilePhone: string;
+    profileImei: string;
+    language: string;
     contacts: Contact[];
     notes: Note[];
     safetyPlan: SafetyPlan;
@@ -26,6 +30,7 @@ type AppState = {
 
 function buildInitialState(): AppState {
     const pub = loadPublicSync();
+    const profile = JSON.parse(localStorage.getItem('pr_profile') ?? '{}');
     return {
         screen: pub.pin === '' ? 'setup-pin' : 'calculator',
         rev: 0,
@@ -33,6 +38,10 @@ function buildInitialState(): AppState {
         pinBuffer: '',
         pinHash: pub.pin,
         authEmail: null,
+        profileName: profile.name ?? '',
+        profilePhone: profile.phone ?? '',
+        profileImei: profile.imei ?? '',
+        language: localStorage.getItem('pr_lang') ?? 'en',
         contacts: [],
         notes: [],
         safetyPlan: {
@@ -168,6 +177,7 @@ class Store {
         this.touch();
         this.notify();
         this._saveContacts(updated).catch(console.error);
+        return true;
     }
     deleteContact(id: string) {
         const updated = this.state.contacts.filter(c => c.id !== id);
@@ -281,6 +291,17 @@ class Store {
         else if (!wasNull) {
             this.state = { ...this.state, screen: 'login' };
         }
+        this.notify();
+    }
+    saveProfile(name: string, phone: string, imei: string, language: string) {
+        const normalized = {
+            name: name.trim(),
+            phone: phone.trim(),
+            imei: imei.trim(),
+            language,
+        };
+        localStorage.setItem('pr_profile', JSON.stringify(normalized));
+        this.state = { ...this.state, profileName: normalized.name, profilePhone: normalized.phone, profileImei: normalized.imei, language: normalized.language };
         this.notify();
     }
     async signOut() {
