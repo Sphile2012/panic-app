@@ -3,6 +3,21 @@ import { t } from '../i18n.js';
 import { RELATIONSHIPS } from '../storage.js';
 import { DISGUISE_OPTIONS, loadAppearance, saveAppearance, applyAppearance } from '../theme.js';
 
+function disguisePreview(id: string): string {
+    switch (id) {
+        case 'calculator':
+            return `<div class="dp-calc"><div class="dp-disp">0</div><div class="dp-keys">${Array.from({ length: 16 }, (_, i) => `<i class="${i % 4 === 3 ? 'op' : ''}"></i>`).join('')}</div></div>`;
+        case 'budget':
+            return `<div class="dp-bud"><div class="dp-bal">R 12,480</div><b></b><b></b><b></b><div class="dp-bar"><i></i></div></div>`;
+        case 'weather':
+            return `<div class="dp-wx"><div class="dp-sun"></div><div class="dp-temp">24°</div><div class="dp-days"><i></i><i></i><i></i><i></i></div></div>`;
+        case 'notes-plain':
+            return `<div class="dp-notes"><div class="dp-nt">Notes</div><b></b><b></b><b></b></div>`;
+        default:
+            return `<div class="dp-clock"><div class="dp-face"></div><div class="dp-tm">12:30</div></div>`;
+    }
+}
+
 export function renderSetupPin(root: HTMLElement) {
     root.innerHTML = `
     <div class="screen setup-screen">
@@ -16,10 +31,13 @@ export function renderSetupPin(root: HTMLElement) {
       <form class="setup-form" id="setup-pin-form" autocomplete="off">
 
         <label class="field-label">Choose your disguise screen</label>
-        <div class="disguise-pick" style="display:grid;gap:8px;margin-bottom:12px">
+        <div class="dg-grid">
           ${DISGUISE_OPTIONS.map(d => `
-            <label class="settings-radio"><input type="radio" name="disguise" value="${d.id}" ${d.id === loadAppearance().disguise ? 'checked' : ''}> <strong>${d.label}</strong> — ${d.description}</label>`).join('')}
+            <label class="dg-card"><input type="radio" name="disguise" value="${d.id}" ${d.id === loadAppearance().disguise ? 'checked' : ''}>
+              <span class="dg-prev">${disguisePreview(d.id)}</span>
+              <strong>${d.label}</strong></label>`).join('')}
         </div>
+        <p class="setup-body" id="dg-desc" style="margin:-4px 0 12px"></p>
 
         <label class="field-label" for="pin-input">Your secret PIN</label>
         <input
@@ -55,6 +73,13 @@ export function renderSetupPin(root: HTMLElement) {
     const pinInput = root.querySelector('#pin-input') as HTMLInputElement;
     const decoyInput = root.querySelector('#decoy-input') as HTMLInputElement;
     const errorEl = root.querySelector('#pin-error') as HTMLElement;
+    const descEl = root.querySelector('#dg-desc') as HTMLElement;
+    const showDesc = () => {
+        const v = (root.querySelector('input[name="disguise"]:checked') as HTMLInputElement | null)?.value;
+        descEl.textContent = DISGUISE_OPTIONS.find(d => d.id === v)?.description ?? '';
+    };
+    root.querySelectorAll('input[name="disguise"]').forEach(r => r.addEventListener('change', showDesc));
+    showDesc();
     form.addEventListener('submit', async (e: SubmitEvent) => {
         e.preventDefault();
         const pin = pinInput.value.trim();
