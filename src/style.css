@@ -47,7 +47,7 @@ html, body {
 
 
 .phone-frame {
-  width: 390px;
+  width: min(390px, 100vw);
   height: 100dvh;
   max-height: 860px;
   background: var(--surface);
@@ -1961,3 +1961,17 @@ details[open] .loc-info-summary::before { transform: rotate(90deg); }
 .dp-wx{background:linear-gradient(#3a8fe0,#8cc4f5);align-items:center;color:#fff}.dp-sun{width:22px;height:22px;border-radius:50%;background:#ffd84a;margin-top:6px}.dp-temp{font-size:22px;font-weight:300}.dp-days{display:flex;gap:3px;margin-top:auto;width:100%}.dp-days i{flex:1;height:18px;border-radius:4px;background:rgba(255,255,255,.35)}
 .dp-notes{background:#fff8d6}.dp-nt{font-size:11px;font-weight:700;color:#8a6d00}.dp-notes b{height:7px;background:#e8dca0;border-radius:3px}
 .dp-clock{background:#101018;align-items:center;justify-content:center}.dp-face{width:44px;height:44px;border-radius:50%;border:3px solid #ccc;position:relative}.dp-face::after{content:"";position:absolute;left:50%;top:6px;width:2px;height:16px;background:#ff9f0a;transform:translateX(-50%)}.dp-tm{color:#fff;font-size:12px}
+
+/* App polish */
+.auth-screen{background:radial-gradient(120% 60% at 50% 0%,#4a3f8f 0%,#2b2838 55%,#1c1a28 100%)!important;justify-content:center}
+.auth-screen .auth-title{text-align:center;font-size:1.8rem}
+.auth-screen .auth-subtitle{text-align:center;font-size:.85rem;line-height:1.4}
+.auth-screen .text-input{border-radius:14px;padding:15px 16px;background:#37334a;box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
+.auth-screen .btn-primary{border-radius:999px;padding:15px;font-size:1rem;font-weight:600;background:linear-gradient(135deg,#7c6bf0,#5b49c9);box-shadow:0 8px 22px rgba(91,73,201,.45)}
+.auth-screen .auth-link-btn{text-decoration:none;font-weight:600}
+.btn-primary,.text-input,button{transition:transform .12s ease,box-shadow .2s ease,opacity .2s}
+.btn-primary:active{transform:scale(.97)}
+.screen{animation:scrIn .25s ease}
+@keyframes scrIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.setup-screen .btn-primary{border-radius:999px}
+.setup-screen .pin-input,.setup-screen .text-input{border-radius:14px}
