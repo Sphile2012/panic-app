@@ -19,6 +19,7 @@ import { renderSupport } from './screens/support.js';
 import { renderSettings } from './screens/settings.js';
 import { renderAppearance } from './screens/appearance.js';
 import { renderSignup, renderLogin, renderVerifyEmail, renderForgotPassword, renderResetPassword } from './screens/auth.js';
+import { renderChatbot } from './screens/chatbot.js';
 import { renderBudget } from './screens/disguise/budget.js';
 import { renderWeather } from './screens/disguise/weather.js';
 import { renderNotesPlain } from './screens/disguise/notesPlain.js';

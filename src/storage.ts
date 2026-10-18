@@ -77,6 +77,39 @@ export const EMPTY_PLAN: SafetyPlan = {
 
 export const EMPTY_VAULT: VaultData = { contacts: [], notes: [], safetyPlan: { ...EMPTY_PLAN } };
 
+export const LANGUAGES = [
+    { code: 'en', label: 'English' },
+    { code: 'zu', label: 'Zulu' },
+    { code: 'af', label: 'Afrikaans' },
+    { code: 'st', label: 'Sotho' },
+] as const;
+
+export function getPreferredLanguage(): string {
+    const stored = localStorage.getItem('pr_lang');
+    return LANGUAGES.some(lang => lang.code === stored) ? stored! : 'en';
+}
+
+export function setPreferredLanguage(code: string) {
+    const next = LANGUAGES.some(lang => lang.code === code) ? code : 'en';
+    localStorage.setItem('pr_lang', next);
+    return next;
+}
+
+export function normalizePhone(input: string): string {
+    return input.trim().replace(/[^\d+]/g, '').replace(/(\+\d{1,3})(?=\d)/, '$1 ');
+}
+
+export function getBatteryStatus() {
+    const battery = (navigator as Navigator & { getBattery?: () => Promise<{ level: number }> }).getBattery?.();
+    if (!battery) return { level: 100, isLow: false, text: 'Battery status: 100%.' };
+    return battery.then((result) => {
+        const level = Math.max(0, Math.min(100, Math.round((result.level ?? 1) * 100)));
+        const isLow = level <= 20;
+        return { level, isLow, text: isLow ? `Battery status: low (${level}%).` : `Battery status: ${level}%.` };
+    }).catch(() => ({ level: 100, isLow: false, text: 'Battery status: 100%.' }));
+}
+
+
 export async function loadVault(pinHash: string): Promise<VaultData> {
     try {
         const b64 = localStorage.getItem(KEY_VAULT);
@@ -190,3 +223,4 @@ export async function hashPin(pin) {
         .map(b => b.toString(16).padStart(2, '0'))
         .join('');
 }
+
