@@ -150,11 +150,11 @@ class Store {
             await saveVault(vault, this.state.pinHash);
         })().catch(console.error);
     }
-    addContact(name: string, phone: string, relationship = 'other'): boolean {
+    addContact(name: string, phone: string, relationship = 'other', photo = ''): boolean {
         if (this.state.contacts.length >= 5)
             return false;
         const contact: Contact = {
-            id: uid(), name: name.trim(), phone: phone.trim(), relationship,
+            id: uid(), name: name.trim(), phone: phone.trim(), relationship, photo: photo || undefined,
             initials: initials(name), status: 'pending',
         };
         const updated = [...this.state.contacts, contact];
@@ -164,8 +164,8 @@ class Store {
         this._saveContacts(updated).catch(console.error);
         return true;
     }
-    updateContact(id: string, name: string, phone: string, relationship = 'other') {
-        const updated = this.state.contacts.map(c => c.id === id ? { ...c, name: name.trim(), phone: phone.trim(), relationship, initials: initials(name) } : c);
+    updateContact(id: string, name: string, phone: string, relationship = 'other', photo?: string) {
+        const updated = this.state.contacts.map(c => c.id === id ? { ...c, name: name.trim(), phone: phone.trim(), relationship, initials: initials(name), photo: photo ?? c.photo } : c);
         this.state = { ...this.state, contacts: updated };
         this.touch();
         this.notify();

@@ -5,6 +5,33 @@ import { RELATIONSHIPS } from '../storage.js';
 const relOptions = (selected: string) => RELATIONSHIPS.map(r =>
   `<option value="${r}"${r === selected ? ' selected' : ''}>${t('rel.' + r)}</option>`).join('');
 
+const esc = (v: string) => v.replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch] as string));
+const waLink = (phone: string) => 'https://wa.me/' + phone.replace(/\D/g, '').replace(/^0/, '27');
+
+function avatarHtml(c: { initials: string; photo?: string }) {
+  return c.photo
+    ? `<img class="ct-avatar" src="${c.photo}" alt="" />`
+    : `<span class="ct-avatar ct-avatar--txt">${esc(c.initials)}</span>`;
+}
+
+function groupedHtml(contacts: any[]) {
+  const sorted = [...contacts].sort((a, b) => a.name.localeCompare(b.name));
+  const groups: Record<string, any[]> = {};
+  sorted.forEach(c => { (groups[(c.name[0] || '#').toUpperCase()] ||= []).push(c); });
+  return Object.keys(groups).map(letter => `
+    <div class="ct-letter">${letter}</div>
+    ${groups[letter].map(c => `
+      <div class="ct-row" data-id="${c.id}">
+        ${avatarHtml(c)}
+        <div class="ct-info">
+          <span class="ct-name">${esc(c.name)}</span>
+          <span class="ct-sub">${c.relationship ? esc(t('rel.' + c.relationship)) + ' · ' : ''}${esc(c.phone)}</span>
+        </div>
+        <a class="ct-btn" href="${waLink(c.phone)}" target="_blank" rel="noopener" aria-label="WhatsApp ${esc(c.name)}">WhatsApp</a>
+        <button class="ct-btn contact-edit" data-id="${c.id}">Edit</button>
+        <button class="ct-btn ct-btn--del contact-delete" data-id="${c.id}">✕</button>
+      </div>`).join('')}`).join('');
+}
 export function renderContacts(root: HTMLElement) {
   const { contacts } = store.getState();
   const full = contacts.length >= 5;
@@ -15,22 +42,9 @@ export function renderContacts(root: HTMLElement) {
         <h2 class="screen-title">Trusted circle (${contacts.length}/5)</h2>
       </header>
 
-      <ul class="contact-list" id="contact-list">
-        ${contacts.length === 0
-          ? '<li class="empty-hint">No contacts yet.</li>'
-          : contacts.map(c => `
-            <li class="contact-item contact-item--manage" data-id="${c.id}">
-              <div class="contact-avatar">${c.initials}</div>
-              <div class="contact-info">
-                <span class="contact-name">${c.name}</span>
-                <span class="contact-phone">${c.phone}${c.relationship ? ' - ' + t('rel.' + c.relationship) : ''}</span>
-              </div>
-              <div class="contact-actions">
-                <button class="contact-edit" data-id="${c.id}" aria-label="Edit ${c.name}">Edit</button>
-                <button class="contact-delete" data-id="${c.id}" aria-label="Remove ${c.name}">Remove</button>
-              </div>
-            </li>`).join('')}
-      </ul>
+      <div class="ct-list" id="contact-list">
+        ${contacts.length === 0 ? '<p class="empty-hint">No contacts yet.</p>' : groupedHtml(contacts)}
+      </div>
 
       <form class="setup-form" id="contact-form" autocomplete="off" ${full ? 'hidden' : ''}>
         <h3 class="form-section-title" id="form-title">Add contact</h3>
@@ -41,6 +55,8 @@ export function renderContacts(root: HTMLElement) {
         <input class="text-input" id="c-phone" type="tel" placeholder="+27 82 123 4567" required />
         <label class="field-label" for="c-rel">${t('rel.label')}</label>
         <select class="text-input" id="c-rel">${relOptions('other')}</select>
+        <label class="field-label" for="c-photo">Photo (optional)</label>
+        <input class="text-input" id="c-photo" type="file" accept="image/*" />
         <p class="setup-hint" id="c-error" aria-live="polite"></p>
         <div class="form-row">
           <button class="btn-primary" type="submit" id="btn-save">Add</button>
@@ -61,6 +77,21 @@ export function renderContacts(root: HTMLElement) {
   const formTitle = q('#form-title');
   const saveBtn = q('#btn-save');
   const cancelBtn = q('#btn-cancel-edit');
+  const photoEl = q<HTMLInputElement>('#c-photo');
+  const readPhoto = (): Promise<string> => new Promise(resolve => {
+    const file = photoEl.files?.[0];
+    if (!file) return resolve('');
+    const img = new Image();
+    img.onload = () => {
+      const size = 160, cv = document.createElement('canvas');
+      cv.width = cv.height = size;
+      const s = Math.min(img.width, img.height);
+      cv.getContext('2d')!.drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, size, size);
+      resolve(cv.toDataURL('image/jpeg', 0.8));
+    };
+    img.onerror = () => resolve('');
+    img.src = URL.createObjectURL(file);
+  });
 
   q('#contact-list').addEventListener('click', e => {
     const target = e.target as HTMLElement;
@@ -90,7 +121,7 @@ export function renderContacts(root: HTMLElement) {
     }
   });
   cancelBtn.addEventListener('click', () => store.navigateTo('contacts'));
-  form.addEventListener('submit', e => {
+  form.addEventListener('submit', async e => {
     e.preventDefault();
     const name = nameEl.value.trim();
     const phone = phoneEl.value.trim();
@@ -106,3 +137,5 @@ export function renderContacts(root: HTMLElement) {
     store.navigateTo('contacts');
   });
 }
+
+

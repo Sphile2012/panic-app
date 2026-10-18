@@ -7,6 +7,7 @@ export type Contact = {
     phone: string;
     initials: string;
     relationship?: string;
+    photo?: string;
     status: 'pending' | 'sending' | 'delivered' | 'failed';
 };
 

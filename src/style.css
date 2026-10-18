@@ -1935,3 +1935,15 @@ details[open] .loc-info-summary::before { transform: rotate(90deg); }
 .auth-screen .auth-link-btn, .auth-screen .pw-toggle { color: #c7bff0; text-decoration: underline; }
 .auth-screen .auth-notice { background: #3b3750; color: #d8d3ea; border-radius: 8px; }
 .auth-screen .auth-skip-btn { color: #c7bff0; }
+
+/* Contacts: alphabetical list */
+.ct-list { display: flex; flex-direction: column; }
+.ct-letter { color: var(--accent); font-weight: 700; font-size: .95rem; margin: 14px 0 6px; }
+.ct-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; }
+.ct-avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; flex: none; }
+.ct-avatar--txt { display: inline-flex; align-items: center; justify-content: center; background: var(--accent-fill); color: #fff; font-weight: 700; }
+.ct-info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.ct-name { font-weight: 600; font-size: 1rem; }
+.ct-sub { font-size: .78rem; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ct-btn { background: transparent; border: 1px solid var(--border, #444); color: var(--text); border-radius: 8px; padding: 5px 8px; font-size: .72rem; text-decoration: none; cursor: pointer; }
+.ct-btn--del { color: var(--danger); }
