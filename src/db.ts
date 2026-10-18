@@ -13,7 +13,9 @@ export function getClient() {
         if (!DB_CONFIGURED || !SUPABASE_URL || !SUPABASE_ANON) {
             throw new Error('Account service not configured.');
         }
-        _client = createClient(window.location.origin + '/api', SUPABASE_ANON, {
+        // Static hosts (Netlify) have no /api proxy, so a production build talks to the hosted project directly.
+        const base = import.meta.env.PROD && !isLocalSupabase ? SUPABASE_URL : window.location.origin + '/api';
+        _client = createClient(base, SUPABASE_ANON, {
             auth: {
                 persistSession: true,
                 autoRefreshToken: true,
