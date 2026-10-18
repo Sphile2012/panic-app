@@ -1,15 +1,15 @@
 {
-  "name": "Panic Ring",
-  "short_name": "Panic Ring",
-  "description": "A privacy-first personal safety app.",
+  "name": "Calculator",
+  "short_name": "Calculator",
+  "description": "A simple calculator.",
   "start_url": "/",
   "id": "/",
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui"],
   "orientation": "portrait",
-  "background_color": "#0f0f13",
-  "theme_color": "#0f0f13",
-  "categories": ["utilities", "health"],
+  "background_color": "#1f2937",
+  "theme_color": "#1f2937",
+  "categories": ["utilities"],
   "icons": [
     {
       "src": "/icon-192.png",
@@ -30,12 +30,5 @@
       "purpose": "maskable"
     }
   ],
-  "screenshots": [],
-  "shortcuts": [
-    {
-      "name": "Open dashboard",
-      "url": "/dashboard.html",
-      "description": "View alert history and account"
-    }
-  ]
+  "screenshots": []
 }

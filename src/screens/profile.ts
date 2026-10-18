@@ -1,3 +1,4 @@
+import '../strings/groupB.js';
 import { store } from '../state.js';
 import { t } from '../i18n.js';
 import { displayIdentity } from '../db.js';
@@ -62,7 +63,7 @@ export function renderProfile(root: HTMLElement) {
     const { profile: initial, authEmail } = store.getState();
     let photo = initial.photo;
     let editing = false;
-    const identity = authEmail ? displayIdentity(authEmail) : (initial.phone || 'Panic Ring user');
+    const identity = authEmail ? displayIdentity(authEmail) : (initial.phone || t('b.prof.user'));
 
     const draw = () => {
         const profile = store.getState().profile;
@@ -73,15 +74,15 @@ export function renderProfile(root: HTMLElement) {
     <div class="screen profile-screen pf">
       <section class="pf-hero">
         <div class="pf-top">
-        <button class="pf-icon-btn" id="btn-back" aria-label="Back">${svg(IC.menu, 'pf-top-ic')}</button>
-        <button class="pf-icon-btn" id="btn-edit" aria-label="Edit">${svg(IC.edit, 'pf-top-ic')}</button>
+        <button class="pf-icon-btn" id="btn-back"         aria-label="${t('common.back')}">${svg(IC.menu, 'pf-top-ic')}</button>
+                <button class="pf-icon-btn" id="btn-edit" aria-label="${t('b.prof.edit')}">${svg(IC.edit, 'pf-top-ic')}</button>
       </div>
 
       <div class="pf-head">
         <button class="pf-photo" id="profile-photo" type="button" aria-label="${t('prof.upload')}">${photoHtml}</button>
         <div class="pf-who">
           <h2 class="pf-name">${esc(name)}</h2>
-          <p class="pf-sub">${esc(profile.phone || (identity.includes('@') ? 'Panic Ring user' : identity))}</p>
+          <p class="pf-sub">${esc(profile.phone || (identity.includes('@') ? t('b.prof.user') : identity))}</p>
         </div>
       </div>
       </section>
@@ -101,13 +102,13 @@ export function renderProfile(root: HTMLElement) {
       </form>` : ''}
       <p class="setup-hint" id="p-msg" aria-live="polite"></p>
       <div class="pf-list">
-        ${row('pf-profile', IC.users, 'My Profile', editing ? 'pf-row--active' : '')}
-        ${row('pf-messages', IC.mail, 'Messages')}
-        ${row('pf-favourites', IC.heart, 'Favourites')}
-        ${row('pf-location', IC.location, 'Location')}
-        ${row('pf-settings', IC.gear, 'Settings')}
+        ${row('pf-profile', IC.users, t('b.prof.my'), editing ? 'pf-row--active' : '')}
+        ${row('pf-messages', IC.mail, t('b.prof.messages'))}
+        ${row('pf-favourites', IC.heart, t('b.prof.fav'))}
+        ${row('pf-location', IC.location, t('b.prof.location'))}
+        ${row('pf-settings', IC.gear, t('b.prof.settings'))}
       </div>
-      <div class="pf-logout">${row('pf-logout', IC.out, 'Log out', 'pf-danger')}</div>
+      <div class="pf-logout">${row('pf-logout', IC.out, t('b.prof.logout'), 'pf-danger')}</div>
     </div>`;
         bind();
     };
@@ -124,7 +125,7 @@ export function renderProfile(root: HTMLElement) {
         go('#pf-location', 'live');
         go('#pf-settings', 'settings');
         root.querySelector('#pf-logout')!.addEventListener('click', async () => {
-            if (confirm('Log out?'))
+            if (confirm(t('b.prof.logout.q')))
                 await store.signOut();
         });
         root.querySelector('#btn-edit')!.addEventListener('click', () => {

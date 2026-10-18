@@ -1,3 +1,4 @@
+import '../strings/groupA.js';
 import { store } from '../state.js';
 import { t } from '../i18n.js';
 import { startEvidenceCapture } from '../evidence.js';
@@ -35,7 +36,7 @@ export function renderLive(root: HTMLElement) {
         root.innerHTML = `
       <div class="screen">
         <header class="screen-header">
-          <button class="btn-back-small" id="btn-back" aria-label="Back">Back</button>
+          <button class="btn-back-small" id="btn-back" aria-label="${t('common.back')}">${t('common.back')}</button>
           <h2 class="screen-title">${esc(t('trk.title'))}</h2>
         </header>
         ${low !== null ? `

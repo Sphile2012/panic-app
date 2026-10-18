@@ -470,6 +470,11 @@ const af: Dict = {
 
 const DICTS: Record<LangCode, Dict> = { en, zu, st, af };
 
+export function registerStrings(strings: Partial<Record<LangCode, Dict>>) {
+    for (const code of Object.keys(strings) as LangCode[])
+        Object.assign(DICTS[code], strings[code]);
+}
+
 let current: LangCode = readLang();
 
 function readLang(): LangCode {

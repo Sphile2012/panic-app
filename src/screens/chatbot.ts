@@ -1,3 +1,4 @@
+import '../strings/groupC.js';
 import { getPreferredLanguage, LANGUAGES } from '../storage.js';
 import { store } from '../state.js';
 
@@ -66,11 +67,11 @@ const translations: Record<string, any> = {
 
 function detectIntent(input: string, lang: string): string {
   const lower = input.toLowerCase();
-  if (/(error|fix|bug|problem|not working|broken)/.test(lower)) return 'error';
-  if (/(reboot|restart|power off|turn off)/.test(lower)) return 'reboot';
-  if (/(location|gps|share my location|live location|where am i)/.test(lower)) return 'location';
-  if (/(battery|low battery|charge|power)/.test(lower)) return 'battery';
-  if (/(unsafe|danger|afraid|help|scared|safe)/.test(lower)) return 'unsafe';
+  if (/(error|fix|bug|problem|not working|broken|iphutha|lungisa|bothata|lokisa|fout|herstel)/.test(lower)) return 'error';
+  if (/(reboot|restart|power off|turn off|qala kabusha|qala hape|herlaai)/.test(lower)) return 'reboot';
+  if (/(location|gps|share my location|live location|where am i|indawo|sebaka|ligging)/.test(lower)) return 'location';
+  if (/(battery|low battery|charge|power|ibhethri|betri|battery|laai)/.test(lower)) return 'battery';
+  if (/(unsafe|danger|afraid|help|scared|safe|ngingezwa ukuphepha|ngingaphephile|sa sireletseha|kotsi|onveilig|gevaar)/.test(lower)) return 'unsafe';
   return 'default';
 }
 

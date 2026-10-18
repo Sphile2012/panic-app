@@ -1,8 +1,10 @@
+import '../strings/groupC.js';
+import { t } from '../i18n.js';
 import { store } from '../state.js';
-function safeEval(expr) {
+function safeEval(expr, errorText) {
     const tokens = expr.trim().match(/[\d.]+|[+\-*/]/g);
     if (!tokens)
-        return 'Error';
+        return errorText;
     try {
         const prec = { '+': 1, '-': 1, '*': 2, '/': 2 };
         const out = [];
@@ -34,11 +36,11 @@ function safeEval(expr) {
             applyOp();
         const result = out[0] ?? NaN;
         if (!isFinite(result))
-            return 'Error';
+            return errorText;
         return parseFloat(result.toPrecision(12)).toString();
     }
     catch {
-        return 'Error';
+        return errorText;
     }
 }
 const KEYS = [
@@ -86,7 +88,7 @@ export function renderCalculator(root) {
         if (v === '=') {
             store.evaluatePin().then(route => {
                 if (!route) {
-                    display.textContent = safeEval(calcBuffer || '0');
+                    display.textContent = safeEval(calcBuffer || '0', t('c.calc.error'));
                     expression.textContent = calcBuffer + ' =';
                     calcBuffer = '';
                 }

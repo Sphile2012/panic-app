@@ -1,4 +1,5 @@
 import './style.css';
+import './strings/core.js';
 import { store } from './state.js';
 import { renderCalculator } from './screens/calculator.js';
 import { renderSetupPin, renderSetupContacts } from './screens/setup.js';

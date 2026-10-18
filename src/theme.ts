@@ -1,3 +1,6 @@
+import './strings/groupC.js';
+import { t } from './i18n.js';
+
 export const ACCENT_COLOURS = [
     { id: 'purple', label: 'Purple', hex: '#5c4de8', darkHex: '#8b80f7', dim: '#3a2f9a' },
     { id: 'teal', label: 'Teal', hex: '#0d9488', darkHex: '#42cfc1', dim: '#0f6b63' },
@@ -40,6 +43,15 @@ export const DISGUISE_OPTIONS = [
         preview: 'Clock',
     },
 ];
+const DISGUISE_TRANSLATION_IDS: Record<string, string> = { calculator: 'calculator', budget: 'budget', weather: 'weather', 'notes-plain': 'notes', clock: 'clock' };
+export function disguiseLabel(id: string): string {
+    const key = DISGUISE_TRANSLATION_IDS[id];
+    return key ? t('c.theme.' + key + '.label') : (DISGUISE_OPTIONS.find(option => option.id === id) ?? DISGUISE_OPTIONS[0]).label;
+}
+export function disguiseDescription(id: string): string {
+    const key = DISGUISE_TRANSLATION_IDS[id];
+    return key ? t('c.theme.' + key + '.description') : (DISGUISE_OPTIONS.find(option => option.id === id) ?? DISGUISE_OPTIONS[0]).description;
+}
 const STORAGE_KEY = 'pr_appearance';
 const DEFAULT = {
     mode: 'dark',
@@ -71,7 +83,7 @@ export function resolveThemeMode(mode) {
 export function applyAppearance(a) {
     const html = document.documentElement;
     const disguise = DISGUISE_OPTIONS.find(d => d.id === a.disguise) ?? DISGUISE_OPTIONS[0];
-    document.title = disguise.label;
+    document.title = disguiseLabel(disguise.id);
     const icon = document.querySelector('link[rel="icon"]') as HTMLLinkElement | null;
     if (icon) {
         const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#374151"/><text x="32" y="43" font-size="30" text-anchor="middle" fill="#fff" font-family="Arial" font-weight="700">${disguise.preview[0]}</text></svg>`;

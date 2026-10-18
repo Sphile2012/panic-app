@@ -1,3 +1,5 @@
+import './strings/groupA.js';
+import { t } from './i18n.js';
 import { store } from './state.js';
 const QUEUE_KEY = 'pr_alert_queue';
 export function enqueueAlert(locationText, locationShared) {
@@ -29,7 +31,7 @@ export function watchForReconnect(onReconnect) {
         clearQueue();
         const banner = document.createElement('div');
         banner.className = 'reconnect-banner';
-        banner.textContent = 'Connection restored — sending your alert now…';
+        banner.textContent = t('a.queue.restored');
         banner.setAttribute('role', 'alert');
         document.body.prepend(banner);
         setTimeout(() => banner.remove(), 5000);

@@ -1,8 +1,46 @@
 import { getClient, DB_CONFIGURED, signUp, signIn, signOut, getUser, onAuthStateChange, fetchAlertStats, fetchRecentAlerts, } from './db.js';
+import './strings/groupC.js';
 import { loadAppearance, applyAppearance } from './theme.js';
-import { t, authErrorKey } from './i18n.js';
+import { t, authErrorKey, getLang, languageBarHtml, bindLanguageBar } from './i18n.js';
 import './style.css';
 applyAppearance(loadAppearance());
+let currentEmail: string | null = null;
+let noConfig = false;
+const DASH_LOCALES = { en: 'en-ZA', zu: 'zu-ZA', st: 'st-ZA', af: 'af-ZA' };
+function applyDashboardTranslations() {
+    document.title = `Panic Ring — ${t('c.dashboard.title')}`;
+    document.querySelectorAll<HTMLElement>('[data-i18n]').forEach(el => {
+        el.textContent = t(el.dataset['i18n'] ?? '');
+    });
+    document.querySelectorAll<HTMLElement>('[data-i18n-html]').forEach(el => {
+        el.innerHTML = t(el.dataset['i18nHtml'] ?? '');
+    });
+    document.querySelectorAll<HTMLInputElement>('[data-i18n-placeholder]').forEach(el => {
+        el.placeholder = t(el.dataset['i18nPlaceholder'] ?? '');
+    });
+}
+function refreshLanguageBar() {
+    const mount = document.getElementById('dashboard-language-bar');
+    if (!mount)
+        return;
+    mount.innerHTML = languageBarHtml();
+    bindLanguageBar(mount, () => {
+        applyDashboardTranslations();
+        refreshLanguageBar();
+        if (noConfig)
+            showNoConfig();
+        else if (currentEmail !== null) {
+            updateGreeting(t('c.dashboard.welcome', { name: currentEmail.split('@')[0] }));
+            loadStats();
+            loadRecentAlerts();
+        }
+        else {
+            updateGreeting(t('c.dashboard.signInPrompt'));
+        }
+    });
+}
+refreshLanguageBar();
+applyDashboardTranslations();
 let installPrompt = null;
 window.addEventListener('beforeinstallprompt', e => {
     e.preventDefault();
@@ -89,23 +127,26 @@ async function boot() {
     }
 }
 function showNoConfig() {
+    noConfig = true;
     const gate = document.getElementById('dash-auth-gate');
     gate.innerHTML = `
     <div class="dash-no-config">
-      <h2>Account service not available</h2>
-      <p>Sign-in is not set up on this installation. You can still use the app without an account.</p>
+      <h2>${t('c.dashboard.noConfigTitle')}</h2>
+      <p>${t('c.dashboard.noConfigBody')}</p>
       <a class="btn-primary" href="/" style="display:inline-flex;margin-top:16px;text-decoration:none">
-        Open app (offline mode)
+        ${t('c.dashboard.openOffline')}
       </a>
     </div>
   `;
 }
 function showAuthGate() {
+    noConfig = false;
+    currentEmail = null;
     const gate = document.getElementById('dash-auth-gate');
     const content = document.getElementById('dash-content');
     gate.style.display = 'block';
     content.style.display = 'none';
-    updateGreeting('Sign in or create an account to view your dashboard.');
+    updateGreeting(t('c.dashboard.signInPrompt'));
     wireAuthForms();
 }
 function wireAuthForms() {
@@ -137,14 +178,14 @@ function wireAuthForms() {
         const email = liEmailEl.value.trim();
         const pw = liPwEl.value;
         if (!email || !pw) {
-            liErrEl.textContent = 'Fill in all fields.';
+            liErrEl.textContent = t('c.dashboard.fillFields');
             return;
         }
         liSubmitBtn.disabled = true;
-        liSubmitBtn.textContent = 'Signing in...';
+        liSubmitBtn.textContent = t('c.dashboard.signingIn');
         const { error } = await signIn(email, pw);
         liSubmitBtn.disabled = false;
-        liSubmitBtn.textContent = 'Sign in';
+        liSubmitBtn.textContent = t('c.dashboard.signIn');
         if (error) {
             liErrEl.textContent = t(authErrorKey(error));
         }
@@ -163,39 +204,41 @@ function wireAuthForms() {
         const pw = suPwEl.value;
         const cf = suCfEl.value;
         if (!email || !pw) {
-            suErrEl.textContent = 'Fill in all fields.';
+            suErrEl.textContent = t('c.dashboard.fillFields');
             return;
         }
         if (pw.length < 8) {
-            suErrEl.textContent = 'Password must be at least 8 characters.';
+            suErrEl.textContent = t('c.dashboard.passwordTooShort');
             return;
         }
         if (pw !== cf) {
-            suErrEl.textContent = 'Passwords do not match.';
+            suErrEl.textContent = t('c.dashboard.passwordMismatch');
             return;
         }
         suSubmitBtn.disabled = true;
-        suSubmitBtn.textContent = 'Creating...';
+        suSubmitBtn.textContent = t('c.dashboard.creating');
         const { error } = await signUp(email, pw);
         suSubmitBtn.disabled = false;
-        suSubmitBtn.textContent = 'Create account';
+        suSubmitBtn.textContent = t('c.dashboard.createAccount');
         if (error) {
             suErrEl.textContent = t(authErrorKey(error));
             return;
         }
         suErrEl.style.color = 'var(--safe)';
-        suErrEl.textContent = 'Account created. If asked, confirm your email, then sign in.';
+        suErrEl.textContent = t('c.dashboard.accountCreated');
         tabLogin.click();
     });
 }
 async function showDashboard(email) {
+    noConfig = false;
+    currentEmail = email;
     const gate = document.getElementById('dash-auth-gate');
     const content = document.getElementById('dash-content');
     gate.style.display = 'none';
     content.style.display = 'block';
     const emailEls = document.querySelectorAll('#dash-user-email, #dash-account-email');
     emailEls.forEach(el => { el.textContent = email; });
-    updateGreeting(`Welcome back, ${email.split('@')[0]}.`);
+    updateGreeting(t('c.dashboard.welcome', { name: email.split('@')[0] }));
     document.getElementById('dash-signout')?.addEventListener('click', async () => {
         await signOut();
     });
@@ -212,7 +255,7 @@ async function loadStats() {
         document.getElementById('stat-opened').textContent = '0';
         document.getElementById('stat-failed').textContent = '0';
         document.getElementById('stat-location').textContent = '0';
-        document.getElementById('stat-last').textContent = 'Never';
+        document.getElementById('stat-last').textContent = t('c.dashboard.never');
         return;
     }
     document.getElementById('stat-total').textContent = String(stats.total_alerts);
@@ -220,23 +263,23 @@ async function loadStats() {
     document.getElementById('stat-failed').textContent = String(stats.total_failed);
     document.getElementById('stat-location').textContent = String(stats.alerts_with_location);
     document.getElementById('stat-last').textContent = stats.last_alert_at
-        ? new Date(stats.last_alert_at).toLocaleString('en-ZA')
-        : 'Never';
+        ? new Date(stats.last_alert_at).toLocaleString(DASH_LOCALES[getLang()] || 'en-ZA')
+        : t('c.dashboard.never');
 }
 async function loadRecentAlerts() {
     const tbody = document.getElementById('dash-alerts-body');
     const rows = await fetchRecentAlerts(20);
     if (rows.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="dash-table-empty">No alerts yet.</td></tr>';
+        tbody.innerHTML = `<tr><td colspan="5" class="dash-table-empty">${t('c.dashboard.noAlerts')}</td></tr>`;
         return;
     }
     tbody.innerHTML = rows.map(r => `
     <tr>
-      <td>${new Date(r.fired_at).toLocaleString('en-ZA')}</td>
+      <td>${new Date(r.fired_at).toLocaleString(DASH_LOCALES[getLang()] || 'en-ZA')}</td>
       <td>${r.contact_count}</td>
       <td class="dash-cell-good">${r.contacts_opened}</td>
       <td class="${r.contacts_failed > 0 ? 'dash-cell-bad' : ''}">${r.contacts_failed}</td>
-    <td>${r.location_shared ? 'Yes' : 'No'}</td>
+    <td>${r.location_shared ? t('c.dashboard.yes') : t('c.dashboard.no')}</td>
     </tr>
   `).join('');
 }

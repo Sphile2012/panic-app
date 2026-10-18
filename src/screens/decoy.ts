@@ -1,41 +1,23 @@
+import '../strings/groupB.js';
+import { t } from '../i18n.js';
 export function renderDecoy(root) {
+    const items = [1, 2, 3, 4].map(n => `
+        <li class="decoy-item">
+          <div class="decoy-item-body">
+            <span class="decoy-item-title">${t(`b.decoy.n${n}.t`)}</span>
+            <span class="decoy-item-preview">${t(`b.decoy.n${n}.p`)}</span>
+          </div>
+          <span class="decoy-item-date">${t(`b.decoy.n${n}.d`)}</span>
+        </li>`).join('');
     root.innerHTML = `
     <div class="screen decoy-screen">
       <header class="decoy-header">
-        <span class="decoy-title">Notes</span>
-        <button class="decoy-add-btn" title="New note" aria-label="New note">＋</button>
+        <span class="decoy-title">${t('b.notes.title')}</span>
+        <button class="decoy-add-btn" title="${t('b.notes.new.aria')}" aria-label="${t('b.notes.new.aria')}">＋</button>
       </header>
-      <ul class="decoy-list">
-        <li class="decoy-item">
-          <div class="decoy-item-body">
-            <span class="decoy-item-title">Shopping list</span>
-            <span class="decoy-item-preview">Bread, milk, olive oil…</span>
-          </div>
-          <span class="decoy-item-date">Today</span>
-        </li>
-        <li class="decoy-item">
-          <div class="decoy-item-body">
-            <span class="decoy-item-title">Work notes</span>
-            <span class="decoy-item-preview">Call with Sipho at 14:00…</span>
-          </div>
-          <span class="decoy-item-date">Yesterday</span>
-        </li>
-        <li class="decoy-item">
-          <div class="decoy-item-body">
-            <span class="decoy-item-title">Weekend plans</span>
-            <span class="decoy-item-preview">Braai at Zanele's place…</span>
-          </div>
-          <span class="decoy-item-date">Mon</span>
-        </li>
-        <li class="decoy-item">
-          <div class="decoy-item-body">
-            <span class="decoy-item-title">Book list</span>
-            <span class="decoy-item-preview">Disgrace, Long Walk…</span>
-          </div>
-          <span class="decoy-item-date">Sun</span>
-        </li>
+      <ul class="decoy-list">${items}
       </ul>
-      <p class="decoy-footer">4 notes</p>
+      <p class="decoy-footer">${t('b.decoy.count')}</p>
     </div>
   `;
 }

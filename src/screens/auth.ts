@@ -1,3 +1,4 @@
+import '../strings/groupC.js';
 import { store } from '../state.js';
 import { signUp, signIn, requestPasswordReset, updatePassword } from '../db.js';
 import { t, languageBarHtml, bindLanguageBar, authErrorKey } from '../i18n.js';
@@ -250,6 +251,7 @@ export function renderResetPassword(root) {
       </div>
     </div>
   `;
+    bindLanguageBar(root, () => renderResetPassword(root));
     const msg = root.querySelector('#rp-msg');
     root.querySelector('#rp-form').addEventListener('submit', async (e) => {
         e.preventDefault();

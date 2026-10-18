@@ -1,4 +1,6 @@
+import '../strings/groupB.js';
 import { store } from '../state.js';
+import { t } from '../i18n.js';
 import { exportNotes } from '../export.js';
 export function renderNotes(root) {
     const { notes } = store.getState();
@@ -6,20 +8,17 @@ export function renderNotes(root) {
     <div class="screen notes-screen">
 
       <header class="screen-header">
-        <button class="btn-back-small" id="btn-back" aria-label="Back">Back</button>
-        <h2 class="screen-title">Notes</h2>
-        <button class="btn-icon-action" id="btn-export" aria-label="Export notes" title="Export">Export</button>
-        <button class="btn-icon-action" id="btn-new-note" aria-label="New note">New</button>
+        <button class="btn-back-small" id="btn-back" aria-label="${t('common.back')}">${t('common.back')}</button>
+        <h2 class="screen-title">${t('b.notes.title')}</h2>
+        <button class="btn-icon-action" id="btn-export" aria-label="${t('b.notes.export.aria')}" title="${t('b.notes.export')}">${t('b.notes.export')}</button>
+        <button class="btn-icon-action" id="btn-new-note" aria-label="${t('b.notes.new.aria')}">${t('b.notes.new')}</button>
       </header>
 
-      <p class="notes-info">
-        Notes are stored on this device only. They are not shared
-        unless you choose to include them in an alert.
-      </p>
+      <p class="notes-info">${t('b.notes.info')}</p>
 
       <ul class="note-list" id="note-list">
         ${notes.length === 0
-        ? '<li class="empty-hint">No notes yet. Tap + to add one.</li>'
+        ? `<li class="empty-hint">${t('b.notes.empty')}</li>`
         : notes.map(noteCard).join('')}
       </ul>
 
@@ -31,7 +30,7 @@ export function renderNotes(root) {
     root.querySelector('#btn-export').addEventListener('click', async () => {
         const { notes } = store.getState();
         if (notes.length === 0) {
-            alert('No notes to export.');
+            alert(t('b.notes.noexport'));
             return;
         }
         await exportNotes(notes);
@@ -49,7 +48,7 @@ export function renderNotes(root) {
         }
         if (deleteBtn) {
             const id = deleteBtn.dataset['delete'];
-            if (confirm('Delete this note?')) {
+            if (confirm(t('b.notes.delete.q'))) {
                 store.deleteNote(id);
                 store.navigateTo('notes');
             }
@@ -65,9 +64,9 @@ export function renderNoteEdit(root) {
     <div class="screen note-edit-screen">
 
       <header class="screen-header">
-        <button class="btn-back-small" id="btn-back" aria-label="Cancel">Back</button>
-        <h2 class="screen-title">${existing ? 'Edit note' : 'New note'}</h2>
-        <button class="btn-text-action" id="btn-save-note">Save</button>
+        <button class="btn-back-small" id="btn-back"         aria-label="${t('common.cancel')}">${t('common.back')}</button>
+                <h2 class="screen-title">${existing ? t('b.notes.edit') : t('b.notes.newtitle')}</h2>
+                <button class="btn-text-action" id="btn-save-note">${t('b.plan.save')}</button>
       </header>
 
       <form class="note-form" id="note-form" autocomplete="off">
@@ -75,18 +74,18 @@ export function renderNoteEdit(root) {
           class="note-title-input"
           id="note-title"
           type="text"
-          placeholder="Title"
+          placeholder="${t('b.notes.title.ph')}"
           value="${existing ? escHtml(existing.title) : ''}"
           required
           autocomplete="off" />
         <textarea
           class="note-body-input"
           id="note-body"
-          placeholder="Write your note here…"
+          placeholder="${t('b.notes.body.ph')}"
           rows="12">${existing ? escHtml(existing.body) : ''}</textarea>
       </form>
 
-      ${existing ? `<p class="note-timestamp">Last updated: ${formatDate(existing.updatedAt)}</p>` : ''}
+      ${existing ? `<p class="note-timestamp">${t('b.notes.updated', { date: formatDate(existing.updatedAt) })}</p>` : ''}
 
     </div>
   `;
@@ -115,7 +114,7 @@ function noteCard(n) {
         <span class="note-card-preview">${escHtml(preview)}${n.body.length > 80 ? '…' : ''}</span>
         <span class="note-card-date">${formatDate(n.updatedAt)}</span>
       </div>
-      <button class="note-delete" data-delete="${n.id}" aria-label="Delete ${escHtml(n.title)}">Delete</button>
+      <button class="note-delete" data-delete="${n.id}" aria-label="${t('b.notes.delete.aria', { title: escHtml(n.title) })}">${t('b.notes.delete')}</button>
     </li>
   `;
 }

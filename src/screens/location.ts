@@ -1,3 +1,4 @@
+import '../strings/groupA.js';
 import { store } from '../state.js';
 import { getLocation } from '../alertService.js';
 import { t } from '../i18n.js';
@@ -26,7 +27,7 @@ export function renderLocation(root) {
           <span class="loc-accuracy-badge" id="loc-accuracy-badge"></span>
         </div>
         <a class="loc-maps-link" id="loc-maps-link" target="_blank" rel="noopener">
-          Open in Maps
+          ${t('a.loc.openmaps')}
         </a>
       </div>
 
@@ -44,23 +45,19 @@ export function renderLocation(root) {
 
       <!-- What the app can and cannot do — honest note -->
       <details class="loc-info-details">
-        <summary class="loc-info-summary">What location data is sent?</summary>
+        <summary class="loc-info-summary">${t('a.loc.info.title')}</summary>
         <div class="loc-info-body">
-          <p>When you tap <strong>Share</strong>, your contacts receive:</p>
+          <p>${t('a.loc.info.p1')}</p>
           <ul>
-            <li>The street address (from GPS + OpenStreetMap)</li>
-            <li>GPS accuracy in metres</li>
-            <li>A Google Maps link that opens at your exact coordinates</li>
+            <li>${t('a.loc.info.l1')}</li>
+            <li>${t('a.loc.info.l2')}</li>
+            <li>${t('a.loc.info.l3')}</li>
           </ul>
           <p>
-            Location is only captured at the moment you tap Share.
-            It is not tracked continuously and is not stored on any server.
+            ${t('a.loc.info.p2')}
           </p>
           <p>
-            <strong>This browser-based app cannot access your phone's IMEI or
-            locate it remotely.</strong> To locate a lost device, use its
-            manufacturer's find-device service or contact your mobile network
-            provider.
+            ${t('a.loc.info.p3')}
           </p>
         </div>
       </details>
@@ -85,11 +82,11 @@ export function renderLocation(root) {
         watchId = navigator.geolocation.watchPosition(pos => {
             const acc = Math.round(pos.coords.accuracy);
             const pct = Math.max(10, Math.min(100, Math.round((1 - (acc / 200)) * 100)));
-            const label = acc <= 10 ? 'Excellent' : acc <= 30 ? 'Good' : acc <= 100 ? 'Fair' : 'Poor';
+            const label = acc <= 10 ? t('a.loc.q.excellent') : acc <= 30 ? t('a.loc.q.good') : acc <= 100 ? t('a.loc.q.fair') : t('a.loc.q.poor');
             const colour = acc <= 10 ? '#1abf7a' : acc <= 30 ? '#59c93d' : acc <= 100 ? '#e09a19' : '#e0193a';
             accuracyFill.style.width = `${pct}%`;
             accuracyFill.style.background = colour;
-            accuracyText.textContent = `GPS signal: ${label} (+/-${acc} m)`;
+            accuracyText.textContent = t('a.loc.signal', { label, acc });
         }, () => { }, { enableHighAccuracy: true, maximumAge: 0 });
     }
     function stopWatch() {
@@ -105,7 +102,7 @@ export function renderLocation(root) {
         skipBtn.disabled = true;
         errorEl.textContent = '';
         accuracyWrap.style.display = 'block';
-        accuracyText.textContent = 'Getting your exact position...';
+        accuracyText.textContent = t('a.loc.getting');
         const result: any = await getLocation(12000);
         if (result.ok) {
             addressLine.textContent = result.address;
@@ -126,7 +123,7 @@ export function renderLocation(root) {
     });
     skipBtn.addEventListener('click', () => {
         stopWatch();
-        store.setLocationShared(false, 'Location not shared');
+        store.setLocationShared(false, t('a.loc.notshared'));
         store.startSending();
     });
 }

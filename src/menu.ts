@@ -27,8 +27,7 @@ function sections(): Array<{ title: string; items: Item[] }> {
         ] },
         { title: t('menu.safety'), items: [
             { screen: 'history', label: t('menu.history') },
-            { screen: 'records', label: 'Records' },
-            { screen: 'records', label: 'Records' },
+            { screen: 'records', label: t('menu.records') },
             { screen: 'journey', label: t('menu.journey') },
             { screen: 'fakecall', label: t('menu.fakecall') },
             { screen: 'watch', label: t('menu.watch') },
@@ -71,6 +70,10 @@ export function openMenu() {
         `).join('')}
       </nav>
       <div class="side-menu-foot">
+        <button class="side-menu-item" data-go="calculator">
+          <span class="side-menu-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18M10.6 5.1A10 10 0 0 1 22 12a14 14 0 0 1-2.6 3.6M6.1 6.1A14 14 0 0 0 2 12s3.5 7 10 7a9.7 9.7 0 0 0 4-.9"/></svg></span>
+          <span>${t('menu.hide')}</span>
+        </button>
         <p class="side-menu-version">Panic Ring v1.0</p>
       </div>
     </aside>`;

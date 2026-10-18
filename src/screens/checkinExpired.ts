@@ -1,3 +1,5 @@
+import '../strings/groupA.js';
+import { t } from '../i18n.js';
 import { store } from '../state.js';
 
 export function renderCheckinExpired(root: HTMLElement): void {
@@ -5,29 +7,28 @@ export function renderCheckinExpired(root: HTMLElement): void {
   root.innerHTML = `
     <section class="screen checkin-expired-screen" aria-labelledby="checkin-expired-title">
       <div class="checkin-expired-mark" aria-hidden="true">!</div>
-      <p class="checkin-expired-eyebrow">CHECK-IN MISSED</p>
-      <h1 class="checkin-expired-title" id="checkin-expired-title">Your timer has ended</h1>
+      <p class="checkin-expired-eyebrow">${t('a.exp.eyebrow')}</p>
+      <h1 class="checkin-expired-title" id="checkin-expired-title">${t('a.exp.title')}</h1>
       <p class="checkin-expired-copy">
         ${contacts.length
-            ? 'If you need help, continue to prepare an alert for your trusted circle.'
-            : 'Your timer ended, but you have no trusted contacts set up yet.'}
+            ? t('a.exp.copy')
+            : t('a.exp.copynone')}
       </p>
 
       <div class="checkin-expired-note" role="note">
-        <strong>Messages are not sent automatically.</strong>
-        <span>Panic Ring will open your messaging app. You must review and send each message yourself.</span>
+        <strong>${t('a.exp.note1')}</strong>
+        <span>${t('a.exp.note2')}</span>
       </div>
 
       <div class="checkin-expired-actions">
         ${contacts.length
-            ? '<button class="btn-primary checkin-expired-send" id="btn-expired-alert">Prepare an alert</button>'
-            : '<button class="btn-primary checkin-expired-send" id="btn-expired-contacts">Add trusted contacts</button>'}
-        <button class="btn-secondary-outline" id="btn-expired-safe">I’m safe — return to Panic Ring</button>
+            ? `<button class="btn-primary checkin-expired-send" id="btn-expired-alert">${t('a.exp.prepare')}</button>`
+            : `<button class="btn-primary checkin-expired-send" id="btn-expired-contacts">${t('a.exp.addcontacts')}</button>`}
+        <button class="btn-secondary-outline" id="btn-expired-safe">${t('a.exp.safe')}</button>
       </div>
 
       <p class="checkin-expired-footnote">
-        Timers depend on your browser and device. They may be delayed while the app is closed or suspended.
-        For immediate danger, contact emergency services directly.
+        ${t('a.exp.foot')}
       </p>
     </section>
   `;

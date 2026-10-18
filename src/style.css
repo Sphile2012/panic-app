@@ -455,6 +455,7 @@ html[data-photo-background="true"] .phone-screen > .screen { background: transpa
 .dash-menu-btn { background: none; border: 0; display: flex; flex-direction: column; gap: 4px; padding: 6px; cursor: pointer; }
 .dash-menu-btn span { display: block; height: 2px; background: #fff; border-radius: 2px; width: 22px; }
 .dash-menu-btn span:nth-child(2) { width: 15px; }
+.dash-hide-btn { margin-left: auto; margin-right: 12px; background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.5); color: #fff; border-radius: 999px; padding: 6px 14px; font-size: .75rem; font-weight: 600; cursor: pointer; }
 .dash-avatar { margin-left: 0; width: 40px; height: 40px; border: 2px solid #fff; background: #f5a623; }
 .dash-title { font-size: 1.5rem; font-weight: 700; margin: 22px 0 2px; position: relative; z-index: 1; }
 .dash-sub { font-size: .75rem; opacity: .75; margin: 0; position: relative; z-index: 1; }

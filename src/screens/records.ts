@@ -1,4 +1,6 @@
+import '../strings/groupB.js';
 import { store } from '../state.js';
+import { t } from '../i18n.js';
 import { listPhotos, deletePhoto, type EvidencePhoto } from '../evidence.js';
 
 function fmt(ts: number): string {
@@ -10,25 +12,25 @@ async function shareFiles(photos: EvidencePhoto[]): Promise<string> {
     const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean };
     if (nav.canShare?.({ files }) && nav.share) {
         try {
-            await nav.share({ files, text: 'Panic Ring records' });
-            return 'Choose WhatsApp in the share sheet to send.';
+            await nav.share({ files, text: t('b.rec.sharetext') });
+            return t('b.rec.choose');
         }
         catch {
-            return 'Sharing was cancelled.';
+            return t('b.rec.cancelled');
         }
     }
-    window.open('https://wa.me/?text=' + encodeURIComponent('Panic Ring records. Photos are saved on my phone.'), '_blank');
-    return 'This device cannot attach photos from the browser. Download them and attach in WhatsApp.';
+    window.open('https://wa.me/?text=' + encodeURIComponent(t('b.rec.watext')), '_blank');
+    return t('b.rec.noattach');
 }
 
 export async function renderRecords(root: HTMLElement) {
     root.innerHTML = `
     <div class="screen">
       <header class="screen-header">
-        <button class="btn-back-small" id="btn-back" aria-label="Back">Back</button>
-        <h2 class="screen-title">Records</h2>
+        <button class="btn-back-small" id="btn-back"         aria-label="${t('common.back')}">${t('common.back')}</button>
+                <h2 class="screen-title">${t('b.rec.title')}</h2>
       </header>
-      <p class="setup-hint">Photos taken during alerts are stored on this device only.</p>
+              <p class="setup-hint">${t('b.rec.info')}</p>
       <div id="rec-actions"></div>
       <p class="setup-hint" id="rec-msg" aria-live="polite"></p>
       <div class="rec-grid" id="rec-grid"></div>
@@ -42,10 +44,10 @@ export async function renderRecords(root: HTMLElement) {
         const photos = await listPhotos();
         grid.innerHTML = '';
         actions.innerHTML = photos.length
-            ? '<button class="btn-primary" id="rec-share-all" type="button">Send all via WhatsApp</button>'
+            ? `<button class="btn-primary" id="rec-share-all" type="button">${t('b.rec.sendall')}</button>`
             : '';
         if (!photos.length) {
-            grid.innerHTML = '<p class="setup-hint">No records yet. Turn on alert photos in Settings.</p>';
+                        grid.innerHTML = `<p class="setup-hint">${t('b.rec.none')}</p>`;
             return;
         }
         actions.querySelector('#rec-share-all')!.addEventListener('click', async () => {
@@ -56,8 +58,8 @@ export async function renderRecords(root: HTMLElement) {
             const card = document.createElement('div');
             card.className = 'rec-card';
             card.innerHTML = `<img src="${url}" alt="" /><span>${fmt(p.at)}</span>
-              <div><button type="button" class="btn-secondary-outline rec-s">Send</button>
-              <button type="button" class="btn-secondary rec-d">Delete</button></div>`;
+              <div><button type="button" class="btn-secondary-outline               rec-s">${t('b.rec.send')}</button>
+                            <button type="button" class="btn-secondary rec-d">${t('b.notes.delete')}</button></div>`;
             card.querySelector('.rec-s')!.addEventListener('click', async () => {
                 msg.textContent = await shareFiles([p]);
             });

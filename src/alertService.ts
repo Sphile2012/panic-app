@@ -1,3 +1,5 @@
+import './strings/groupA.js';
+import { t } from './i18n.js';
 import { store } from './state.js';
 import { buildSmsBody, smsUri, isOnline } from './storage.js';
 import { insertAlertLog, getDeviceId, getUser } from './db.js';
@@ -77,7 +79,7 @@ async function getWhat3Words(lat, lng) {
 }
 export async function getLocation(timeoutMs = 12000) {
     if (!('geolocation' in navigator)) {
-        return { ok: false, reason: 'Location services are not available on this device.' };
+        return { ok: false, reason: t('trk.unsupported') };
     }
     return new Promise(resolve => {
         navigator.geolocation.getCurrentPosition(async (pos) => {
@@ -89,8 +91,8 @@ export async function getLocation(timeoutMs = 12000) {
             const mapsUrl = `https://maps.google.com/?q=${lat.toFixed(7)},${lng.toFixed(7)}`;
             const accuracyStr = `±${Math.round(accuracy)} m`;
             const lines = [
-                `Location: ${address}`,
-                `Accuracy: ${accuracyStr}`,
+                `${t('a.alert.location')}: ${address}`,
+                `${t('a.alert.accuracy')}: ${accuracyStr}`,
                 w3w ? `what3words: ${w3w}` : null,
                 `Google Maps: ${mapsUrl}`,
             ].filter(Boolean).join('\n');
@@ -104,13 +106,13 @@ export async function getLocation(timeoutMs = 12000) {
                 text: lines,
             });
         }, err => {
-            let reason = 'Location unavailable.';
+            let reason = t('a.alert.err.unavailable');
             if (err.code === 1)
-                reason = 'Location permission was denied. Please enable it in your device settings.';
+                reason = t('a.alert.err.denied');
             if (err.code === 2)
-                reason = 'No GPS signal found. Move to an open area and try again.';
+                reason = t('a.alert.err.nosignal');
             if (err.code === 3)
-                reason = 'Location request timed out. Try again in a moment.';
+                reason = t('a.alert.err.timeout');
             resolve({ ok: false, reason });
         }, {
             timeout: timeoutMs,

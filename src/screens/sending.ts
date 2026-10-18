@@ -1,3 +1,5 @@
+import '../strings/groupA.js';
+import { t } from '../i18n.js';
 import { store } from '../state.js';
 import { telUri } from '../storage.js';
 export function renderSending(root) {
@@ -8,10 +10,9 @@ export function renderSending(root) {
         <div class="sending-pulse"></div>
         <div class="sending-icon" aria-hidden="true"></div>
       </div>
-      <h2 class="sending-title">Alerting your circle…</h2>
+      <h2 class="sending-title">${t('a.send.title')}</h2>
       <p class="sending-sub" id="sending-sub">
-        Your Messages app will open for each contact.
-        Send the message, then come back.
+        ${t('a.send.sub')}
       </p>
       <ul class="sending-list" id="sending-list">
         ${contacts.map(sendingRow).join('')}
@@ -30,19 +31,18 @@ export function renderSent(root) {
     const opened = contacts.filter(c => c.status === 'delivered').length;
     const failed = contacts.filter(c => c.status === 'failed').length;
     const summaryLine = failed > 0
-        ? `${opened} messages opened · ${failed} failed (no network)`
-        : `${opened} message${opened !== 1 ? 's' : ''} opened`;
+        ? t('a.send.summaryfail', { opened, failed })
+        : t(opened === 1 ? 'a.send.one' : 'a.send.many', { n: opened });
     root.innerHTML = `
     <div class="screen sent-screen">
 
       <div class="sent-hero" aria-hidden="true">${failed > 0 ? '!' : 'OK'}</div>
-      <h2 class="sent-title">Alert sent</h2>
+      <h2 class="sent-title">${t('a.send.sent')}</h2>
       <p class="sent-summary">${summaryLine}</p>
 
       ${failed > 0 ? `
         <p class="sent-warning">
-          Some messages could not be opened — check your connection,
-          then call your contacts or emergency services directly.
+          ${t('a.send.warning')}
         </p>
       ` : ''}
 
@@ -52,31 +52,31 @@ export function renderSent(root) {
 
       ${locationShared ? `
         <div class="sent-location-box">
-          <span class="sent-location-label">Location shared:</span>
+          <span class="sent-location-label">${t('a.send.locshared')}</span>
           <span class="sent-location-text">${alertLocation.split('\n')[0]}</span>
           ${alertLocation.includes('http')
         ? `<a class="sent-location-link" href="${alertLocation.split('\n')[1]}"
-                 target="_blank" rel="noopener">Open in Maps</a>`
+                 target="_blank" rel="noopener">${t('a.loc.openmaps')}</a>`
         : ''}
         </div>
-      ` : `<p class="sent-no-location">Location was not shared.</p>`}
+      ` : `<p class="sent-no-location">${t('a.send.noloc')}</p>`}
 
       <!-- Always-visible emergency fallback numbers -->
       <div class="emergency-links">
-        <p class="emergency-label">If nobody responds, call directly:</p>
+        <p class="emergency-label">${t('a.send.calldirect')}</p>
         <a class="emergency-call" href="tel:10111">
           <span class="emergency-number">10111</span>
-          <span class="emergency-name">SAPS Emergency</span>
+          <span class="emergency-name">${t('a.send.saps')}</span>
         </a>
         <a class="emergency-call" href="tel:0800428428">
           <span class="emergency-number">0800 428 428</span>
-          <span class="emergency-name">GBV Command Centre</span>
+          <span class="emergency-name">${t('a.send.gbv')}</span>
         </a>
       </div>
 
       <div class="sent-actions">
-        <button class="btn-secondary" id="btn-back">Back to contacts</button>
-        <button class="btn-danger" id="btn-retry" title="Re-send alert">Re-send</button>
+        <button class="btn-secondary" id="btn-back">${t('a.send.backcontacts')}</button>
+        <button class="btn-danger" id="btn-retry" title="${t('a.send.resendtitle')}">${t('a.send.resend')}</button>
       </div>
 
     </div>
@@ -104,7 +104,7 @@ function sendingRow(c) {
 }
 function sentRow(c) {
     const callLink = c.status === 'failed'
-        ? `<a class="sent-call-link" href="${telUri(c.phone)}">Call ${c.name}</a>`
+        ? `<a class="sent-call-link" href="${telUri(c.phone)}">${t('a.send.call', { name: c.name })}</a>`
         : '';
     return `
     <li class="sending-item sending-item--${c.status}">
@@ -122,7 +122,7 @@ function deliveryIcon(status) {
     switch (status) {
         case 'pending': return '–';
         case 'sending': return '<span class="spinner"></span>';
-        case 'delivered': return 'Sent';
-        case 'failed': return 'Failed';
+        case 'delivered': return t('a.send.statussent');
+        case 'failed': return t('a.send.statusfailed');
     }
 }

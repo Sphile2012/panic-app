@@ -10,6 +10,8 @@
   </head>
   <body class="dashboard-body">
 
+    <div id="dashboard-language-bar"></div>
+
     <div class="dash-layout">
 
       <!-- Sidebar -->
@@ -19,14 +21,14 @@
           <span class="dash-brand-name">Panic Ring</span>
         </div>
         <nav class="dash-nav">
-          <a class="dash-nav-item dash-nav-item--active" href="#overview">Overview</a>
-          <a class="dash-nav-item" href="#alerts">Alerts</a>
-          <a class="dash-nav-item" href="#install">Install app</a>
-          <a class="dash-nav-item" href="#account">Account</a>
+          <a class="dash-nav-item dash-nav-item--active" href="#overview" data-i18n="c.dashboard.overview">Overview</a>
+          <a class="dash-nav-item" href="#alerts" data-i18n="c.dashboard.alerts">Alerts</a>
+          <a class="dash-nav-item" href="#install" data-i18n="c.dashboard.installApp">Install app</a>
+          <a class="dash-nav-item" href="#account" data-i18n="c.dashboard.account">Account</a>
         </nav>
         <div class="dash-sidebar-footer">
           <span class="dash-user-email" id="dash-user-email">—</span>
-          <button class="dash-signout-btn" id="dash-signout">Sign out</button>
+          <button class="dash-signout-btn" id="dash-signout" data-i18n="c.dashboard.signOut">Sign out</button>
         </div>
       </aside>
 
@@ -36,10 +38,10 @@
         <!-- Header -->
         <header class="dash-header">
           <div>
-            <h1 class="dash-page-title">Dashboard</h1>
-            <p class="dash-page-sub" id="dash-greeting">Loading…</p>
+            <h1 class="dash-page-title" data-i18n="c.dashboard.title">Dashboard</h1>
+            <p class="dash-page-sub" id="dash-greeting" data-i18n="c.dashboard.loading">Loading…</p>
           </div>
-          <button class="btn-primary dash-install-btn" id="dash-header-install" style="display:none">
+          <button class="btn-primary dash-install-btn" id="dash-header-install" style="display:none" data-i18n="c.dashboard.installApp">
             Install app
           </button>
         </header>
@@ -48,39 +50,39 @@
         <section class="dash-auth-gate" id="dash-auth-gate">
 
           <div class="dash-auth-tabs">
-            <button class="dash-tab dash-tab--active" id="tab-login">Sign in</button>
-            <button class="dash-tab" id="tab-signup">Create account</button>
+            <button class="dash-tab dash-tab--active" id="tab-login" data-i18n="c.dashboard.signIn">Sign in</button>
+            <button class="dash-tab" id="tab-signup" data-i18n="c.dashboard.createAccount">Create account</button>
           </div>
 
           <!-- Login form -->
           <div class="dash-auth-form-wrap" id="login-wrap">
             <form class="dash-auth-form" id="dash-login-form" novalidate>
-              <label class="field-label" for="d-li-email">Email</label>
+              <label class="field-label" for="d-li-email" data-i18n="c.dashboard.email">Email</label>
               <input class="text-input" id="d-li-email" type="email"
-                placeholder="you@example.com" autocomplete="email" required />
-              <label class="field-label" for="d-li-pw">Password</label>
+                placeholder="you@example.com" data-i18n-placeholder="c.dashboard.emailPlaceholder" autocomplete="email" required />
+              <label class="field-label" for="d-li-pw" data-i18n="c.dashboard.password">Password</label>
               <input class="text-input" id="d-li-pw" type="password"
-                placeholder="Your password" autocomplete="current-password" required />
+                placeholder="Your password" data-i18n-placeholder="c.dashboard.yourPassword" autocomplete="current-password" required />
               <p class="auth-error" id="d-li-error" aria-live="polite"></p>
-              <button class="btn-primary" type="submit" id="d-li-submit">Sign in</button>
+              <button class="btn-primary" type="submit" id="d-li-submit" data-i18n="c.dashboard.signIn">Sign in</button>
             </form>
           </div>
 
           <!-- Signup form -->
           <div class="dash-auth-form-wrap" id="signup-wrap" style="display:none">
             <form class="dash-auth-form" id="dash-signup-form" novalidate>
-              <label class="field-label" for="d-su-email">Email</label>
+              <label class="field-label" for="d-su-email" data-i18n="c.dashboard.email">Email</label>
               <input class="text-input" id="d-su-email" type="email"
-                placeholder="you@example.com" autocomplete="email" required />
-              <label class="field-label" for="d-su-pw">Password</label>
+                placeholder="you@example.com" data-i18n-placeholder="c.dashboard.emailPlaceholder" autocomplete="email" required />
+              <label class="field-label" for="d-su-pw" data-i18n="c.dashboard.password">Password</label>
               <input class="text-input" id="d-su-pw" type="password"
-                placeholder="At least 8 characters" autocomplete="new-password"
+                placeholder="At least 8 characters" data-i18n-placeholder="c.dashboard.passwordMin" autocomplete="new-password"
                 minlength="8" required />
-              <label class="field-label" for="d-su-cf">Confirm password</label>
+              <label class="field-label" for="d-su-cf" data-i18n="c.dashboard.confirmPassword">Confirm password</label>
               <input class="text-input" id="d-su-cf" type="password"
-                placeholder="Repeat password" autocomplete="new-password" required />
+                placeholder="Repeat password" data-i18n-placeholder="c.dashboard.repeatPassword" autocomplete="new-password" required />
               <p class="auth-error" id="d-su-error" aria-live="polite"></p>
-              <button class="btn-primary" type="submit" id="d-su-submit">Create account</button>
+              <button class="btn-primary" type="submit" id="d-su-submit" data-i18n="c.dashboard.createAccount">Create account</button>
             </form>
           </div>
 
@@ -91,47 +93,47 @@
 
           <!-- Stats grid -->
           <section class="dash-section" id="overview">
-            <h2 class="dash-section-title">Overview</h2>
+            <h2 class="dash-section-title" data-i18n="c.dashboard.overview">Overview</h2>
             <div class="dash-stats-grid" id="dash-stats">
               <div class="dash-stat-card">
                 <span class="dash-stat-value" id="stat-total">—</span>
-                <span class="dash-stat-label">Total alerts sent</span>
+                <span class="dash-stat-label" data-i18n="c.dashboard.totalAlerts">Total alerts sent</span>
               </div>
               <div class="dash-stat-card">
                 <span class="dash-stat-value" id="stat-opened">—</span>
-                <span class="dash-stat-label">Messages opened</span>
+                <span class="dash-stat-label" data-i18n="c.dashboard.messagesOpened">Messages opened</span>
               </div>
               <div class="dash-stat-card">
                 <span class="dash-stat-value" id="stat-failed">—</span>
-                <span class="dash-stat-label">Failed deliveries</span>
+                <span class="dash-stat-label" data-i18n="c.dashboard.failedDeliveries">Failed deliveries</span>
               </div>
               <div class="dash-stat-card">
                 <span class="dash-stat-value" id="stat-location">—</span>
-                <span class="dash-stat-label">Sent with location</span>
+                <span class="dash-stat-label" data-i18n="c.dashboard.sentWithLocation">Sent with location</span>
               </div>
               <div class="dash-stat-card dash-stat-card--wide">
-                <span class="dash-stat-label">Last alert</span>
-                <span class="dash-stat-value dash-stat-value--sm" id="stat-last">Never</span>
+                <span class="dash-stat-label" data-i18n="c.dashboard.lastAlert">Last alert</span>
+                <span class="dash-stat-value dash-stat-value--sm" id="stat-last" data-i18n="c.dashboard.never">Never</span>
               </div>
             </div>
           </section>
 
           <!-- Recent alerts -->
           <section class="dash-section" id="alerts">
-            <h2 class="dash-section-title">Recent alerts</h2>
+            <h2 class="dash-section-title" data-i18n="c.dashboard.recentAlerts">Recent alerts</h2>
             <div class="dash-table-wrap">
               <table class="dash-table" id="dash-alerts-table">
                 <thead>
                   <tr>
-                    <th>Date &amp; time</th>
-                    <th>Contacts</th>
-                    <th>Opened</th>
-                    <th>Failed</th>
-                    <th>Location</th>
+                    <th data-i18n="c.dashboard.dateTime">Date &amp; time</th>
+                    <th data-i18n="c.dashboard.contacts">Contacts</th>
+                    <th data-i18n="c.dashboard.opened">Opened</th>
+                    <th data-i18n="c.dashboard.failed">Failed</th>
+                    <th data-i18n="c.dashboard.location">Location</th>
                   </tr>
                 </thead>
                 <tbody id="dash-alerts-body">
-                  <tr><td colspan="5" class="dash-table-empty">Loading…</td></tr>
+                  <tr><td colspan="5" class="dash-table-empty" data-i18n="c.dashboard.loading">Loading…</td></tr>
                 </tbody>
               </table>
             </div>
@@ -139,24 +141,24 @@
 
           <!-- Install section -->
           <section class="dash-section" id="install">
-            <h2 class="dash-section-title">Install the app</h2>
+            <h2 class="dash-section-title" data-i18n="c.dashboard.installTheApp">Install the app</h2>
             <div class="dash-install-card">
               <div class="dash-install-icon" aria-hidden="true"></div>
               <div class="dash-install-body">
-                <h3 class="dash-install-title">Add Panic Ring to your home screen</h3>
-                <p class="dash-install-desc">
+                <h3 class="dash-install-title" data-i18n="c.dashboard.addToHome">Add Panic Ring to your home screen</h3>
+                <p class="dash-install-desc" data-i18n="c.dashboard.installDescription">
                   Installing makes the app available offline, removes the browser bar,
                   and makes it launch faster. Works on Android and iOS.
                 </p>
                 <div class="dash-install-actions">
-                  <button class="btn-primary" id="dash-install-btn" style="display:none">
+                  <button class="btn-primary" id="dash-install-btn" style="display:none" data-i18n="c.dashboard.installNow">
                     Install now
                   </button>
                   <div class="dash-install-ios" id="dash-install-ios" style="display:none">
-                    <p>On iPhone/iPad: tap the <strong>Share</strong> button in Safari,
+                    <p data-i18n-html="c.dashboard.iphoneInstall">On iPhone/iPad: tap the <strong>Share</strong> button in Safari,
                     then choose <strong>Add to Home Screen</strong>.</p>
                   </div>
-                  <p class="dash-install-already" id="dash-install-already" style="display:none">
+                  <p class="dash-install-already" id="dash-install-already" style="display:none" data-i18n="c.dashboard.alreadyInstalled">
                     App is already installed.
                   </p>
                 </div>
@@ -166,14 +168,14 @@
 
           <!-- Account section -->
           <section class="dash-section" id="account">
-            <h2 class="dash-section-title">Account</h2>
+            <h2 class="dash-section-title" data-i18n="c.dashboard.account">Account</h2>
             <div class="dash-account-card">
               <p class="dash-account-email" id="dash-account-email">—</p>
-              <p class="dash-account-note">
+              <p class="dash-account-note" data-i18n="c.dashboard.accountNote">
                 Your contacts, notes and safety plan are stored encrypted on your device only.
                 This account keeps your settings backed up and lets you track alert history.
               </p>
-              <button class="btn-danger" id="dash-account-signout">Sign out</button>
+              <button class="btn-danger" id="dash-account-signout" data-i18n="c.dashboard.signOut">Sign out</button>
             </div>
           </section>
 
