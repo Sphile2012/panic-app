@@ -70,6 +70,14 @@ export function resolveThemeMode(mode) {
 
 export function applyAppearance(a) {
     const html = document.documentElement;
+    const disguise = DISGUISE_OPTIONS.find(d => d.id === a.disguise) ?? DISGUISE_OPTIONS[0];
+    document.title = disguise.label;
+    const icon = document.querySelector('link[rel="icon"]') as HTMLLinkElement | null;
+    if (icon) {
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#374151"/><text x="32" y="43" font-size="30" text-anchor="middle" fill="#fff" font-family="Arial" font-weight="700">${disguise.preview[0]}</text></svg>`;
+        icon.type = 'image/svg+xml';
+        icon.href = 'data:image/svg+xml,' + encodeURIComponent(svg);
+    }
     const resolved = resolveThemeMode(a.mode);
     html.setAttribute('data-theme', resolved);
     html.setAttribute('data-accent', a.accentId);

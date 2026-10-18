@@ -1,6 +1,6 @@
 // Service worker — cache-first for app shell, network-first for API calls.
 // Bump CACHE_VERSION on every deploy to force clients to pick up new assets.
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3';
 const CACHE_NAME    = `panic-ring-${CACHE_VERSION}`;
 
 // Files to precache on install (app shell only — no API or external URLs)
@@ -64,7 +64,7 @@ self.addEventListener('fetch', event => {
         }
         return response;
       })
-      .catch(() => caches.match(request))
+      .catch(() => caches.match(request).then(r => r || (request.mode === 'navigate' ? caches.match('/') : undefined)))
   );
 });
 
@@ -77,3 +77,4 @@ function fetchAndCache(request) {
     return response;
   });
 }
+

@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+const APP_URL = 'https://panic-ring-app.netlify.app/';
 const SUPABASE_URL = import.meta.env['VITE_SUPABASE_URL'];
 const SUPABASE_ANON = import.meta.env['VITE_SUPABASE_ANON_KEY'];
 const ENABLE_LOCAL_AUTH = import.meta.env['VITE_ENABLE_LOCAL_AUTH'] === 'true';
@@ -103,7 +104,7 @@ export async function requestPasswordReset(identifier: string): Promise<{ error:
     if (!DB_CONFIGURED)
         return { error: 'service' };
     try {
-        const { error } = await getClient().auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '/' });
+        const { error } = await getClient().auth.resetPasswordForEmail(email, { redirectTo: APP_URL });
         return { error: error ? 'service' : null };
     }
     catch {
@@ -229,3 +230,4 @@ export async function fetchRecentAlerts(limit = 10) {
         return [];
     }
 }
+

@@ -151,6 +151,8 @@ class Store {
         })().catch(console.error);
     }
     addContact(name: string, phone: string, relationship = 'other'): boolean {
+        if (this.state.contacts.length >= 5)
+            return false;
         const contact: Contact = {
             id: uid(), name: name.trim(), phone: phone.trim(), relationship,
             initials: initials(name), status: 'pending',

@@ -1,4 +1,7 @@
 import { store } from '../state.js';
+import { t } from '../i18n.js';
+import { RELATIONSHIPS } from '../storage.js';
+import { DISGUISE_OPTIONS, loadAppearance, saveAppearance, applyAppearance } from '../theme.js';
 
 export function renderSetupPin(root: HTMLElement) {
     root.innerHTML = `
@@ -11,6 +14,12 @@ export function renderSetupPin(root: HTMLElement) {
       </p>
 
       <form class="setup-form" id="setup-pin-form" autocomplete="off">
+
+        <label class="field-label">Choose your disguise screen</label>
+        <div class="disguise-pick" style="display:grid;gap:8px;margin-bottom:12px">
+          ${DISGUISE_OPTIONS.map(d => `
+            <label class="settings-radio"><input type="radio" name="disguise" value="${d.id}" ${d.id === loadAppearance().disguise ? 'checked' : ''}> <strong>${d.label}</strong> — ${d.description}</label>`).join('')}
+        </div>
 
         <label class="field-label" for="pin-input">Your secret PIN</label>
         <input
@@ -63,112 +72,74 @@ export function renderSetupPin(root: HTMLElement) {
             return;
         }
         errorEl.textContent = '';
+        const chosen = (root.querySelector('input[name="disguise"]:checked') as HTMLInputElement | null)?.value;
+        if (chosen) {
+            const ap = { ...loadAppearance(), disguise: chosen };
+            saveAppearance(ap);
+            applyAppearance(ap);
+        }
         await store.savePin(pin, decoy);
         store.navigateTo('setup-contacts');
     });
 }
 
-export function renderSetupContacts(root) {
-    const { contacts, authEmail } = store.getState();
+export function renderSetupContacts(root: HTMLElement) {
+    const { contacts } = store.getState();
+    const full = contacts.length >= 5;
+    const relOptions = RELATIONSHIPS.map(r => `<option value="${r}">${t('rel.' + r)}</option>`).join('');
     root.innerHTML = `
     <div class="screen setup-screen">
       <h2 class="setup-title">Add trusted contacts</h2>
       <p class="setup-body">
-        These people will receive an SMS alert when you activate the app.
-        ${authEmail ? 'Add at least one person you trust completely.' : 'Sign in or create an account before adding contacts.'}
+        These people receive your alert, live location and photos. You can add up to 5 (${contacts.length}/5).
       </p>
-
-      ${authEmail ? `<ul class="contact-list" id="setup-contact-list">
+      <ul class="contact-list" id="setup-contact-list">
         ${contacts.map(c => `
           <li class="contact-item">
             <div class="contact-avatar">${c.initials}</div>
             <div class="contact-info">
               <span class="contact-name">${c.name}</span>
-              <span class="contact-phone">${c.phone}</span>
+              <span class="contact-phone">${c.phone}${c.relationship ? ' - ' + t('rel.' + c.relationship) : ''}</span>
             </div>
             <button class="contact-delete" data-id="${c.id}" aria-label="Remove ${c.name}">✕</button>
-          </li>
-        `).join('')}
-      </ul>` : ''}
-
-      ${authEmail ? `<form class="setup-form" id="add-contact-form" autocomplete="off">
+          </li>`).join('')}
+      </ul>
+      ${full ? '<p class="setup-hint">You have reached the limit of 5 contacts.</p>' : `
+      <form class="setup-form" id="add-contact-form" autocomplete="off">
         <label class="field-label" for="contact-name">Name</label>
-        <input
-          class="text-input"
-          id="contact-name"
-          type="text"
-          placeholder="Full name"
-          autocomplete="off"
-          required />
-
+        <input class="text-input" id="contact-name" type="text" placeholder="Full name" autocomplete="off" required />
         <label class="field-label" for="contact-phone">Phone number</label>
-        <input
-          class="text-input"
-          id="contact-phone"
-          type="tel"
-          placeholder="+27 82 123 4567"
-          autocomplete="off"
-          required />
-
+        <input class="text-input" id="contact-phone" type="tel" placeholder="+27 82 123 4567" autocomplete="off" required />
+        <label class="field-label" for="contact-rel">${t('rel.label')}</label>
+        <select class="text-input" id="contact-rel">${relOptions}</select>
         <p class="setup-hint" id="contact-error" aria-live="polite"></p>
         <button class="btn-secondary-outline" type="submit">Add contact</button>
-      </form>` : `
-        <div class="settings-auth-buttons">
-          <button class="btn-primary" id="btn-contact-signup" type="button">Create account</button>
-          <button class="btn-secondary-outline" id="btn-contact-login" type="button">Sign in</button>
-        </div>
-      `}
-
-      <button
-        class="btn-primary"
-        id="btn-setup-done"
-        ${authEmail && contacts.length === 0 ? 'disabled' : ''}>
-        ${authEmail ? 'Done — open app' : 'Continue without contacts'}
+      </form>`}
+      <button class="btn-primary" id="btn-setup-done">
+        ${contacts.length ? 'Done — open app' : 'Skip for now'}
       </button>
-      ${authEmail && contacts.length === 0
-        ? '<p class="setup-hint">Add at least one contact to continue.</p>'
-        : ''}
     </div>
   `;
     root.querySelector('#setup-contact-list')?.addEventListener('click', (e: MouseEvent) => {
         const btn = (e.target as Element).closest('.contact-delete') as HTMLButtonElement | null;
-        if (!btn)
+        if (!btn?.dataset['id'])
             return;
-        const id = btn.dataset['id'];
-        if (!id) return;
-        store.deleteContact(id);
+        store.deleteContact(btn.dataset['id']);
         store.navigateTo('setup-contacts');
     });
-    root.querySelector('#btn-contact-signup')?.addEventListener('click', () => store.navigateTo('signup'));
-    root.querySelector('#btn-contact-login')?.addEventListener('click', () => store.navigateTo('login'));
     const addForm = root.querySelector('#add-contact-form') as HTMLFormElement | null;
-    if (addForm) {
-      const nameInput = root.querySelector('#contact-name') as HTMLInputElement;
-      const phoneInput = root.querySelector('#contact-phone') as HTMLInputElement;
-      const errEl = root.querySelector('#contact-error') as HTMLElement;
-      addForm.addEventListener('submit', (e: SubmitEvent) => {
+    addForm?.addEventListener('submit', (e: SubmitEvent) => {
         e.preventDefault();
-        const name = nameInput.value.trim();
-        const phone = phoneInput.value.trim();
-        if (!name) {
-          errEl.textContent = 'Enter a name.';
-          return;
-        }
-        if (!phone) {
-          errEl.textContent = 'Enter a phone number.';
-          return;
-        }
-        errEl.textContent = '';
-        if (!store.addContact(name, phone)) {
-          store.navigateTo('signup');
-          return;
-        }
+        const name = (root.querySelector('#contact-name') as HTMLInputElement).value.trim();
+        const phone = (root.querySelector('#contact-phone') as HTMLInputElement).value.trim();
+        const rel = (root.querySelector('#contact-rel') as HTMLSelectElement).value;
+        const errEl = root.querySelector('#contact-error') as HTMLElement;
+        if (!name) { errEl.textContent = 'Enter a name.'; return; }
+        if (!phone) { errEl.textContent = 'Enter a phone number.'; return; }
+        if (!store.addContact(name, phone, rel)) { errEl.textContent = 'You can add up to 5 contacts.'; return; }
         store.navigateTo('setup-contacts');
-      });
-    }
-    root.querySelector('#btn-setup-done').addEventListener('click', () => {
-      if (!store.getState().authEmail || store.getState().contacts.length > 0) {
-            store.navigateTo('app');
-        }
     });
+    root.querySelector('#btn-setup-done')!.addEventListener('click', () => store.navigateTo('app'));
 }
+
+

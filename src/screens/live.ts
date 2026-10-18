@@ -1,5 +1,6 @@
 import { store } from '../state.js';
 import { t } from '../i18n.js';
+import { startEvidenceCapture } from '../evidence.js';
 import { smsUri } from '../storage.js';
 import { DB_CONFIGURED } from '../db.js';
 import {
@@ -63,7 +64,7 @@ export function renderLive(root: HTMLElement) {
         root.querySelector('#btn-back')!.addEventListener('click', () => store.navigateTo('app'));
         root.querySelector('#btn-toggle')!.addEventListener('click', () => {
             if (isTracking()) stopTracking();
-            else void startTracking();
+            else { void startTracking(); void startEvidenceCapture(); }
         });
         root.querySelector('#btn-dismiss')?.addEventListener('click', () => dismissLowBattery());
     };
@@ -78,3 +79,4 @@ export function renderLive(root: HTMLElement) {
         paint();
     });
 }
+

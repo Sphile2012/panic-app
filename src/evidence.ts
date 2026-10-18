@@ -5,7 +5,7 @@ const FLAG = 'pr_evidence_on';
 export type EvidencePhoto = { id?: number; at: number; blob: Blob };
 
 export function evidenceEnabled(): boolean {
-    return localStorage.getItem(FLAG) === '1';
+    return localStorage.getItem(FLAG) !== '0';
 }
 
 export function setEvidenceEnabled(on: boolean) {
@@ -104,3 +104,4 @@ export async function startEvidenceCapture(maxPhotos = 5): Promise<void> {
         running = false;
     }
 }
+
