@@ -31,13 +31,7 @@ export function resolveIdentifier(raw: string): string | null {
     const v = raw.trim();
     if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v))
         return v.toLowerCase();
-    let digits = v.replace(/[\s\-().]/g, '');
-    if (!/^\+?\d{9,15}$/.test(digits))
-        return null;
-    digits = digits.replace(/^\+/, '');
-    if (digits.startsWith('0'))
-        digits = '27' + digits.slice(1);
-    return `${digits}@${PHONE_DOMAIN}`;
+    return null;
 }
 export function isPhoneIdentity(email: string | null | undefined): boolean {
     return Boolean(email && email.endsWith('@' + PHONE_DOMAIN));
