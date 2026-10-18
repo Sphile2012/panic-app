@@ -25,7 +25,6 @@ export function renderSignup(root) {
       <div class="auth-card">
         <h2 class="auth-title">${t('auth.create')}</h2>
         <p class="auth-subtitle">${t('auth.signup.sub')}</p>
-        ${offlineNotice('btn-skip')}
         <form class="auth-form" id="signup-form" autocomplete="on" novalidate>
           <label class="field-label" for="su-email">${t('auth.id.label')}</label>
           <input class="text-input" id="su-email" type="text" inputmode="email"
@@ -55,9 +54,6 @@ export function renderSignup(root) {
           ${t('auth.haveaccount')}
           <button class="auth-link-btn" id="btn-to-login">${t('auth.signin')}</button>
         </p>
-        <p class="auth-switch">
-          <button class="auth-link-btn" id="btn-quick-access" type="button">${t('auth.skip')}</button>
-        </p>
       </div>
     </div>
   `;
@@ -67,9 +63,6 @@ export function renderSignup(root) {
     });
     root.querySelector('#btn-to-login').addEventListener('click', () => {
         store.navigateTo('login');
-    });
-    root.querySelector('#btn-quick-access').addEventListener('click', () => {
-        store.navigateTo('setup-pin');
     });
     bindPwToggles(root);
     const form = root.querySelector('#signup-form');
@@ -137,7 +130,6 @@ export function renderLogin(root) {
       ${logoHtml()}
       <div class="auth-card">
         <h2 class="auth-title">${t('auth.signin')}</h2>
-        ${offlineNotice('btn-skip')}
         <form class="auth-form" id="login-form" autocomplete="on" novalidate>
           <label class="field-label" for="li-email">${t('auth.id.label')}</label>
           <input class="text-input" id="li-email" type="text" inputmode="email"
@@ -161,9 +153,6 @@ export function renderLogin(root) {
           ${t('auth.noaccount')}
           <button class="auth-link-btn" id="btn-to-signup">${t('auth.createone')}</button>
         </p>
-        <p class="auth-switch">
-          <button class="auth-link-btn" id="btn-quick-access" type="button">${t('auth.skip')}</button>
-        </p>
       </div>
     </div>
   `;
@@ -176,9 +165,6 @@ export function renderLogin(root) {
     });
     root.querySelector('#btn-to-signup').addEventListener('click', () => {
         store.navigateTo('signup');
-    });
-    root.querySelector('#btn-quick-access').addEventListener('click', () => {
-        store.navigateTo('setup-pin');
     });
     bindPwToggles(root);
     const form = root.querySelector('#login-form');
