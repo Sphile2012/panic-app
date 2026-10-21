@@ -28,7 +28,7 @@ type AppState = {
 function buildInitialState(): AppState {
     const pub = loadPublicSync();
     return {
-        screen: pub.pin === '' ? (DB_CONFIGURED ? 'signup' : 'setup-pin') : 'calculator',
+        screen: pub.pin === '' ? 'welcome' : 'calculator',
         rev: 0,
         profile: { ...EMPTY_PROFILE },
         pinBuffer: '',

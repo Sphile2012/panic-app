@@ -36,19 +36,40 @@ export function getClient() {
     }
     return _client;
 }
-export async function signUp(email, password) {
+export async function signUp(email, password, fullName = '') {
     if (!DB_CONFIGURED)
         return { error: 'Secure account service unavailable. Continue in offline mode.' };
     try {
         const { data, error } = await getClient().auth.signUp({
             email,
             password,
-            options: { emailRedirectTo: getFrontendRedirectUrl(FRONTEND_URL, window.location.origin) },
+            options: {
+                emailRedirectTo: getFrontendRedirectUrl(FRONTEND_URL, window.location.origin),
+                ...(fullName ? { data: { full_name: fullName } } : {}),
+            },
         });
         return { error: error?.message ?? null, session: data.session };
     }
     catch {
         return { error: 'Unable to reach the secure account service. Continue in offline mode.', session: null };
+    }
+}
+export async function signInWithGoogle() {
+    if (!DB_CONFIGURED)
+        return { error: 'Secure account service unavailable. Continue in offline mode.' };
+    try {
+        const { error } = await getClient().auth.signInWithOAuth({
+            provider: 'google',
+            options: { redirectTo: getFrontendRedirectUrl(FRONTEND_URL, window.location.origin) },
+        });
+        if (error && /unsupported provider/i.test(error.message)) {
+            return { error: 'Google sign-in is not enabled yet. Enable the Google provider in Supabase Auth settings.' };
+        }
+        return { error: error?.message ?? null };
+    }
+    catch {
+        console.warn('[auth] Google sign-in could not reach the account service.');
+        return { error: 'Unable to start Google sign-in. Check your connection and try again.' };
     }
 }
 export async function signIn(email, password) {

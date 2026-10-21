@@ -16,7 +16,7 @@ import { renderSafetyPlan } from './screens/safetyPlan.js';
 import { renderSupport } from './screens/support.js';
 import { renderSettings } from './screens/settings.js';
 import { renderAppearance } from './screens/appearance.js';
-import { renderSignup, renderLogin, renderForgotPassword, renderResetPassword, renderVerifyEmail } from './screens/auth.js';
+import { renderWelcome, renderSignup, renderLogin, renderForgotPassword, renderResetPassword, renderVerifyEmail } from './screens/auth.js';
 import { renderBudget } from './screens/disguise/budget.js';
 import { renderWeather } from './screens/disguise/weather.js';
 import { renderNotesPlain } from './screens/disguise/notesPlain.js';
@@ -84,6 +84,9 @@ function render(screen: string) {
     currentScreen = screen;
     appRoot.scrollTop = 0;
     switch (screen) {
+        case 'welcome':
+            renderWelcome(appRoot);
+            break;
         case 'signup':
             renderSignup(appRoot);
             break;
@@ -213,7 +216,7 @@ store.subscribe((state) => {
 
 document.addEventListener('keydown', (event: KeyboardEvent) => {
     if (event.key === 'Escape') {
-        const safe = ['calculator', 'decoy', 'setup-pin', 'setup-contacts', 'signup', 'login', 'forgot-password', 'reset-password', 'verify-email'];
+        const safe = ['calculator', 'decoy', 'setup-pin', 'setup-contacts', 'welcome', 'signup', 'login', 'forgot-password', 'reset-password', 'verify-email'];
         if (!safe.includes(store.getState().screen)) {
             window.location.href = 'https://www.google.com';
         }

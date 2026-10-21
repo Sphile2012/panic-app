@@ -120,6 +120,13 @@ and sender domain with your email provider before launch.
 
 ## Sign-in, languages and live location
 
+The browser app supports email/password signup and sign-in plus Google OAuth.
+To enable Google, configure the Google provider under Supabase Authentication >
+Sign In / Providers, create a Web OAuth client in Google Cloud, and add the
+callback URL shown by Supabase to the client's authorized redirect URIs. Add the
+frontend origin to Supabase's allowed Redirect URLs. The app displays a clear
+message if the Google provider has not been enabled.
+
 - Users sign in with an email address. Email confirmation can remain enabled;
   users must confirm their address before signing in.
 - The interface is available in English, isiZulu, Sesotho and Afrikaans
