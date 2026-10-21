@@ -1,4 +1,6 @@
 const PROXY_API_KEY = 'panic-ring-public-proxy-key';
+const DEFAULT_SUPABASE_URL = 'https://bnmzydhlmhwxejfuydeb.supabase.co';
+const DEFAULT_SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_7hQCMDk28DIB0pUv9V945A_vPsC-OOZ';
 const ALLOWED_METHODS = new Set(['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']);
 const HOP_BY_HOP_HEADERS = new Set([
   'connection', 'content-length', 'host', 'keep-alive', 'proxy-authenticate',
@@ -6,16 +8,16 @@ const HOP_BY_HOP_HEADERS = new Set([
 ]);
 
 function upstreamConfig(env) {
-  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY)
-    return null;
+  const supabaseUrl = env.SUPABASE_URL || DEFAULT_SUPABASE_URL;
+  const publishableKey = env.SUPABASE_ANON_KEY || DEFAULT_SUPABASE_PUBLISHABLE_KEY;
   try {
-    const url = new URL(env.SUPABASE_URL);
+    const url = new URL(supabaseUrl);
     const local = ['localhost', '127.0.0.1', '[::1]', 'kong'].includes(url.hostname);
     if ((!['https:', 'http:'].includes(url.protocol)) ||
         (url.protocol === 'http:' && !local) ||
         url.username || url.password || url.pathname !== '/' || url.search || url.hash)
       return null;
-    return { url, anonKey: env.SUPABASE_ANON_KEY };
+    return { url, anonKey: publishableKey };
   }
   catch {
     return null;

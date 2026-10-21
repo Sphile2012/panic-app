@@ -33,14 +33,29 @@ afterEach(() => {
   }
 });
 
-test('Supabase proxy fails closed when server credentials are missing', async () => {
+test('Supabase proxy uses the configured public project defaults when deployment variables are missing', async () => {
+  let request;
+  globalThis.fetch = async (url, options) => {
+    request = { url: new URL(url), options };
+    return new Response('{"external":{"email":true},"disable_signup":false}', {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    });
+  };
+
   const result = await supabaseProxy({
     httpMethod: 'GET',
-    path: '/api/auth/v1/health',
-    rawUrl: 'https://panic-ring.example/api/auth/v1/health',
+    path: '/api/auth/v1/settings',
+    rawUrl: 'https://panic-ring.example/api/auth/v1/settings',
   });
-  assert.equal(result.statusCode, 503);
-  assert.match(result.body, /not configured/i);
+  assert.equal(result.statusCode, 200);
+  assert.equal(request.url.origin, 'https://bnmzydhlmhwxejfuydeb.supabase.co');
+  assert.equal(request.url.pathname, '/auth/v1/settings');
+  assert.match(request.options.headers.get('apikey'), /^sb_publishable_/);
+  assert.deepEqual(JSON.parse(Buffer.from(result.body, 'base64').toString()), {
+    external: { email: true },
+    disable_signup: false,
+  });
 });
 
 test('Supabase proxy rejects paths outside the Auth and REST APIs', async () => {
