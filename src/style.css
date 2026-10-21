@@ -439,6 +439,117 @@ html[data-photo-background="true"] .phone-screen > .screen { background: transpa
 .empty-hint { font-size: 0.83rem; color: var(--text-muted); text-align: center; padding: 20px 0; }
 .form-section-title { font-size: 0.9rem; font-weight: 700; margin-top: 16px; }
 
+.contacts-screen {
+  gap: 10px;
+  background: #e5f4f8;
+}
+.contacts-screen .screen-header {
+  margin-bottom: 2px;
+  padding-bottom: 8px;
+  border-bottom: 0;
+}
+.contacts-screen .screen-title { color: #26374a; }
+.contacts-add-shortcut {
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 12px;
+  background: #fff;
+  color: #4388e8;
+  font-size: 1.4rem;
+  cursor: pointer;
+}
+.contacts-search {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 3px 12px rgba(54, 88, 112, .08);
+}
+.contacts-search svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: #8fa5b2;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+.contacts-search input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #26374a;
+  font: inherit;
+  font-size: .78rem;
+}
+.contacts-caption { color: #758a97; font-size: .68rem; }
+.contacts-screen .contact-list { gap: 7px; }
+.contacts-screen .contact-item {
+  min-height: 62px;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 3px 12px rgba(54, 88, 112, .06);
+}
+.contacts-screen .contact-avatar {
+  width: 40px;
+  height: 40px;
+  background: #dbeaf3;
+  color: #31516a;
+  font-size: .76rem;
+}
+.contacts-screen .contact-info { align-self: center; }
+.contacts-screen .contact-name { color: #283b4d; font-size: .78rem; }
+.contacts-screen .contact-phone { margin-top: 2px; color: #8a9aa4; font-size: .65rem; }
+.contacts-screen .contact-actions { gap: 7px; }
+.contact-message {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  text-decoration: none;
+  transition: transform .12s, filter .12s;
+}
+.contact-message:hover { transform: scale(1.08); filter: brightness(.95); }
+.contact-message svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.contact-message--whatsapp { background: #2fbd72; }
+.contact-message--sms { background: #4c91f5; }
+.contact-manage-actions { display: flex; gap: 8px; margin-top: 4px; }
+.contact-manage-actions .contact-edit,
+.contact-manage-actions .contact-delete {
+  width: auto;
+  height: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  color: #71899a;
+  font-size: .61rem;
+}
+.contact-manage-actions .contact-delete { color: #c26470; }
+.contacts-screen .contacts-form {
+  margin-top: 4px;
+  padding: 0 2px 12px;
+}
+.contacts-screen .form-section-title { margin-top: 5px; color: #344b5b; }
+.contact-item[hidden], #contact-no-results[hidden] { display: none; }
+[data-theme="dark"] .contacts-screen { background: var(--bg); }
+[data-theme="dark"] .contacts-screen .screen-title,
+[data-theme="dark"] .contacts-screen .contact-name,
+[data-theme="dark"] .contacts-screen .form-section-title { color: var(--text); }
+[data-theme="dark"] .contacts-search,
+[data-theme="dark"] .contacts-screen .contact-item,
+[data-theme="dark"] .contacts-add-shortcut { background: var(--surface); }
+[data-theme="dark"] .contacts-search input { color: var(--text); }
+
 
 .app-screen { background: var(--bg); gap: 18px; }
 .app-header {
