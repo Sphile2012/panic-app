@@ -1,16 +1,28 @@
 import { createClient } from '@supabase/supabase-js';
-import { getFrontendRedirectUrl, resolveIdentifier } from './authConfig.mjs';
-export { resolveIdentifier } from './authConfig.mjs';
+import { getFrontendRedirectUrl } from './authConfig.mjs';
+const SUPABASE_URL = `${window.location.origin}/api`;
 const PROXY_API_KEY = 'panic-ring-public-proxy-key';
 const FRONTEND_URL = import.meta.env['VITE_FRONTEND_URL'];
-export const DB_CONFIGURED = import.meta.env['VITE_AUTH_ENABLED'] === 'true';
+const AUTH_ENABLED = import.meta.env['VITE_AUTH_ENABLED'] === 'true';
+const LEGACY_CLIENT_CONFIGURED = Boolean(
+    import.meta.env['VITE_SUPABASE_URL'] && import.meta.env['VITE_SUPABASE_ANON_KEY'],
+);
+export const DB_CONFIGURED = AUTH_ENABLED || LEGACY_CLIENT_CONFIGURED;
+const PHONE_DOMAIN = 'phone.panicring.app';
+
+export function displayIdentity(email: string | null | undefined): string {
+    if (!email)
+        return '';
+    return email.endsWith(`@${PHONE_DOMAIN}`) ? `+${email.split('@')[0]}` : email;
+}
+
 let _client = null;
 export function getClient() {
     if (!_client) {
         if (!DB_CONFIGURED) {
-            throw new Error('Account service not configured.');
+            throw new Error('Account service is disabled — set VITE_AUTH_ENABLED=true and configure server-side SUPABASE_URL and SUPABASE_ANON_KEY.');
         }
-        _client = createClient(`${window.location.origin}/api`, PROXY_API_KEY, {
+        _client = createClient(SUPABASE_URL, PROXY_API_KEY, {
             auth: {
                 persistSession: true,
                 autoRefreshToken: true,
@@ -20,135 +32,68 @@ export function getClient() {
     }
     return _client;
 }
-export type AuthFailure = 'id' | 'invalid' | 'confirm' | 'service' | 'generic';
-const PHONE_DOMAIN = 'phone.panicring.app';
-
-function logAuthFailure(operation: string, code?: string) {
-    console.warn(`[auth] ${operation} failed${code ? ` (${code})` : ''}`);
-}
-
-export function isPhoneIdentity(email: string | null | undefined): boolean {
-    return Boolean(email && email.endsWith('@' + PHONE_DOMAIN));
-}
-export function displayIdentity(email: string | null | undefined): string {
-    if (!email)
-        return '';
-    return isPhoneIdentity(email) ? '+' + email.split('@')[0] : email;
-}
-function mapAuthError(message: string | undefined): AuthFailure {
-    const m = (message ?? '').toLowerCase();
-    if (m.includes('not confirmed'))
-        return 'confirm';
-    if (m.includes('invalid') || m.includes('already registered'))
-        return 'invalid';
-    return 'generic';
-}
-export async function signUp(identifier: string, password: string): Promise<{ error: AuthFailure | null; needsConfirm?: boolean; identity?: string }> {
-    const email = resolveIdentifier(identifier);
-    if (!email)
-        return { error: 'id' };
+export async function signUp(email, password) {
     if (!DB_CONFIGURED)
-        return { error: 'service' };
+        return { error: 'Secure account service unavailable. Continue in offline mode.' };
     try {
         const { data, error } = await getClient().auth.signUp({
             email,
             password,
             options: { emailRedirectTo: getFrontendRedirectUrl(FRONTEND_URL, window.location.origin) },
         });
-        if (error) {
-            logAuthFailure('sign up', error.code);
-            return { error: mapAuthError(error.message) };
-        }
-        return {
-            error: null,
-            needsConfirm: !data.session && !isPhoneIdentity(email),
-            identity: data.session ? data.user?.email ?? email : undefined,
-        };
+        return { error: error?.message ?? null, session: data.session };
     }
     catch {
-        logAuthFailure('sign up');
-        return { error: 'service' };
+        return { error: 'Unable to reach the secure account service. Continue in offline mode.', session: null };
     }
 }
-export async function signIn(identifier: string, password: string): Promise<{ error: AuthFailure | null; identity?: string }> {
-    const email = resolveIdentifier(identifier);
-    if (!email)
-        return { error: 'id' };
+export async function signIn(email, password) {
     if (!DB_CONFIGURED)
-        return { error: 'service' };
+        return { error: 'Secure account service unavailable. Continue in offline mode.' };
     try {
-        const { data, error } = await getClient().auth.signInWithPassword({ email, password });
-        if (error)
-            logAuthFailure('sign in', error.code);
-        return {
-            error: error ? mapAuthError(error.message) : null,
-            identity: error ? undefined : data.user.email ?? email,
-        };
+        const { error } = await getClient().auth.signInWithPassword({ email, password });
+        return { error: error?.message ?? null };
     }
     catch {
-        logAuthFailure('sign in');
-        return { error: 'service' };
+        return { error: 'Unable to reach the secure account service. Continue in offline mode.' };
+    }
+}
+export async function resetPasswordForEmail(email, redirectTo?: string) {
+    if (!DB_CONFIGURED)
+        return { error: 'Secure account service unavailable. Continue in offline mode.' };
+    try {
+        const { error } = await getClient().auth.resetPasswordForEmail(email.trim(), redirectTo ? { redirectTo } : undefined);
+        return { error: error?.message ?? null };
+    }
+    catch {
+        console.warn('[auth] Password recovery request could not reach the account service.');
+        return { error: 'Unable to reach the secure account service. Continue in offline mode.' };
+    }
+}
+export async function updatePassword(password) {
+    if (!DB_CONFIGURED)
+        return { error: 'Secure account service unavailable. Continue in offline mode.' };
+    try {
+        const { error } = await getClient().auth.updateUser({ password });
+        return { error: error?.message ?? null };
+    }
+    catch {
+        return { error: 'Unable to reach the secure account service. Continue in offline mode.' };
     }
 }
 export async function signOut() {
     if (!DB_CONFIGURED)
         return;
-    try {
-        const { error } = await getClient().auth.signOut();
-        if (error)
-            logAuthFailure('sign out', error.code);
-    }
-    catch {
-        logAuthFailure('sign out');
-        throw new Error('Could not sign out.');
-    }
-}
-export async function requestPasswordReset(identifier: string): Promise<{ error: 'id' | 'phone' | 'service' | null }> {
-    const email = resolveIdentifier(identifier);
-    if (!email)
-        return { error: 'id' };
-    if (isPhoneIdentity(email))
-        return { error: 'phone' };
-    if (!DB_CONFIGURED)
-        return { error: 'service' };
-    try {
-        const { error } = await getClient().auth.resetPasswordForEmail(email, {
-            redirectTo: getFrontendRedirectUrl(FRONTEND_URL, window.location.origin, 'recovery'),
-        });
-        if (error)
-            logAuthFailure('password reset request', error.code);
-        return { error: error ? 'service' : null };
-    }
-    catch {
-        logAuthFailure('password reset request');
-        return { error: 'service' };
-    }
-}
-export async function updatePassword(password: string): Promise<boolean> {
-    if (!DB_CONFIGURED)
-        return false;
-    try {
-        const { error } = await getClient().auth.updateUser({ password });
-        if (error)
-            logAuthFailure('password update', error.code);
-        return !error;
-    }
-    catch {
-        logAuthFailure('password update');
-        return false;
-    }
+    await getClient().auth.signOut();
 }
 export async function getSession() {
     if (!DB_CONFIGURED)
         return null;
     try {
-        const { data, error } = await getClient().auth.getSession();
-        if (error)
-            logAuthFailure('get session', error.code);
+        const { data } = await getClient().auth.getSession();
         return data.session;
     }
     catch {
-        logAuthFailure('get session');
         return null;
     }
 }
@@ -156,31 +101,20 @@ export async function getUser() {
     if (!DB_CONFIGURED)
         return null;
     try {
-        const { data, error } = await getClient().auth.getUser();
-        if (error)
-            logAuthFailure('get user', error.code);
+        const { data } = await getClient().auth.getUser();
         return data.user ?? null;
     }
     catch {
-        logAuthFailure('get user');
         return null;
     }
 }
 export function onAuthStateChange(cb) {
     if (!DB_CONFIGURED)
         return () => { };
-    try {
-        const { data, error } = getClient().auth.onAuthStateChange((_event, session) => {
-            cb(session?.user ?? null);
-        });
-        if (error)
-            logAuthFailure('subscribe to auth changes', error.code);
-        return () => data.subscription.unsubscribe();
-    }
-    catch {
-        logAuthFailure('subscribe to auth changes');
-        return () => { };
-    }
+    const { data } = getClient().auth.onAuthStateChange((_event, session) => {
+        cb(session?.user ?? null);
+    });
+    return () => data.subscription.unsubscribe();
 }
 const DEVICE_KEY = 'pr_device_id';
 export function getDeviceId() {
@@ -195,43 +129,26 @@ export async function upsertDevice(row) {
     if (!DB_CONFIGURED)
         return;
     try {
-        const user = await getUser();
-        if (!user || user.id !== row.user_id) {
-            console.warn('[db] upsertDevice skipped: authenticated user unavailable');
-            return;
-        }
         const { error } = await getClient()
             .from('devices')
-            .upsert({
-                user_id: user.id,
-                device_id: row.device_id,
-                auto_lock: row.auto_lock,
-            }, { onConflict: 'user_id,device_id' });
+            .upsert(row, { onConflict: 'device_id' });
         if (error)
-            console.warn('[db] upsertDevice failed:', error.code ?? 'unknown');
+            console.warn('[db] upsertDevice:', error.message);
     }
-    catch {
-        console.warn('[db] upsertDevice failed: request unavailable');
+    catch (e) {
+        console.warn('[db] upsertDevice offline:', e);
     }
 }
 export async function insertAlertLog(row) {
     if (!DB_CONFIGURED)
         return;
     try {
-        const user = await getUser();
-        if (!user) {
-            console.warn('[db] insertAlertLog skipped: authenticated user unavailable');
-            return;
-        }
-        const { error } = await getClient().from('alert_logs').insert({
-            ...row,
-            user_id: user.id,
-        });
+        const { error } = await getClient().from('alert_logs').insert(row);
         if (error)
-            console.warn('[db] insertAlertLog failed:', error.code ?? 'unknown');
+            console.warn('[db] insertAlertLog:', error.message);
     }
-    catch {
-        console.warn('[db] insertAlertLog failed: request unavailable');
+    catch (e) {
+        console.warn('[db] insertAlertLog offline:', e);
     }
 }
 export async function fetchAlertStats() {
@@ -247,13 +164,12 @@ export async function fetchAlertStats() {
             .eq('user_id', user.id)
             .maybeSingle();
         if (error) {
-            console.warn('[db] fetchAlertStats failed:', error.code ?? 'unknown');
+            console.warn('[db] fetchAlertStats:', error.message);
             return null;
         }
         return data;
     }
     catch {
-        console.warn('[db] fetchAlertStats failed: request unavailable');
         return null;
     }
 }
@@ -270,14 +186,11 @@ export async function fetchRecentAlerts(limit = 10) {
             .eq('user_id', user.id)
             .order('fired_at', { ascending: false })
             .limit(limit);
-        if (error) {
-            console.warn('[db] fetchRecentAlerts failed:', error.code ?? 'unknown');
+        if (error)
             return [];
-        }
         return (data ?? []);
     }
     catch {
-        console.warn('[db] fetchRecentAlerts failed: request unavailable');
         return [];
     }
 }

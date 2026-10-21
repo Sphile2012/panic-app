@@ -1,11 +1,15 @@
 import { getClient, DB_CONFIGURED, signUp, signIn, signOut, getUser, onAuthStateChange, fetchAlertStats, fetchRecentAlerts, } from './db.js';
 import './strings/groupC.js';
 import { loadAppearance, applyAppearance } from './theme.js';
-import { t, authErrorKey, getLang, languageBarHtml, bindLanguageBar } from './i18n.js';
+import { t, getLang, languageBarHtml, bindLanguageBar } from './i18n.js';
+import { formatAuthError, SIGNUP_CONFIRMATION_MESSAGE } from './authMessages.js';
 import './style.css';
 applyAppearance(loadAppearance());
 let currentEmail: string | null = null;
 let noConfig = false;
+let installPrompt = null;
+let dashboardVisible = false;
+let authFormsWired = false;
 const DASH_LOCALES = { en: 'en-ZA', zu: 'zu-ZA', st: 'st-ZA', af: 'af-ZA' };
 function applyDashboardTranslations() {
     document.title = `Panic Ring — ${t('c.dashboard.title')}`;
@@ -21,27 +25,21 @@ function applyDashboardTranslations() {
 }
 function refreshLanguageBar() {
     const mount = document.getElementById('dashboard-language-bar');
-    if (!mount)
-        return;
+    if (!mount) return;
     mount.innerHTML = languageBarHtml();
     bindLanguageBar(mount, () => {
         applyDashboardTranslations();
         refreshLanguageBar();
-        if (noConfig)
-            showNoConfig();
+        if (noConfig) showNoConfig();
         else if (currentEmail !== null) {
             updateGreeting(t('c.dashboard.welcome', { name: currentEmail.split('@')[0] }));
-            loadStats();
-            loadRecentAlerts();
-        }
-        else {
-            updateGreeting(t('c.dashboard.signInPrompt'));
-        }
+            void loadStats();
+            void loadRecentAlerts();
+        } else updateGreeting(t('c.dashboard.signInPrompt'));
     });
 }
 refreshLanguageBar();
 applyDashboardTranslations();
-let installPrompt = null;
 window.addEventListener('beforeinstallprompt', e => {
     e.preventDefault();
     installPrompt = e;
@@ -142,6 +140,7 @@ function showNoConfig() {
 function showAuthGate() {
     noConfig = false;
     currentEmail = null;
+    dashboardVisible = false;
     const gate = document.getElementById('dash-auth-gate');
     const content = document.getElementById('dash-content');
     gate.style.display = 'block';
@@ -150,6 +149,7 @@ function showAuthGate() {
     wireAuthForms();
 }
 function wireAuthForms() {
+    if (authFormsWired) return;
     const tabLogin = document.getElementById('tab-login');
     const tabSignup = document.getElementById('tab-signup');
     const loginWrap = document.getElementById('login-wrap');
@@ -187,8 +187,15 @@ function wireAuthForms() {
         liSubmitBtn.disabled = false;
         liSubmitBtn.textContent = t('c.dashboard.signIn');
         if (error) {
-            liErrEl.textContent = t(authErrorKey(error));
+            liErrEl.textContent = formatAuthError(error);
+            return;
         }
+        const { data, error: sessionError } = await getClient().auth.getSession();
+        if (sessionError || !data.session) {
+            liErrEl.textContent = 'Sign-in succeeded, but your session could not be restored. Please try again.';
+            return;
+        }
+        showDashboard(data.session.user.email ?? email);
     });
     const signupForm = document.getElementById('dash-signup-form');
     const suEmailEl = document.getElementById('d-su-email') as HTMLInputElement | null;
@@ -200,6 +207,7 @@ function wireAuthForms() {
     signupForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         suErrEl.textContent = '';
+        suErrEl.style.color = '';
         const email = suEmailEl.value.trim();
         const pw = suPwEl.value;
         const cf = suCfEl.value;
@@ -217,19 +225,25 @@ function wireAuthForms() {
         }
         suSubmitBtn.disabled = true;
         suSubmitBtn.textContent = t('c.dashboard.creating');
-        const { error } = await signUp(email, pw);
+        const { error, session } = await signUp(email, pw);
         suSubmitBtn.disabled = false;
         suSubmitBtn.textContent = t('c.dashboard.createAccount');
         if (error) {
-            suErrEl.textContent = t(authErrorKey(error));
+            suErrEl.textContent = formatAuthError(error);
+            return;
+        }
+        if (session) {
+            showDashboard(session.user.email ?? email);
             return;
         }
         suErrEl.style.color = 'var(--safe)';
-        suErrEl.textContent = t('c.dashboard.accountCreated');
-        tabLogin.click();
+        suErrEl.textContent = SIGNUP_CONFIRMATION_MESSAGE;
     });
+    authFormsWired = true;
 }
 async function showDashboard(email) {
+    if (dashboardVisible) return;
+    dashboardVisible = true;
     noConfig = false;
     currentEmail = email;
     const gate = document.getElementById('dash-auth-gate');
@@ -263,7 +277,7 @@ async function loadStats() {
     document.getElementById('stat-failed').textContent = String(stats.total_failed);
     document.getElementById('stat-location').textContent = String(stats.alerts_with_location);
     document.getElementById('stat-last').textContent = stats.last_alert_at
-        ? new Date(stats.last_alert_at).toLocaleString(DASH_LOCALES[getLang()] || 'en-ZA')
+        ? new Date(stats.last_alert_at).toLocaleString('en-ZA')
         : t('c.dashboard.never');
 }
 async function loadRecentAlerts() {
