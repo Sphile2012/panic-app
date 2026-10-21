@@ -1,7 +1,7 @@
 import './style.css';
 import { store } from './state.js';
 import { renderCalculator } from './screens/calculator.js';
-import { renderSetupPin, renderSetupContacts, renderRecoverySetup, renderPinRecovery } from './screens/setup.js';
+import { renderSetupPin, renderSetupProfile, renderSetupContacts, renderRecoverySetup, renderPinRecovery } from './screens/setup.js';
 import { renderApp } from './screens/app.js';
 import { renderContacts } from './screens/contacts.js';
 import { renderLocation } from './screens/location.js';
@@ -84,6 +84,9 @@ function render(screen: string) {
             break;
         case 'setup-pin':
             renderSetupPin(appRoot);
+            break;
+        case 'setup-profile':
+            renderSetupProfile(appRoot);
             break;
         case 'setup-contacts':
             renderSetupContacts(appRoot);
@@ -190,7 +193,7 @@ store.subscribe((state) => {
 
 document.addEventListener('keydown', (event: KeyboardEvent) => {
     if (event.key === 'Escape') {
-        const safe = ['calculator', 'decoy', 'setup-pin', 'setup-contacts'];
+        const safe = ['calculator', 'decoy', 'setup-pin', 'setup-profile', 'setup-contacts'];
         if (!safe.includes(store.getState().screen)) {
             window.location.href = 'https://www.google.com';
         }
