@@ -10,10 +10,14 @@ const LEGACY_CLIENT_CONFIGURED = Boolean(
 export const DB_CONFIGURED = AUTH_ENABLED || LEGACY_CLIENT_CONFIGURED;
 const PHONE_DOMAIN = 'phone.panicring.app';
 
+export function isPhoneIdentity(email: string | null | undefined): boolean {
+    return Boolean(email && email.endsWith(`@${PHONE_DOMAIN}`));
+}
+
 export function displayIdentity(email: string | null | undefined): string {
     if (!email)
         return '';
-    return email.endsWith(`@${PHONE_DOMAIN}`) ? `+${email.split('@')[0]}` : email;
+    return isPhoneIdentity(email) ? `+${email.split('@')[0]}` : email;
 }
 
 let _client = null;

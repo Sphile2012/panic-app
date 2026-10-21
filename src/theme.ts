@@ -40,6 +40,12 @@ export const DISGUISE_OPTIONS = [
         preview: 'Clock',
     },
 ];
+export function disguiseLabel(id: string): string {
+    return DISGUISE_OPTIONS.find(option => option.id === id)?.label ?? id;
+}
+export function disguiseDescription(id: string): string {
+    return DISGUISE_OPTIONS.find(option => option.id === id)?.description ?? '';
+}
 const STORAGE_KEY = 'pr_appearance';
 const DEFAULT = {
     mode: 'light',

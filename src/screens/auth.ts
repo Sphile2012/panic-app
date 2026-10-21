@@ -297,10 +297,10 @@ export function renderForgotPassword(root) {
     });
 }
 
-export async function renderResetPassword(root) {
+export async function renderResetPassword(root, recoveryLinkInvalid = false) {
     const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
     const session = await getSession();
-    const hasRecoveryError = hashParams.has('error') || hashParams.has('error_code');
+    const hasRecoveryError = recoveryLinkInvalid || hashParams.has('error') || hashParams.has('error_code');
     const hasRecoveryToken = !hasRecoveryError && (
         hashParams.get('type') === 'recovery' ||
         hashParams.has('access_token') ||
