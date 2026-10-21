@@ -285,7 +285,7 @@ export function renderForgotPassword(root) {
                 errEl.textContent = error;
                 return;
             }
-            successEl.textContent = 'If an account exists with this email address, a reset link has been sent. Check your inbox and spam folder. If it does not arrive, check that SMTP email delivery is configured in Supabase.';
+            successEl.textContent = 'Email sent. Check your inbox for a password reset link.';
         }
         catch {
             errEl.textContent = 'Could not request a password reset. Check your connection and try again.';

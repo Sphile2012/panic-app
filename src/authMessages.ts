@@ -10,4 +10,4 @@ export function formatAuthError(message: string): string {
 }
 
 export const SIGNUP_CONFIRMATION_MESSAGE =
-    'Check your email for a confirmation link. If you already have an account, sign in or reset your password.';
+    'Email sent. Check your inbox for a confirmation link.';

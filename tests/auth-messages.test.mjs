@@ -12,5 +12,5 @@ test('invalid credentials and email confirmation errors are understandable', () 
 });
 
 test('signup confirmation copy does not reveal whether an account exists', () => {
-  assert.match(SIGNUP_CONFIRMATION_MESSAGE, /if you already have an account/i);
+  assert.equal(SIGNUP_CONFIRMATION_MESSAGE, 'Email sent. Check your inbox for a confirmation link.');
 });
