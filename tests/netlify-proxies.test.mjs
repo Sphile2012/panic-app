@@ -69,7 +69,7 @@ test('Supabase proxy injects its anon key and substitutes only the placeholder b
     request = { url, options };
     return new Response('{"id":"created"}', {
       status: 200,
-      headers: { 'content-type': 'application/json' },
+      headers: { 'content-encoding': 'gzip', 'content-type': 'application/json' },
     });
   };
 
@@ -88,6 +88,7 @@ test('Supabase proxy injects its anon key and substitutes only the placeholder b
 
   assert.equal(result.statusCode, 200);
   assert.equal(request.url.toString(), 'https://project.supabase.co/auth/v1/signup?redirect_to=https%3A%2F%2Fpanic-ring.example');
+  assert.equal(result.headers['content-encoding'], undefined);
   assert.equal(request.options.headers.get('apikey'), 'server-side-anon-key');
   assert.equal(request.options.headers.get('authorization'), 'Bearer server-side-anon-key');
   assert.equal(request.options.headers.get('host'), null);
