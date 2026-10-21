@@ -1,11 +1,8 @@
-# Build output
 dist/
 dist-ssr/
 
-# Dependencies
 node_modules/
 
-# Local environment files — contain secrets, never commit
 .env
 .env.local
 .env.docker.local
@@ -14,17 +11,13 @@ node_modules/
 !.env.example
 !.env.docker.example
 
-# Database dumps and exports contain user data and must never enter Git.
 *.dump
 database-backups/
 
-# OS / editor artefacts
 .DS_Store
 Thumbs.db
 .vscode/settings.json
 
-# TypeScript cache
 *.tsbuildinfo
 
-# Logs
 npm-debug.log*

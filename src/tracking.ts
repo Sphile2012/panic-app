@@ -33,9 +33,13 @@ export function onTrackChange(l: TrackListener): () => void {
     return () => listeners.delete(l);
 }
 
+export function isTrackToken(token: string): boolean {
+    return /^[0-9a-f]{32}$/i.test(token);
+}
+
 export function getToken(): string {
     let tok = localStorage.getItem(TOKEN_KEY);
-    if (!tok || !/^[0-9a-f]{32}$/.test(tok)) {
+    if (!tok || !isTrackToken(tok)) {
         const bytes = new Uint8Array(16);
         crypto.getRandomValues(bytes);
         tok = Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
@@ -187,7 +191,7 @@ export function wasTracking(): boolean {
 }
 
 export async function fetchTrack(token: string): Promise<(TrackSnapshot & { updated: string }) | null> {
-    if (!DB_CONFIGURED || !/^[0-9a-f]{32}$/.test(token))
+    if (!DB_CONFIGURED || !isTrackToken(token))
         return null;
     try {
         const { data, error: err } = await getClient().rpc('get_track', { p_token: token });

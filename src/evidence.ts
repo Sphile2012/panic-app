@@ -71,7 +71,6 @@ export async function requestCameraAccess(): Promise<boolean> {
 
 let running = false;
 
-// Takes a few photos at random moments after an alert starts and keeps them on this device.
 export async function startEvidenceCapture(maxPhotos = 5): Promise<void> {
     if (running || !evidenceEnabled() || !navigator.mediaDevices?.getUserMedia)
         return;
@@ -97,11 +96,9 @@ export async function startEvidenceCapture(maxPhotos = 5): Promise<void> {
         }
     }
     catch {
-        // Camera unavailable or permission withdrawn; the alert itself is unaffected.
     }
     finally {
         stream?.getTracks().forEach(tr => tr.stop());
         running = false;
     }
 }
-

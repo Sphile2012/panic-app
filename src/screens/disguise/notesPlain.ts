@@ -1,45 +1,53 @@
-import '../../strings/groupC.js';
-import { t } from '../../i18n.js';
 import { store } from '../../state.js';
-
 const SEED_NOTES = [
-    { title: 'shopping', body: 'shoppingBody', date: 'today' },
-    { title: 'work', body: 'workBody', date: 'yesterday' },
-    { title: 'weekend', body: 'weekendBody', date: 'mon' },
-    { title: 'ideas', body: 'ideasBody', date: 'sun' },
+    { title: 'Shopping list', body: 'Bread, milk, olive oil, onions…', date: 'Today' },
+    { title: 'Work reminder', body: 'Call Sipho back before 15:00', date: 'Yesterday' },
+    { title: 'Weekend', body: "Braai at Zanele's place, 14:00", date: 'Mon' },
+    { title: 'Ideas', body: 'Learn Zulu phrases, gym routine…', date: 'Sun' },
 ];
-
 export function renderNotesPlain(root) {
     root.innerHTML = `
     <div class="screen notes-plain-screen">
+
       <header class="notes-plain-header">
-        <span class="notes-plain-title">${t('c.notes.title')}</span>
-        <button class="notes-plain-new" aria-label="${t('c.notes.newAria')}" title="${t('c.notes.newAria')}">${t('c.notes.new')}</button>
+        <span class="notes-plain-title">Notes</span>
+        <button class="notes-plain-new" aria-label="New note" title="New note">＋</button>
       </header>
+
       <div class="notes-plain-search-wrap">
-        <input class="notes-plain-search" id="notes-pin-input" type="search"
-          placeholder="${t('c.notes.searchPlaceholder')}" autocomplete="off" aria-label="${t('c.notes.searchAria')}" />
+        <input
+          class="notes-plain-search"
+          id="notes-pin-input"
+          type="search"
+          placeholder="Search notes…"
+          autocomplete="off"
+          aria-label="Search notes"
+        />
       </div>
+
       <ul class="notes-plain-list" id="notes-plain-list">
         ${SEED_NOTES.map(n => `
           <li class="notes-plain-item">
             <div class="notes-plain-item-body">
-              <span class="notes-plain-item-title">${t(`c.notes.${n.title}`)}</span>
-              <span class="notes-plain-item-preview">${t(`c.notes.${n.body}`)}</span>
+              <span class="notes-plain-item-title">${n.title}</span>
+              <span class="notes-plain-item-preview">${n.body}</span>
             </div>
-            <span class="notes-plain-item-date">${t(`c.notes.${n.date}`)}</span>
+            <span class="notes-plain-item-date">${n.date}</span>
           </li>
         `).join('')}
       </ul>
-      <p class="notes-plain-count">${t('c.notes.count', { count: SEED_NOTES.length })}</p>
-    </div>`;
+
+      <p class="notes-plain-count">${SEED_NOTES.length} notes</p>
+
+    </div>
+  `;
     const pinInput = root.querySelector('#notes-pin-input');
     let pinBuffer = '';
     pinInput.addEventListener('input', () => {
         const digits = pinInput.value.replace(/\D/g, '');
         pinBuffer = digits.slice(0, 4);
     });
-    pinInput.addEventListener('keydown', async e => {
+    pinInput.addEventListener('keydown', async (e) => {
         if (e.key === 'Enter' && pinBuffer.length === 4) {
             e.preventDefault();
             for (const d of pinBuffer)

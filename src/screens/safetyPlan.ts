@@ -1,29 +1,32 @@
-import '../strings/groupB.js';
 import { store } from '../state.js';
-import { t } from '../i18n.js';
 export function renderSafetyPlan(root) {
     const { safetyPlan: p } = store.getState();
     root.innerHTML = `
     <div class="screen safety-plan-screen">
 
       <header class="screen-header">
-        <button class="btn-back-small" id="btn-back" aria-label="${t('common.back')}">${t('common.back')}</button>
-        <h2 class="screen-title">${t('b.plan.title')}</h2>
-        <button class="btn-text-action" id="btn-save-plan">${t('b.plan.save')}</button>
+        <button class="btn-back-small" id="btn-back" aria-label="Back">←</button>
+        <h2 class="screen-title">My safety plan</h2>
+        <button class="btn-text-action" id="btn-save-plan">Save</button>
       </header>
 
-      <p class="plan-intro">${t('b.plan.intro')}</p>
+      <p class="plan-intro">
+        Fill this in while you feel safe. Having it ready helps
+        you act quickly if you need to.
+      </p>
 
       <form class="plan-form" id="plan-form" autocomplete="off">
-        ${planField('trusted-people', t('b.plan.trusted'), t('b.plan.trusted.ph'), p.trustedPeople)}
-        ${planField('safe-places', t('b.plan.places'), t('b.plan.places.ph'), p.safePlaces)}
-        ${planField('emergency-numbers', t('b.plan.numbers'), t('b.plan.numbers.ph'), p.emergencyNumbers)}
-        ${planField('important-docs', t('b.plan.docs'), t('b.plan.docs.ph'), p.importantDocs)}
-        ${planField('transport', t('b.plan.transport'), t('b.plan.transport.ph'), p.transportOptions)}
-        ${planField('remember', t('b.plan.remember'), t('b.plan.remember.ph'), p.thingsToRemember)}
+        ${planField('trusted-people', 'Trusted people', 'Names and phone numbers of people I can call', p.trustedPeople)}
+        ${planField('safe-places', 'Safe places', 'Addresses where I can go if I need to leave', p.safePlaces)}
+        ${planField('emergency-numbers', 'Emergency numbers', '10111, 0800 428 428, neighbours, etc.', p.emergencyNumbers)}
+        ${planField('important-docs', 'Important documents', 'ID, passport, bank cards — where they are', p.importantDocs)}
+        ${planField('transport', 'Transport options', 'How I can get to a safe place', p.transportOptions)}
+        ${planField('remember', 'Things to remember', 'Anything else I need to know in an emergency', p.thingsToRemember)}
       </form>
 
-      <p class="plan-footer">${t('b.plan.footer')}</p>
+      <p class="plan-footer">
+        This plan is stored on this device only. It is not shared automatically.
+      </p>
 
     </div>
   `;
@@ -42,8 +45,8 @@ export function renderSafetyPlan(root) {
         };
         store.saveSafetyPlan(plan);
         const btn = root.querySelector('#btn-save-plan');
-        btn.textContent = t('b.plan.saved');
-        setTimeout(() => { btn.textContent = t('b.plan.save'); }, 1500);
+        btn.textContent = 'Saved ✓';
+        setTimeout(() => { btn.textContent = 'Save'; }, 1500);
     });
 }
 function planField(id, label, placeholder, value) {

@@ -1,5 +1,3 @@
-import './strings/groupA.js';
-import { t } from './i18n.js';
 import { store } from './state.js';
 import { buildSmsBody, smsUri, isOnline } from './storage.js';
 import { insertAlertLog, getDeviceId, getUser } from './db.js';
@@ -63,9 +61,11 @@ function formatCoords(lat, lng) {
     return `${Math.abs(lat).toFixed(6)}° ${latDir}, ${Math.abs(lng).toFixed(6)}° ${lngDir}`;
 }
 async function getWhat3Words(lat, lng) {
+    const key = import.meta.env['VITE_W3W_API_KEY'];
+    if (!key)
+        return null;
     try {
-        const coordinates = encodeURIComponent(`${lat},${lng}`);
-        const res = await fetch(`/api/what3words?coordinates=${coordinates}&language=en`, { signal: AbortSignal.timeout(5000) });
+        const res = await fetch(`https://api.what3words.com/v3/convert-to-3wa?coordinates=${lat},${lng}&language=en&key=${key}`, { signal: AbortSignal.timeout(5000) });
         if (!res.ok)
             return null;
         const data = await res.json();
@@ -77,7 +77,7 @@ async function getWhat3Words(lat, lng) {
 }
 export async function getLocation(timeoutMs = 12000) {
     if (!('geolocation' in navigator)) {
-        return { ok: false, reason: t('trk.unsupported') };
+        return { ok: false, reason: 'Location services are not available on this device.' };
     }
     return new Promise(resolve => {
         navigator.geolocation.getCurrentPosition(async (pos) => {
@@ -89,8 +89,8 @@ export async function getLocation(timeoutMs = 12000) {
             const mapsUrl = `https://maps.google.com/?q=${lat.toFixed(7)},${lng.toFixed(7)}`;
             const accuracyStr = `±${Math.round(accuracy)} m`;
             const lines = [
-                `${t('a.alert.location')}: ${address}`,
-                `${t('a.alert.accuracy')}: ${accuracyStr}`,
+                `Location: ${address}`,
+                `Accuracy: ${accuracyStr}`,
                 w3w ? `what3words: ${w3w}` : null,
                 `Google Maps: ${mapsUrl}`,
             ].filter(Boolean).join('\n');
@@ -104,13 +104,13 @@ export async function getLocation(timeoutMs = 12000) {
                 text: lines,
             });
         }, err => {
-            let reason = t('a.alert.err.unavailable');
+            let reason = 'Location unavailable.';
             if (err.code === 1)
-                reason = t('a.alert.err.denied');
+                reason = 'Location permission was denied. Please enable it in your device settings.';
             if (err.code === 2)
-                reason = t('a.alert.err.nosignal');
+                reason = 'No GPS signal found. Move to an open area and try again.';
             if (err.code === 3)
-                reason = t('a.alert.err.timeout');
+                reason = 'Location request timed out. Try again in a moment.';
             resolve({ ok: false, reason });
         }, {
             timeout: timeoutMs,
@@ -138,7 +138,7 @@ export async function runAlertSequence(locationText, locationShared, onStep) {
     let failed = 0;
     for (let i = 0; i < contacts.length; i++) {
         const contact = contacts[i];
-        const body = await buildSmsBody(contact.name, locationText, locationShared);
+        const body = buildSmsBody(contact.name, locationText, locationShared);
         window.location.href = smsUri(contact.phone, body);
         await waitForReturn();
         store.updateContactStatus(contact.id, 'delivered');
@@ -174,12 +174,8 @@ function waitForReturn() {
 }
 async function logAlert(contactCount, locationShared, opened, failed) {
     const user = await getUser();
-    if (!user) {
-        console.warn('[alert] Alert history not saved: no authenticated user.');
-        return;
-    }
     await insertAlertLog({
-        user_id: user.id,
+        user_id: user?.id ?? '',
         device_id: getDeviceId(),
         contact_count: contactCount,
         location_shared: locationShared,

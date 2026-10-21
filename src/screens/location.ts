@@ -1,63 +1,62 @@
-import '../strings/groupA.js';
 import { store } from '../state.js';
 import { getLocation } from '../alertService.js';
-import { t } from '../i18n.js';
 export function renderLocation(root) {
     root.innerHTML = `
     <div class="screen location-screen">
 
-      <div class="location-icon" aria-hidden="true"></div>
-      <h2 class="location-title">${t('loc.title')}</h2>
+      <div class="location-icon" aria-hidden="true">GPS</div>
+      <h2 class="location-title">Share your location?</h2>
       <p class="location-body">
-        ${t('loc.body')}
+        Your contacts receive the alert either way.
+        Sharing your location helps them find you faster.
       </p>
 
-      <!-- Live GPS accuracy bar — shown while acquiring -->
       <div class="loc-accuracy-wrap" id="loc-accuracy-wrap" style="display:none">
         <div class="loc-accuracy-bar">
           <div class="loc-accuracy-fill" id="loc-accuracy-fill"></div>
         </div>
-        <p class="loc-accuracy-text" id="loc-accuracy-text">${t('loc.acquiring')}</p>
+        <p class="loc-accuracy-text" id="loc-accuracy-text">Acquiring GPS…</p>
       </div>
 
-      <!-- Address result — shown after GPS fix -->
       <div class="loc-address-card" id="loc-address-card" style="display:none">
         <div class="loc-address-body">
           <span class="loc-address-line" id="loc-address-line"></span>
           <span class="loc-accuracy-badge" id="loc-accuracy-badge"></span>
         </div>
         <a class="loc-maps-link" id="loc-maps-link" target="_blank" rel="noopener">
-          ${t('a.loc.openmaps')}
+          Open in Maps
         </a>
       </div>
 
       <div class="location-actions" id="location-actions">
         <button class="btn-location btn-location--share" id="btn-share">
-          ${t('loc.share')}
+          Share my location
         </button>
         <button class="btn-location btn-location--skip" id="btn-skip">
-          ${t('loc.skip')}
+          Send without location
         </button>
       </div>
 
-      <!-- Error message -->
       <p class="loc-error" id="loc-error" aria-live="assertive"></p>
 
-      <!-- What the app can and cannot do — honest note -->
       <details class="loc-info-details">
-        <summary class="loc-info-summary">${t('a.loc.info.title')}</summary>
+        <summary class="loc-info-summary">What location data is sent?</summary>
         <div class="loc-info-body">
-          <p>${t('a.loc.info.p1')}</p>
+          <p>When you tap <strong>Share</strong>, your contacts receive:</p>
           <ul>
-            <li>${t('a.loc.info.l1')}</li>
-            <li>${t('a.loc.info.l2')}</li>
-            <li>${t('a.loc.info.l3')}</li>
+            <li>The street address (from GPS + OpenStreetMap)</li>
+            <li>GPS accuracy in metres</li>
+            <li>A Google Maps link that opens at your exact coordinates</li>
           </ul>
           <p>
-            ${t('a.loc.info.p2')}
+            Location is only captured at the moment you tap Share.
+            It is not tracked continuously and is not stored on any server.
           </p>
           <p>
-            ${t('a.loc.info.p3')}
+            <strong>This browser-based app cannot access your phone's IMEI or
+            locate it remotely.</strong> To locate a lost device, use its
+            manufacturer's find-device service or contact your mobile network
+            provider.
           </p>
         </div>
       </details>
@@ -82,11 +81,11 @@ export function renderLocation(root) {
         watchId = navigator.geolocation.watchPosition(pos => {
             const acc = Math.round(pos.coords.accuracy);
             const pct = Math.max(10, Math.min(100, Math.round((1 - (acc / 200)) * 100)));
-            const label = acc <= 10 ? t('a.loc.q.excellent') : acc <= 30 ? t('a.loc.q.good') : acc <= 100 ? t('a.loc.q.fair') : t('a.loc.q.poor');
+            const label = acc <= 10 ? 'Excellent' : acc <= 30 ? 'Good' : acc <= 100 ? 'Fair' : 'Poor';
             const colour = acc <= 10 ? '#1abf7a' : acc <= 30 ? '#59c93d' : acc <= 100 ? '#e09a19' : '#e0193a';
             accuracyFill.style.width = `${pct}%`;
             accuracyFill.style.background = colour;
-            accuracyText.textContent = t('a.loc.signal', { label, acc });
+            accuracyText.textContent = `GPS signal: ${label} (±${acc} m)`;
         }, () => { }, { enableHighAccuracy: true, maximumAge: 0 });
     }
     function stopWatch() {
@@ -102,11 +101,11 @@ export function renderLocation(root) {
         skipBtn.disabled = true;
         errorEl.textContent = '';
         accuracyWrap.style.display = 'block';
-        accuracyText.textContent = t('a.loc.getting');
+        accuracyText.textContent = 'Getting your exact position…';
         const result: any = await getLocation(12000);
         if (result.ok) {
             addressLine.textContent = result.address;
-            accuracyBadge.textContent = `+/-${Math.round(result.accuracy)} m`;
+            accuracyBadge.textContent = `±${Math.round(result.accuracy)} m`;
             mapsLink.href = result.mapsUrl;
             accuracyWrap.style.display = 'none';
             addressCard.style.display = 'flex';
@@ -123,7 +122,7 @@ export function renderLocation(root) {
     });
     skipBtn.addEventListener('click', () => {
         stopWatch();
-        store.setLocationShared(false, t('a.loc.notshared'));
+        store.setLocationShared(false, 'Location not shared');
         store.startSending();
     });
 }

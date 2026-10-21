@@ -52,5 +52,5 @@ test('fresh bootstrap is transactional and Docker uses that same canonical schem
   assert.match(bootstrap, /\bbegin;/i);
   assert.match(bootstrap, /commit;\s*$/i);
   assert.doesNotMatch(bootstrap, /drop column if exists (pin_hash|decoy_hash)/i);
-  assert.ok(compose.includes('./supabase/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql'));
+  assert.ok(compose.includes('./supabase/schema.sql:/docker-entrypoint-initdb.d/99-panic-ring-schema.sql'));
 });

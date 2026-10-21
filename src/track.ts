@@ -1,9 +1,9 @@
 import './style.css';
-import { fetchTrack } from './tracking.js';
+import { fetchTrack, isTrackToken } from './tracking.js';
 import { t, languageBarHtml, bindLanguageBar } from './i18n.js';
 
 const root = document.getElementById('app') as HTMLElement;
-const token = location.hash.replace('#', '').trim();
+const token = location.hash.replace(/^#/, '').trim();
 let timer: number | null = null;
 
 function esc(s: string): string {
@@ -11,9 +11,10 @@ function esc(s: string): string {
 }
 
 async function paint() {
-    const data = token ? await fetchTrack(token) : null;
+    const validToken = isTrackToken(token);
+    const data = validToken ? await fetchTrack(token) : null;
     let body: string;
-    if (!token) {
+    if (!token || !validToken) {
         body = `<p class="track-note">${esc(t('track.invalid'))}</p>`;
     } else if (!data) {
         body = `<p class="track-note">${esc(t('track.waiting'))}</p>`;

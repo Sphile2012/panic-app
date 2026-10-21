@@ -1,0 +1,72 @@
+import '../strings/groupB.js';
+import { store } from '../state.js';
+import { t } from '../i18n.js';
+import { listPhotos, deletePhoto } from '../evidence.js';
+function fmt(ts) {
+    return new Date(ts).toLocaleString();
+}
+async function shareFiles(photos) {
+    const files = photos.map((p, i) => new File([p.blob], `record-${i + 1}.jpg`, { type: 'image/jpeg' }));
+    const nav = navigator;
+    if (nav.canShare?.({ files }) && nav.share) {
+        try {
+            await nav.share({ files, text: t('b.rec.sharetext') });
+            return t('b.rec.choose');
+        }
+        catch {
+            return t('b.rec.cancelled');
+        }
+    }
+    window.open('https://wa.me/?text=' + encodeURIComponent(t('b.rec.watext')), '_blank');
+    return t('b.rec.noattach');
+}
+export async function renderRecords(root) {
+    root.innerHTML = `
+    <div class="screen">
+      <header class="screen-header">
+        <button class="btn-back-small" id="btn-back"         aria-label="${t('common.back')}">${t('common.back')}</button>
+                <h2 class="screen-title">${t('b.rec.title')}</h2>
+      </header>
+              <p class="setup-hint">${t('b.rec.info')}</p>
+      <div id="rec-actions"></div>
+      <p class="setup-hint" id="rec-msg" aria-live="polite"></p>
+      <div class="rec-grid" id="rec-grid"></div>
+    </div>`;
+    root.querySelector('#btn-back').addEventListener('click', () => store.navigateTo('app'));
+    const grid = root.querySelector('#rec-grid');
+    const msg = root.querySelector('#rec-msg');
+    const actions = root.querySelector('#rec-actions');
+    const paint = async () => {
+        const photos = await listPhotos();
+        grid.innerHTML = '';
+        actions.innerHTML = photos.length
+            ? `<button class="btn-primary" id="rec-share-all" type="button">${t('b.rec.sendall')}</button>`
+            : '';
+        if (!photos.length) {
+            grid.innerHTML = `<p class="setup-hint">${t('b.rec.none')}</p>`;
+            return;
+        }
+        actions.querySelector('#rec-share-all').addEventListener('click', async () => {
+            msg.textContent = await shareFiles(photos);
+        });
+        photos.forEach((p) => {
+            const url = URL.createObjectURL(p.blob);
+            const card = document.createElement('div');
+            card.className = 'rec-card';
+            card.innerHTML = `<img src="${url}" alt="" /><span>${fmt(p.at)}</span>
+              <div><button type="button" class="btn-secondary-outline               rec-s">${t('b.rec.send')}</button>
+                            <button type="button" class="btn-secondary rec-d">${t('b.notes.delete')}</button></div>`;
+            card.querySelector('.rec-s').addEventListener('click', async () => {
+                msg.textContent = await shareFiles([p]);
+            });
+            card.querySelector('.rec-d').addEventListener('click', async () => {
+                if (p.id !== undefined)
+                    await deletePhoto(p.id);
+                URL.revokeObjectURL(url);
+                await paint();
+            });
+            grid.appendChild(card);
+        });
+    };
+    await paint();
+}

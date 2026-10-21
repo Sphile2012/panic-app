@@ -51,19 +51,16 @@ export default defineConfig(({ mode }) => {
       strictPort: true,
       proxy: serverProxy,
     },
-
     build: {
       outDir: 'dist',
       sourcemap: false,
       chunkSizeWarningLimit: 500,
-
       rollupOptions: {
         input: {
           main: resolve(__dirname, 'index.html'),
           dashboard: resolve(__dirname, 'dashboard.html'),
           track: resolve(__dirname, 'track.html'),
         },
-
         output: {
           manualChunks: {
             vendor: ['@supabase/supabase-js'],

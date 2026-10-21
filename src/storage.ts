@@ -1,25 +1,14 @@
 import { upsertDevice, getDeviceId, getUser } from './db.js';
 import { createRecoverySalt, createRecoverySecret, deriveRecoveryHash, encrypt, decrypt, encryptJson, decryptJson } from './crypto.js';
+import { LANGS } from './i18n.js';
 
 export type Contact = {
     id: string;
     name: string;
     phone: string;
     initials: string;
-    relationship?: string;
-    photo?: string;
     status: 'pending' | 'sending' | 'delivered' | 'failed';
 };
-
-export type Profile = {
-    name: string;
-    phone: string;
-    photo: string;
-};
-
-export const EMPTY_PROFILE: Profile = { name: '', phone: '', photo: '' };
-
-export const RELATIONSHIPS = ['partner', 'parent', 'child', 'sibling', 'relative', 'friend', 'neighbour', 'colleague', 'other'] as const;
 
 export type Note = {
     id: string;
@@ -38,6 +27,14 @@ export type SafetyPlan = {
     thingsToRemember: string;
 };
 
+export type Profile = {
+    name: string;
+    phone: string;
+    photo: string;
+};
+
+export const EMPTY_PROFILE: Profile = { name: '', phone: '', photo: '' };
+
 export type VaultData = {
     contacts: Contact[];
     notes: Note[];
@@ -55,6 +52,19 @@ export type RecoveryRecord = {
 
 const KEY_PUBLIC = 'pr_public';
 const KEY_VAULT = 'pr_vault';
+export const LANGUAGES = LANGS;
+
+export function getPreferredLanguage(): string {
+    const stored = localStorage.getItem('pr_lang');
+    return LANGUAGES.some(language => language.code === stored) ? stored! : 'en';
+}
+
+export function setPreferredLanguage(code: string): string {
+    const next = LANGUAGES.some(language => language.code === code) ? code : 'en';
+    localStorage.setItem('pr_lang', next);
+    return next;
+}
+
 function loadPublic() {
     try {
         const raw = localStorage.getItem(KEY_PUBLIC);
@@ -73,39 +83,6 @@ export const EMPTY_PLAN: SafetyPlan = {
 };
 
 export const EMPTY_VAULT: VaultData = { contacts: [], notes: [], safetyPlan: { ...EMPTY_PLAN } };
-
-export const LANGUAGES = [
-    { code: 'en', label: 'English' },
-    { code: 'zu', label: 'Zulu' },
-    { code: 'af', label: 'Afrikaans' },
-    { code: 'st', label: 'Sotho' },
-] as const;
-
-export function getPreferredLanguage(): string {
-    const stored = localStorage.getItem('pr_lang');
-    return LANGUAGES.some(lang => lang.code === stored) ? stored! : 'en';
-}
-
-export function setPreferredLanguage(code: string) {
-    const next = LANGUAGES.some(lang => lang.code === code) ? code : 'en';
-    localStorage.setItem('pr_lang', next);
-    return next;
-}
-
-export function normalizePhone(input: string): string {
-    return input.trim().replace(/[^\d+]/g, '').replace(/(\+\d{1,3})(?=\d)/, '$1 ');
-}
-
-export function getBatteryStatus() {
-    const battery = (navigator as Navigator & { getBattery?: () => Promise<{ level: number }> }).getBattery?.();
-    if (!battery) return { level: 100, isLow: false, text: 'Battery status: 100%.' };
-    return battery.then((result) => {
-        const level = Math.max(0, Math.min(100, Math.round((result.level ?? 1) * 100)));
-        const isLow = level <= 20;
-        return { level, isLow, text: isLow ? `Battery status: low (${level}%).` : `Battery status: ${level}%.` };
-    }).catch(() => ({ level: 100, isLow: false, text: 'Battery status: 100%.' }));
-}
-
 
 export async function loadVault(pinHash: string): Promise<VaultData> {
     try {
@@ -214,7 +191,15 @@ export async function savePinHashes(pinHash, decoyHash, autoLock, oldPinHash?: s
     savePublic(pub);
     if (vault)
         await saveVault(vault, pinHash);
-    void syncDeviceSettings(autoLock);
+    getUser().then(user => {
+        upsertDevice({
+            user_id: user?.id ?? '',
+            device_id: getDeviceId(),
+            pin_hash: pinHash,
+            decoy_hash: decoyHash,
+            auto_lock: autoLock,
+        }).catch(() => { });
+    }).catch(() => { });
 }
 export function saveAutoLock(minutes) {
     const pub = loadPublic();
@@ -222,22 +207,15 @@ export function saveAutoLock(minutes) {
         return;
     pub.autoLock = minutes;
     savePublic(pub);
-    void syncDeviceSettings(minutes);
-}
-async function syncDeviceSettings(autoLock: number) {
-    try {
-        const user = await getUser();
-        if (!user)
-            return;
-        await upsertDevice({
-            user_id: user.id,
+    getUser().then(user => {
+        upsertDevice({
+            user_id: user?.id ?? '',
             device_id: getDeviceId(),
-            auto_lock: autoLock,
-        });
-    }
-    catch {
-        console.warn('[storage] Could not synchronize device settings.');
-    }
+            pin_hash: pub.pinHash,
+            decoy_hash: pub.decoyHash,
+            auto_lock: minutes,
+        }).catch(() => { });
+    }).catch(() => { });
 }
 export function clearAll() {
     localStorage.removeItem(KEY_PUBLIC);
@@ -258,17 +236,13 @@ export function uid() {
 export function dialable(phone) {
     return phone.replace(/[\s\-().]/g, '');
 }
-export async function buildSmsBody(contactName, locationText, locationShared) {
+export function buildSmsBody(contactName, locationText, locationShared) {
     const header = `ALERT — ${contactName} may need urgent help.`;
     const loc = locationShared
         ? locationText
         : 'Location was not shared. Please call them immediately.';
-    const battery = await getBatteryStatus();
-    const batteryLine = battery.isLow
-        ? `Battery status: low (${battery.level}%). Please share their location urgently and keep the device on.`
-        : `Battery status: ${battery.level}%.`;
     const footer = `If you cannot reach them: SAPS 10111 | GBV Command Centre 0800 428 428`;
-    return `${header}\n\n${loc}\n\n${batteryLine}\n\n${footer}`;
+    return `${header}\n\n${loc}\n\n${footer}`;
 }
 export function isOnline() {
     return typeof navigator !== 'undefined' ? navigator.onLine : true;

@@ -5,6 +5,54 @@
 - Node.js 20 or newer
 - npm
 
+## Expo mobile app and Express API
+
+The existing browser app remains available. The Expo/React Native app lives in
+`mobile/` and uses Expo Router with TypeScript. Its authentication is handled by
+Supabase; the Express API validates the signed-in user's access token with
+Supabase Auth and never needs a service-role key.
+
+1. Install each app's dependencies:
+
+   ```powershell
+   npm --prefix mobile ci
+   npm --prefix server ci
+   ```
+
+2. Copy `mobile/.env.example` to `mobile/.env` and `server/.env.example` to
+   `server/.env`. Set the Supabase project URL and anon key in both files.
+   Keep the anon key in the `EXPO_PUBLIC_` mobile variable only; never put a
+   service-role key in the mobile app.
+
+   Set `EXPO_PUBLIC_API_URL` to the Express API address. `localhost` works for
+   the web app and most simulators; a physical device needs the development
+   computer's reachable LAN address. Set `ALLOWED_ORIGINS` in the API
+   environment to the Expo web origin when using Expo for web.
+
+3. In separate terminals, start the API and Expo:
+
+   ```powershell
+   npm run api:dev
+   npm run mobile:dev
+   ```
+
+   The API health endpoint is `/api/health`; the authenticated account
+   verification endpoint is `/api/v1/me`.
+
+The mobile app supports email/password sign-up and sign-in, email recovery
+links, and changing the password while signed in. Before testing those flows,
+configure Supabase Auth email confirmation and SMTP, then add both
+`panicring://auth/callback` and `panicring://reset-password` under
+**Authentication → URL Configuration → Redirect URLs**. The app uses PKCE and
+handles those callback links in Expo Router. Build/install a development or
+production app after changing the `panicring` scheme; Expo Go generates a
+temporary callback URL, which must be allowed separately for the current
+development session.
+
+The root `npm run typecheck` and `npm run build` commands validate the browser
+app, Expo app, and Express API. `npm run test:api` runs the API integration
+tests against a local mock Supabase Auth service.
+
 ## Run with Supabase
 
 1. Install the dependencies:
@@ -63,8 +111,13 @@
    - Under **Authentication → URL Configuration**, set the Site URL to the
      deployed frontend origin and add `https://your-site.netlify.app/**` to the
      allowed Redirect URLs (and `http://localhost:5173/**` for local development).
+     The web recovery request redirects to the site root with
+     `?flow=recovery`.
    - Under **Authentication → Email Templates → Reset Password**, keep the
      confirmation link (`{{ .ConfirmationURL }}`) in the template.
+   - Configure SMTP email delivery and verify that recovery emails reach the
+     account's inbox; enabling email authentication alone does not configure
+     outbound email delivery.
    - Set the recovery token expiry under **Authentication → Settings** to the
      lifetime appropriate for your deployment. Supabase generates, stores,
      validates, and expires these one-time recovery tokens.
@@ -80,18 +133,28 @@
 To configure the environment manually, copy `.env.example` to `.env` and set
 `SUPABASE_URL` and `SUPABASE_ANON_KEY` as server-side environment variables,
 and set `VITE_AUTH_ENABLED=true`. Never use a `VITE_` prefix on API credentials.
-The frontend sends Supabase requests to its same-origin `/api` proxy; set
-`VITE_FRONTEND_URL` to
-the deployed site's origin (for example, `https://your-site.netlify.app`) when
-the build host differs from the deployed domain; otherwise the current site
-origin is used. Add the same origin to Supabase's allowed Redirect URLs. The
+The frontend sends Supabase requests to its same-origin `/api` proxy. Set
+`VITE_FRONTEND_URL` to the exact public frontend origin used for email callbacks
+(for example, `https://panic-ring-app.netlify.app`); Netlify builds use this
+origin so password-reset links do not fall back to localhost. Add the same
+origin to Supabase's allowed Redirect URLs. The
 reset link returns to the app's recovery screen rather than a provider or
 browser error page. For Docker deployments, set `FRONTEND_URL` in
 `.env.docker.local` to the deployed frontend origin before building.
 
-For Netlify, set `SUPABASE_URL` and `SUPABASE_ANON_KEY` as site environment
-variables (not build-exposed `VITE_*` variables); set `WHAT3WORDS_API_KEY`
-server-side if that optional feature is enabled. Supabase Auth owns account records,
+The browser app supports email/password signup and sign-in plus Google OAuth.
+To enable Google, configure the Google provider under **Supabase → Authentication
+→ Sign In / Providers**, create a Web OAuth client in Google Cloud, and add the
+callback URL shown by Supabase to the client's authorized redirect URIs. Add the
+frontend origin to Supabase's allowed Redirect URLs. The app displays a clear
+message if the Google provider has not been enabled.
+
+For Netlify, the Supabase proxy has the demo project's URL and publishable key
+as public fallback configuration. To use a different Supabase project, set
+`SUPABASE_URL` and `SUPABASE_ANON_KEY` as Netlify environment variables with
+the **Functions** scope; values in `netlify.toml` are build-only and are not
+available to functions at runtime. Set `WHAT3WORDS_API_KEY` server-side if that
+optional feature is enabled. Supabase Auth owns account records,
 password hashes, email verification, recovery tokens, and account status.
 Application tables reference `auth.users` and use row-level security; do not
 duplicate credentials, PIN hashes, or reset tokens in application tables. Supabase
@@ -100,9 +163,9 @@ an email is registered, preventing account enumeration. The app displays that
 behavior clearly and sends no credentials or tokens to its logs.
 
 The Netlify proxy only forwards Supabase Auth and REST API paths and injects the
-server-side anon key. It does not expose the project URL in the frontend bundle.
-For local development, the Vite development server runs the same-origin proxy
-using the server-only values in `.env`. The self-hosted Docker configuration
+publishable key from its function configuration. It does not expose the project
+URL or key in the frontend bundle. For local development, the Vite development
+server runs the same-origin proxy using the values in `.env`. The self-hosted Docker configuration
 uses Nginx as the proxy. Supabase's built-in Auth rate limits remain the
 authoritative login/signup/reset throttles; configure restrictive provider
 limits and enable CAPTCHA in the Supabase Auth dashboard before public launch.
@@ -119,13 +182,6 @@ database. Configure SMTP and verify the confirmation and recovery templates
 and sender domain with your email provider before launch.
 
 ## Sign-in, languages and live location
-
-The browser app supports email/password signup and sign-in plus Google OAuth.
-To enable Google, configure the Google provider under Supabase Authentication >
-Sign In / Providers, create a Web OAuth client in Google Cloud, and add the
-callback URL shown by Supabase to the client's authorized redirect URIs. Add the
-frontend origin to Supabase's allowed Redirect URLs. The app displays a clear
-message if the Google provider has not been enabled.
 
 - Users sign in with an email address. Email confirmation can remain enabled;
   users must confirm their address before signing in.

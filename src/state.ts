@@ -1,4 +1,4 @@
-import { EMPTY_PROFILE, type Profile, loadPublicSync, loadVault, saveVault, savePinHashes, saveAutoLock, clearAll, hashPin, recoverVaultWithAnswers, uid, initials, type Contact as StorageContact, type Note as StorageNote, type SafetyPlan as StorageSafetyPlan, type VaultData } from './storage.js';
+import { EMPTY_PROFILE, loadPublicSync, loadVault, saveVault, savePinHashes, saveAutoLock, clearAll, hashPin, recoverVaultWithAnswers, uid, initials, type Contact as StorageContact, type Note as StorageNote, type Profile, type SafetyPlan as StorageSafetyPlan, type VaultData } from './storage.js';
 import { onAuthStateChange, DB_CONFIGURED, signOut } from './db.js';
 
 type Contact = StorageContact;
@@ -7,7 +7,6 @@ type SafetyPlan = StorageSafetyPlan;
 
 type AppState = {
     screen: string;
-    rev: number;
     profile: Profile;
     pinBuffer: string;
     pinHash: string;
@@ -29,7 +28,6 @@ function buildInitialState(): AppState {
     const pub = loadPublicSync();
     return {
         screen: pub.pin === '' ? 'welcome' : 'calculator',
-        rev: 0,
         profile: { ...EMPTY_PROFILE },
         pinBuffer: '',
         pinHash: pub.pin,
@@ -84,7 +82,7 @@ class Store {
         }, mins * 60 * 1000);
     }
     navigateTo(screen: string) {
-        this.state = { ...this.state, screen, rev: this.state.rev + 1 };
+        this.state = { ...this.state, screen };
         this.touch();
         this.notify();
     }
@@ -113,10 +111,10 @@ class Store {
                 ...this.state,
                 screen: 'app',
                 pinHash: hashed,
+                profile: { ...EMPTY_PROFILE, ...(vault.profile ?? {}) },
                 contacts: vault.contacts.map(c => ({ ...c, status: 'pending' as const })),
                 notes: vault.notes,
                 safetyPlan: vault.safetyPlan,
-                profile: { ...EMPTY_PROFILE, ...(vault.profile ?? {}) },
                 pinFailures: 0,
             };
             this.touch();
@@ -151,16 +149,14 @@ class Store {
         this.touch();
         this.notify();
         (async () => {
-            const vault: VaultData = await loadVault(this.state.pinHash);
+            const vault = await loadVault(this.state.pinHash);
             vault.profile = profile;
             await saveVault(vault, this.state.pinHash);
         })().catch(console.error);
     }
-    addContact(name: string, phone: string, relationship = 'other', photo = ''): boolean {
-        if (this.state.contacts.length >= 5)
-            return false;
+    addContact(name: string, phone: string): boolean {
         const contact: Contact = {
-            id: uid(), name: name.trim(), phone: phone.trim(), relationship, photo: photo || undefined,
+            id: uid(), name: name.trim(), phone: phone.trim(),
             initials: initials(name), status: 'pending',
         };
         const updated = [...this.state.contacts, contact];
@@ -170,8 +166,8 @@ class Store {
         this._saveContacts(updated).catch(console.error);
         return true;
     }
-    updateContact(id: string, name: string, phone: string, relationship = 'other', photo?: string) {
-        const updated = this.state.contacts.map(c => c.id === id ? { ...c, name: name.trim(), phone: phone.trim(), relationship, initials: initials(name), photo: photo ?? c.photo } : c);
+    updateContact(id: string, name: string, phone: string) {
+        const updated = this.state.contacts.map(c => c.id === id ? { ...c, name: name.trim(), phone: phone.trim(), initials: initials(name) } : c);
         this.state = { ...this.state, contacts: updated };
         this.touch();
         this.notify();
@@ -300,11 +296,9 @@ class Store {
         this.notify();
     }
     setAuthEmail(email: string | null) {
-        if (this.state.authEmail === email)
-            return;
         const wasNull = this.state.authEmail === null;
-        this.state = { ...this.state, authEmail: email, rev: this.state.rev + 1 };
-        if (email && this.state.screen === 'reset-password') {
+        this.state = { ...this.state, authEmail: email };
+        if (this.state.screen === 'reset-password') {
             this.notify();
             return;
         }
@@ -316,7 +310,7 @@ class Store {
                 this.state = { ...this.state, screen: 'calculator' };
             }
         }
-        else if (!wasNull) {
+        else if (!wasNull || ['setup-pin', 'calculator'].includes(this.state.screen)) {
             this.state = { ...this.state, screen: 'login' };
         }
         this.notify();

@@ -43,7 +43,7 @@ services:
     volumes:
       - db_data:/var/lib/postgresql/data
 
-      - ./supabase/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./supabase/schema.sql:/docker-entrypoint-initdb.d/99-panic-ring-schema.sql:ro
     healthcheck:
       <<: *hc
       test: ["CMD-SHELL", "pg_isready -U postgres -h localhost"]
@@ -223,7 +223,7 @@ services:
       db:
         condition: service_healthy
     ports:
-      - "127.0.0.1:8000:8000"   # Place a TLS-terminating proxy in front for production.
+      - "127.0.0.1:8000:8000"
       - "127.0.0.1:8443:8443"
     environment:
       KONG_DATABASE:         "off"
