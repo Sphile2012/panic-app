@@ -14,7 +14,7 @@ export function renderSetupPin(root: HTMLElement) {
     root.innerHTML = `
     <div class="screen setup-screen">
       <div class="setup-logo">○</div>
-      <h1 class="setup-title">Set up Panic Ring</h1>
+      <h1 class="setup-title">Create your PINs</h1>
       <p class="setup-body">
         Create two 4-digit PINs to secure your app:
         <br>• A secret PIN to unlock the real app
@@ -35,6 +35,18 @@ export function renderSetupPin(root: HTMLElement) {
           autocomplete="new-password"
           required />
 
+        <label class="field-label" for="pin-confirm">Confirm secret PIN</label>
+        <input
+          class="pin-input"
+          id="pin-confirm"
+          type="password"
+          inputmode="numeric"
+          maxlength="4"
+          pattern="[0-9]{4}"
+          placeholder="Re-enter your secret PIN"
+          autocomplete="new-password"
+          required />
+
         <label class="field-label" for="decoy-input">Decoy PIN (4 digits, must be different)</label>
         <input
           class="pin-input"
@@ -47,6 +59,18 @@ export function renderSetupPin(root: HTMLElement) {
           autocomplete="new-password"
           required />
 
+        <label class="field-label" for="decoy-confirm">Confirm decoy PIN</label>
+        <input
+          class="pin-input"
+          id="decoy-confirm"
+          type="password"
+          inputmode="numeric"
+          maxlength="4"
+          pattern="[0-9]{4}"
+          placeholder="Re-enter your decoy PIN"
+          autocomplete="new-password"
+          required />
+
         <p class="setup-hint" id="pin-error" aria-live="polite"></p>
 
         <button class="btn-primary" type="submit">Continue →</button>
@@ -55,18 +79,31 @@ export function renderSetupPin(root: HTMLElement) {
   `;
     const form = root.querySelector('#setup-pin-form') as HTMLFormElement;
     const pinInput = root.querySelector('#pin-input') as HTMLInputElement;
+    const pinConfirm = root.querySelector('#pin-confirm') as HTMLInputElement;
     const decoyInput = root.querySelector('#decoy-input') as HTMLInputElement;
+    const decoyConfirm = root.querySelector('#decoy-confirm') as HTMLInputElement;
     const errorEl = root.querySelector('#pin-error') as HTMLElement;
     form.addEventListener('submit', async (e: SubmitEvent) => {
         e.preventDefault();
         const pin = pinInput.value.trim();
+        const pinConf = pinConfirm.value.trim();
         const decoy = decoyInput.value.trim();
+        const decoyConf = decoyConfirm.value.trim();
+        
         if (pin.length !== 4 || !/^\d{4}$/.test(pin)) {
             errorEl.textContent = 'Secret PIN must be exactly 4 digits.';
             return;
         }
+        if (pin !== pinConf) {
+            errorEl.textContent = 'Secret PINs do not match. Please try again.';
+            return;
+        }
         if (decoy.length !== 4 || !/^\d{4}$/.test(decoy)) {
             errorEl.textContent = 'Decoy PIN must be exactly 4 digits.';
+            return;
+        }
+        if (decoy !== decoyConf) {
+            errorEl.textContent = 'Decoy PINs do not match. Please try again.';
             return;
         }
         if (pin === decoy) {
@@ -87,7 +124,7 @@ export function renderRecoverySetup(root: HTMLElement, nextScreen: string) {
     root.innerHTML = `
     <div class="screen setup-screen">
       ${existing ? '<header class="screen-header"><button class="btn-back-small" id="btn-recovery-back" aria-label="Back">←</button><h2 class="screen-title">PIN recovery</h2></header>' : ''}
-      <h1 class="setup-title">${existing ? 'Set recovery questions' : 'Set up security questions'}</h1>
+      <h1 class="setup-title">${existing ? 'Update recovery questions' : 'Create your recovery questions'}</h1>
       <p class="setup-body">
         ${existing 
           ? 'Choose two questions and provide answers. You will need both to reset your PINs if you forget them.'
