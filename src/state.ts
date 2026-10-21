@@ -27,7 +27,7 @@ type AppState = {
 function buildInitialState(): AppState {
     const pub = loadPublicSync();
     return {
-        screen: pub.pin === '' ? 'welcome' : 'calculator',
+        screen: pub.pin === '' ? 'setup-pin' : 'calculator',
         profile: { ...EMPTY_PROFILE },
         pinBuffer: '',
         pinHash: pub.pin,
@@ -296,28 +296,12 @@ class Store {
         this.notify();
     }
     setAuthEmail(email: string | null) {
-        const wasNull = this.state.authEmail === null;
         this.state = { ...this.state, authEmail: email };
-        if (this.state.screen === 'reset-password') {
-            this.notify();
-            return;
-        }
-        if (email) {
-            if (this.state.isFirstRun) {
-                this.state = { ...this.state, screen: 'setup-pin' };
-            }
-            else {
-                this.state = { ...this.state, screen: 'calculator' };
-            }
-        }
-        else if (!wasNull || ['setup-pin', 'calculator'].includes(this.state.screen)) {
-            this.state = { ...this.state, screen: 'login' };
-        }
         this.notify();
     }
     async signOut() {
         await signOut();
-        this.state = { ...buildInitialState(), screen: 'login', authEmail: null };
+        this.state = { ...buildInitialState(), screen: 'calculator', authEmail: null };
         this.notify();
     }
     async initAuth() {
