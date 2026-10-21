@@ -150,11 +150,6 @@ export function renderSignup(root) {
             errEl.textContent = 'Password must be at least 8 characters.';
             return;
         }
-        // Password complexity requirements
-        if (!/[a-z]/.test(pw) || !/[A-Z]/.test(pw) || !/[0-9]/.test(pw)) {
-            errEl.textContent = 'Password must contain uppercase, lowercase, and numbers.';
-            return;
-        }
         if (pw !== cf) {
             errEl.textContent = 'Passwords do not match.';
             return;
