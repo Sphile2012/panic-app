@@ -1,5 +1,6 @@
 import { store } from './state.js';
 import { t } from './i18n.js';
+import './strings/core.js';
 
 const ICONS: Record<string, string> = {
     app: '<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/>',
@@ -14,29 +15,40 @@ const ICONS: Record<string, string> = {
     settings: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>',
     guide: '<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5"/>',
     faq: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .8-1 1.5M12 17h.01"/>',
+    'safety-plan': '<path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11z"/><path d="M9 12l2 2 4-4"/>',
+    notes: '<path d="M5 3h14v18H5z"/><path d="M8 8h8M8 12h8M8 16h5"/>',
+    companion: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/>',
+    about: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
+    chat: '<path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8A8.5 8.5 0 0 1 8.7 3.9a8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8z"/>',
 };
 
 type Item = { screen: string; label: string };
+
+function escapeHtml(value: string): string {
+    return value.replace(/[&<>"']/g, character => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    }[character] ?? character));
+}
 
 function sections(): Array<{ title: string; items: Item[] }> {
     return [
         { title: t('menu.main'), items: [
             { screen: 'app', label: t('menu.home') },
-            { screen: 'live', label: t('menu.map') },
+            { screen: 'profile', label: t('menu.profile') },
             { screen: 'contacts', label: t('menu.contacts') },
+            { screen: 'live', label: t('menu.map') },
+            { screen: 'chat', label: 'Messages' },
         ] },
         { title: t('menu.safety'), items: [
+            { screen: 'safety-plan', label: 'Safety plan' },
             { screen: 'history', label: t('menu.history') },
-            { screen: 'records', label: t('menu.records') },
-            { screen: 'journey', label: t('menu.journey') },
-            { screen: 'fakecall', label: t('menu.fakecall') },
-            { screen: 'watch', label: t('menu.watch') },
+            { screen: 'records', label: 'Records' },
+            { screen: 'notes', label: 'Notes' },
         ] },
         { title: t('menu.account'), items: [
-            { screen: 'profile', label: t('menu.profile') },
+            { screen: 'companion', label: 'Safety companion' },
             { screen: 'settings', label: t('menu.settings') },
-            { screen: 'guide', label: t('menu.guide') },
-            { screen: 'faq', label: t('menu.faq') },
+            { screen: 'about', label: 'About Panic Ring' },
         ] },
     ];
 }
@@ -47,7 +59,11 @@ export function closeMenu() {
 
 export function openMenu() {
     closeMenu();
-    const { screen, authEmail } = store.getState();
+    const { screen, authEmail, profile } = store.getState();
+    const displayName = escapeHtml(profile.name || authEmail?.split('@')[0] || 'Your profile');
+    const avatar = profile.photo
+        ? `<img src="${escapeHtml(profile.photo)}" alt="" />`
+        : `<span>${displayName[0]?.toUpperCase() ?? '?'}</span>`;
     const wrap = document.createElement('div');
     wrap.id = 'side-menu-root';
     wrap.className = 'side-menu-root';
@@ -55,8 +71,13 @@ export function openMenu() {
     <div class="side-menu-backdrop" data-close="1"></div>
     <aside class="side-menu" role="dialog" aria-label="${t('menu.open')}">
       <div class="side-menu-head">
-        <div class="side-menu-logo" aria-hidden="true"></div>
-        <strong class="side-menu-brand">Panic Ring</strong>
+        <button class="side-menu-user" data-go="profile" type="button">
+          <span class="side-menu-avatar">${avatar}</span>
+          <span class="side-menu-user-copy">
+            <strong>${displayName}</strong>
+            <small>${escapeHtml(authEmail ?? 'Panic Ring')}</small>
+          </span>
+        </button>
         <button class="side-menu-close" data-close="1" aria-label="${t('common.close')}">${t('common.close')}</button>
       </div>
       <nav class="side-menu-body">
@@ -64,15 +85,15 @@ export function openMenu() {
           <div class="side-menu-title">${s.title}</div>
           ${s.items.map(i => `
             <button class="side-menu-item${i.screen === screen ? ' side-menu-item--active' : ''}" data-go="${i.screen}">
-              <span class="side-menu-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[i.screen]}</svg></span>
+              <span class="side-menu-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[i.screen] ?? ICONS.guide}</svg></span>
               <span>${i.label}</span>
             </button>`).join('')}
         `).join('')}
       </nav>
       <div class="side-menu-foot">
-        <button class="side-menu-item" data-go="calculator">
+        <button class="side-menu-item" id="side-menu-auth" type="button">
           <span class="side-menu-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18M10.6 5.1A10 10 0 0 1 22 12a14 14 0 0 1-2.6 3.6M6.1 6.1A14 14 0 0 0 2 12s3.5 7 10 7a9.7 9.7 0 0 0 4-.9"/></svg></span>
-          <span>${t('menu.hide')}</span>
+          <span>${authEmail ? t('menu.signout') : t('menu.signin')}</span>
         </button>
         <p class="side-menu-version">Panic Ring v1.0</p>
       </div>

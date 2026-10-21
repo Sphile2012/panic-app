@@ -1,27 +1,22 @@
 import './style.css';
-import './strings/core.js';
 import { store } from './state.js';
 import { renderCalculator } from './screens/calculator.js';
-import { renderSetupPin, renderSetupContacts } from './screens/setup.js';
+import { renderSetupPin, renderSetupContacts, renderRecoverySetup, renderPinRecovery } from './screens/setup.js';
 import { renderApp } from './screens/app.js';
 import { renderContacts } from './screens/contacts.js';
 import { renderLocation } from './screens/location.js';
 import { renderLive } from './screens/live.js';
-import { renderChat } from './screens/chat.js';
 import { renderProfile } from './screens/profile.js';
-import { renderRecords } from './screens/records.js';
-import { startEvidenceCapture } from './evidence.js';
 import { renderHistory, renderJourney, renderFakeCall, renderWatch, renderGuide, renderFaq } from './screens/pages.js';
-import { onTrackChange, getLowBattery } from './tracking.js';
+import { renderRecords } from './screens/records.js';
+import { renderChat } from './screens/chat.js';
 import { renderSending, renderSent, updateSendingList } from './screens/sending.js';
 import { renderNotes, renderNoteEdit } from './screens/notes.js';
 import { renderSafetyPlan } from './screens/safetyPlan.js';
 import { renderSupport } from './screens/support.js';
 import { renderSettings } from './screens/settings.js';
 import { renderAppearance } from './screens/appearance.js';
-import { renderSignup, renderLogin, renderVerifyEmail, renderForgotPassword, renderResetPassword } from './screens/auth.js';
-import { getSession } from './db.js';
-import { renderChatbot } from './screens/chatbot.js';
+import { renderSignup, renderLogin, renderForgotPassword, renderResetPassword, renderVerifyEmail } from './screens/auth.js';
 import { renderBudget } from './screens/disguise/budget.js';
 import { renderWeather } from './screens/disguise/weather.js';
 import { renderNotesPlain } from './screens/disguise/notesPlain.js';
@@ -34,16 +29,22 @@ import { runAlertSequence } from './alertService.js';
 import { pruneStaleQueue, watchForReconnect } from './alertQueue.js';
 import { loadAppearance, applyAppearance, watchSystemTheme } from './theme.js';
 import { initPwa, canInstall, isInstalled, isIosSafari, promptInstall, onInstallReady, onInstalled } from './pwa.js';
-import { isRecoverySessionValid, parseRecoveryLink } from './authConfig.mjs';
 
 const appRoot = document.getElementById('app-root') as HTMLElement | null;
 if (!appRoot) {
     throw new Error('App root element not found.');
 }
+const recoveryParams = new URLSearchParams(window.location.search);
+const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+if (recoveryParams.get('flow') === 'recovery' ||
+    hashParams.get('type') === 'recovery' ||
+    hashParams.has('access_token') ||
+    hashParams.has('refresh_token')) {
+    store.navigateTo('reset-password');
+}
 initPwa();
 
 let currentScreen: string | null = null;
-let recoveryLinkInvalid = false;
 
 function updateInstallBanner() {
     const banner = document.getElementById('install-banner') as HTMLElement | null;
@@ -93,7 +94,7 @@ function render(screen: string) {
             renderForgotPassword(appRoot);
             break;
         case 'reset-password':
-            renderResetPassword(appRoot, recoveryLinkInvalid);
+            renderResetPassword(appRoot);
             break;
         case 'verify-email':
             renderVerifyEmail(appRoot);
@@ -110,26 +111,35 @@ function render(screen: string) {
         case 'setup-contacts':
             renderSetupContacts(appRoot);
             break;
+        case 'recovery-setup':
+            renderRecoverySetup(appRoot, 'setup-contacts');
+            break;
+        case 'recovery-settings':
+            renderRecoverySetup(appRoot, 'settings');
+            break;
+        case 'pin-recovery':
+            renderPinRecovery(appRoot);
+            break;
         case 'app':
             renderApp(appRoot);
-            break;
-        case 'contacts':
-            renderContacts(appRoot);
-            break;
-        case 'location':
-            renderLocation(appRoot);
-            break;
-        case 'live':
-            renderLive(appRoot);
-            break;
-        case 'chat':
-            renderChat(appRoot);
             break;
         case 'profile':
             renderProfile(appRoot);
             break;
+        case 'contacts':
+            renderContacts(appRoot);
+            break;
+        case 'live':
+            renderLive(appRoot);
+            break;
         case 'history':
             renderHistory(appRoot);
+            break;
+        case 'records':
+            void renderRecords(appRoot);
+            break;
+        case 'chat':
+            renderChat(appRoot);
             break;
         case 'journey':
             renderJourney(appRoot);
@@ -145,6 +155,9 @@ function render(screen: string) {
             break;
         case 'faq':
             renderFaq(appRoot);
+            break;
+        case 'location':
+            renderLocation(appRoot);
             break;
         case 'notes':
             renderNotes(appRoot);
@@ -170,15 +183,11 @@ function render(screen: string) {
         case 'settings':
             renderSettings(appRoot);
             break;
-        case 'chatbot':
-            renderChatbot(appRoot);
-            break;
         case 'appearance':
             renderAppearance(appRoot);
             break;
         case 'sending':
             renderSending(appRoot);
-            startEvidenceCapture();
             runAlertSequence(
                 store.getState().alertLocation,
                 store.getState().locationShared,
@@ -191,26 +200,20 @@ function render(screen: string) {
         case 'sent':
             renderSent(appRoot);
             break;
-        case 'records':
-            renderRecords(appRoot);
-            break;
         default:
             renderCalculator(appRoot);
             break;
     }
 }
 
-let currentRev = -1;
 store.subscribe((state) => {
-    if (state.screen !== currentScreen || state.rev !== currentRev) {
-        currentRev = state.rev;
+    if (state.screen !== currentScreen)
         render(state.screen);
-    }
 });
 
 document.addEventListener('keydown', (event: KeyboardEvent) => {
     if (event.key === 'Escape') {
-        const safe = ['calculator', 'decoy', 'setup-pin', 'setup-contacts', 'signup', 'login', 'verify-email'];
+        const safe = ['calculator', 'decoy', 'setup-pin', 'setup-contacts', 'signup', 'login', 'forgot-password', 'reset-password', 'verify-email'];
         if (!safe.includes(store.getState().screen)) {
             window.location.href = 'https://www.google.com';
         }
@@ -258,11 +261,6 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(() => { });
 }
 
-onTrackChange(() => {
-    if (getLowBattery() !== null && store.getState().screen === 'app')
-        store.navigateTo('live');
-});
-
 document.getElementById('install-btn')?.addEventListener('click', async () => {
     if (isIosSafari()) {
         const msg = document.getElementById('ios-install-msg');
@@ -280,28 +278,18 @@ onInstalled(() => {
         banner.style.display = 'none';
 });
 
-const appearance = loadAppearance();
-applyAppearance(appearance);
-render(store.getState().screen);
-updateInstallBanner();
-
-store.initAuth().then(async () => {
-    const recoveryLink = parseRecoveryLink(window.location.search, window.location.hash);
-    if (recoveryLink.isRecoveryLink) {
-        const session = await getSession();
-        recoveryLinkInvalid = !isRecoverySessionValid(recoveryLink, Boolean(session));
-        window.history.replaceState(null, '', window.location.pathname);
-        store.navigateTo('reset-password');
-    }
+store.initAuth().then(() => {
     pruneStaleQueue();
     watchForReconnect(({ locationText, locationShared }) => {
         store.startSending();
-        startEvidenceCapture();
         runAlertSequence(locationText, locationShared, () => {
             if (store.getState().screen === 'sending')
                 updateSendingList(appRoot);
         });
     });
-
+    render(store.getState().screen);
+    updateInstallBanner();
+    const appearance = loadAppearance();
+    applyAppearance(appearance);
     watchSystemTheme(() => loadAppearance().mode);
 });

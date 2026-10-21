@@ -66,25 +66,29 @@ export function renderProfile(root: HTMLElement) {
     const identity = authEmail ? displayIdentity(authEmail) : (initial.phone || t('b.prof.user'));
 
     const draw = () => {
-        const profile = store.getState().profile;
+        const { profile, contacts, notes, safetyPlan } = store.getState();
         const name = profile.name || identity;
         const letter = (name || '?')[0].toUpperCase();
-        const photoHtml = photo ? `<img src="${photo}" alt="" />` : `<span>${esc(letter)}</span>`;
+        const photoHtml = photo ? `<img src="${esc(photo)}" alt="" />` : `<span>${esc(letter)}</span>`;
+        const planItems = Object.values(safetyPlan).filter(value => value.trim()).length;
         root.innerHTML = `
     <div class="screen profile-screen pf">
       <section class="pf-hero">
         <div class="pf-top">
-        <button class="pf-icon-btn" id="btn-back"         aria-label="${t('common.back')}">${svg(IC.menu, 'pf-top-ic')}</button>
-                <button class="pf-icon-btn" id="btn-edit" aria-label="${t('b.prof.edit')}">${svg(IC.edit, 'pf-top-ic')}</button>
-      </div>
-
-      <div class="pf-head">
-        <button class="pf-photo" id="profile-photo" type="button" aria-label="${t('prof.upload')}">${photoHtml}</button>
-        <div class="pf-who">
-          <h2 class="pf-name">${esc(name)}</h2>
-          <p class="pf-sub">${esc(profile.phone || (identity.includes('@') ? t('b.prof.user') : identity))}</p>
+          <button class="pf-icon-btn" id="btn-back" aria-label="${t('common.back')}">${svg(IC.back, 'pf-top-ic')}</button>
+          <span class="pf-top-title">My profile</span>
+          <button class="pf-icon-btn" id="btn-edit" aria-label="${t('b.prof.edit')}">${svg(IC.edit, 'pf-top-ic')}</button>
         </div>
-      </div>
+        <div class="pf-head">
+          <button class="pf-photo" id="profile-photo" type="button" aria-label="${t('prof.upload')}">${photoHtml}</button>
+          <h2 class="pf-name">${esc(name)}</h2>
+          <p class="pf-sub">${esc(profile.phone || (identity.includes('@') ? identity : 'Panic Ring member'))}</p>
+          <p class="pf-bio">Your personal safety profile and trusted circle.</p>
+          <div class="pf-hero-actions">
+            <button class="pf-follow-btn" id="pf-edit-profile" type="button">${t('b.prof.edit')}</button>
+            <button class="pf-share-btn" id="pf-open-contacts" type="button">Trusted circle</button>
+          </div>
+        </div>
       </section>
       <input type="file" id="photo-input" accept="image/*" hidden />
 
@@ -101,8 +105,38 @@ export function renderProfile(root: HTMLElement) {
         <button class="btn-primary" type="submit">${t('prof.save')}</button>
       </form>` : ''}
       <p class="setup-hint" id="p-msg" aria-live="polite"></p>
+      <section class="pf-stats" aria-label="Profile summary">
+        <div><strong>${contacts.length}</strong><span>Contacts</span></div>
+        <div><strong>${notes.length}</strong><span>Private notes</span></div>
+        <div><strong>${planItems}/6</strong><span>Plan items</span></div>
+      </section>
+      <section class="pf-content-section">
+        <div class="pf-section-head">
+          <h3>Trusted circle</h3>
+          <button id="pf-manage-contacts" type="button">Manage</button>
+        </div>
+        ${contacts.length
+        ? `<div class="pf-contact-strip">${contacts.slice(0, 8).map(contact => `
+            <button class="pf-contact" type="button" data-contact-id="${esc(contact.id)}" aria-label="${esc(contact.name)}">
+              <span>${esc(contact.initials || contact.name[0] || '?')}</span>
+              <small>${esc(contact.name.split(' ')[0])}</small>
+            </button>`).join('')}</div>`
+        : '<p class="pf-empty">Add the people you trust so they are ready when you need them.</p>'}
+      </section>
+      <section class="pf-content-section">
+        <div class="pf-section-head">
+          <h3>Private notes</h3>
+          <button id="pf-add-note" type="button">View all</button>
+        </div>
+        ${notes.length
+        ? `<div class="pf-note-grid">${notes.slice(0, 4).map(note => `
+            <button class="pf-note-card" type="button" data-note-id="${esc(note.id)}">
+              <span>${esc(note.title || 'Untitled note')}</span>
+              <small>${new Date(note.updatedAt).toLocaleDateString()}</small>
+            </button>`).join('')}</div>`
+        : '<p class="pf-empty">Your saved notes will appear here.</p>'}
+      </section>
       <div class="pf-list">
-        ${row('pf-profile', IC.users, t('b.prof.my'), editing ? 'pf-row--active' : '')}
         ${row('pf-messages', IC.mail, t('b.prof.messages'))}
         ${row('pf-favourites', IC.heart, t('b.prof.fav'))}
         ${row('pf-location', IC.location, t('b.prof.location'))}
@@ -120,20 +154,32 @@ export function renderProfile(root: HTMLElement) {
             root.querySelector(id)!.addEventListener('click', () => store.navigateTo(screen));
 
         go('#btn-back', 'app');
+        go('#pf-open-contacts', 'contacts');
+        go('#pf-manage-contacts', 'contacts');
+        go('#pf-add-note', 'notes');
         go('#pf-messages', 'chat');
         go('#pf-favourites', 'records');
         go('#pf-location', 'live');
         go('#pf-settings', 'settings');
+        root.querySelectorAll('.pf-contact').forEach(button => {
+            button.addEventListener('click', () => store.navigateTo('contacts'));
+        });
+        root.querySelector('#pf-edit-profile')!.addEventListener('click', () => {
+            editing = true;
+            draw();
+        });
+        root.querySelectorAll<HTMLElement>('[data-note-id]').forEach(button => {
+            button.addEventListener('click', () => {
+                store.setEditingNote(button.dataset['noteId'] ?? null);
+                store.navigateTo('note-edit');
+            });
+        });
         root.querySelector('#pf-logout')!.addEventListener('click', async () => {
             if (confirm(t('b.prof.logout.q')))
                 await store.signOut();
         });
         root.querySelector('#btn-edit')!.addEventListener('click', () => {
             editing = !editing;
-            draw();
-        });
-        root.querySelector('#pf-profile')!.addEventListener('click', () => {
-            editing = true;
             draw();
         });
         root.querySelector('#profile-photo')!.addEventListener('click', () => fileEl.click());

@@ -1,10 +1,8 @@
-import '../strings/groupC.js';
-import { t } from '../i18n.js';
 import { store } from '../state.js';
-function safeEval(expr, errorText) {
+function safeEval(expr) {
     const tokens = expr.trim().match(/[\d.]+|[+\-*/]/g);
     if (!tokens)
-        return errorText;
+        return 'Error';
     try {
         const prec = { '+': 1, '-': 1, '*': 2, '/': 2 };
         const out = [];
@@ -36,11 +34,11 @@ function safeEval(expr, errorText) {
             applyOp();
         const result = out[0] ?? NaN;
         if (!isFinite(result))
-            return errorText;
+            return 'Error';
         return parseFloat(result.toPrecision(12)).toString();
     }
     catch {
-        return errorText;
+        return 'Error';
     }
 }
 const KEYS = [
@@ -50,12 +48,14 @@ const KEYS = [
     ['C', 'C'], ['0', '0'], ['=', '='], ['+', '+'],
 ];
 export function renderCalculator(root) {
+        const recoveryConfigured = store.getState().recoveryConfigured;
     root.innerHTML = `
     <div class="screen calculator-screen">
       <div class="calc-display">
         <div class="calc-expression" id="calc-expression">&nbsp;</div>
         <div class="calc-result" id="calc-result">0</div>
       </div>
+            ${recoveryConfigured ? '<button class="calc-forgot-pin" id="btn-forgot-pin" type="button">Forgot app PIN? Answer your security questions</button>' : ''}
       <div class="calc-keys">
         ${KEYS.map(([label, value]) => `
           <button
@@ -70,6 +70,8 @@ export function renderCalculator(root) {
   `;
     const display = root.querySelector('#calc-result');
     const expression = root.querySelector('#calc-expression');
+    const recoveryButton = root.querySelector('#btn-forgot-pin') as HTMLButtonElement | null;
+    recoveryButton?.addEventListener('click', () => store.navigateTo('pin-recovery'));
     let calcBuffer = '';
     root.querySelector('.calc-keys').addEventListener('click', e => {
         const btn = e.target.closest('.calc-key');
@@ -88,7 +90,7 @@ export function renderCalculator(root) {
         if (v === '=') {
             store.evaluatePin().then(route => {
                 if (!route) {
-                    display.textContent = safeEval(calcBuffer || '0', t('c.calc.error'));
+                    display.textContent = safeEval(calcBuffer || '0');
                     expression.textContent = calcBuffer + ' =';
                     calcBuffer = '';
                 }

@@ -1,162 +1,147 @@
-import '../strings/groupA.js';
 import { store } from '../state.js';
-import { t } from '../i18n.js';
-import { openMenu } from '../menu.js';
-import { displayIdentity, isPhoneIdentity } from '../db.js';
-import { loadAppearance, saveAppearance, applyAppearance, DISGUISE_OPTIONS, disguiseLabel } from '../theme.js';
+import { loadAppearance, saveAppearance, applyAppearance, DISGUISE_OPTIONS } from '../theme.js';
 import { isCheckinActive, checkinSecondsLeft, startCheckin, cancelCheckin, resumeCheckinIfActive } from '../checkin.js';
+import { openMenu } from '../menu.js';
+
+function escapeHtml(value: string): string {
+    return value.replace(/[&<>"']/g, character => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    }[character] ?? character));
+}
+
+const DASHBOARD_CARDS = [
+    { screen: 'contacts', icon: '<circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.5"/><path d="M17 14c2.5 0 4 1.8 4 4"/>', label: 'Trusted contacts', detail: 'Manage your circle' },
+    { screen: 'live', icon: '<path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1116 0z"/><circle cx="12" cy="10" r="2.5"/>', label: 'Live location', detail: 'Share your location' },
+    { screen: 'safety-plan', icon: '<path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11z"/><path d="M9 12l2 2 4-4"/>', label: 'Safety plan', detail: 'Your plan, ready' },
+    { screen: 'history', icon: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 8v5l3 2"/>', label: 'Alert history', detail: 'Review past alerts' },
+    { screen: 'notes', icon: '<path d="M5 3h14v18H5z"/><path d="M8 8h8M8 12h8M8 16h5"/>', label: 'Private notes', detail: 'Keep key details' },
+    { screen: 'checkin', icon: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', label: 'Check-in timer', detail: 'Set a safe arrival time' },
+];
+
 export function renderApp(root) {
-    const { contacts, authEmail: rawEmail, profile } = store.getState();
-    const authEmail = rawEmail ? displayIdentity(rawEmail) : null;
+    const { contacts, authEmail, profile } = store.getState();
     const appearance = loadAppearance();
-    const avatarLetter = rawEmail
-        ? (isPhoneIdentity(rawEmail) ? 'P' : rawEmail[0].toUpperCase())
-        : '?';
+    const displayName = profile.name || authEmail?.split('@')[0] || 'Your safety dashboard';
+    const avatarLetter = displayName[0]?.toUpperCase() ?? '?';
+    const avatar = profile.photo
+        ? `<img src="${profile.photo}" alt="" />`
+        : escapeHtml(avatarLetter);
     const currentDisguise = DISGUISE_OPTIONS.find(d => d.id === appearance.disguise);
     root.innerHTML = `
     <div class="screen app-screen">
 
-      <!-- Header -->
-      <header class="dash-header">
-        <div class="dash-header-top">
-          <button class="dash-menu-btn" id="btn-menu" aria-label="${t('menu.open')}">
-            <span></span><span></span><span></span>
-          </button>
-          <button class="dash-hide-btn" id="btn-hide" aria-label="${t('app.hide')}">${t('app.hide')}</button>
-          <button class="app-avatar dash-avatar" id="btn-profile" aria-label="${t('menu.profile')}"
-            title="${authEmail ?? t('menu.profile')}">
-            ${profile.photo ? `<img class="avatar-img" src="${profile.photo}" alt="" />` : avatarLetter}
-          </button>
+      <header class="app-header">
+        <button class="app-menu-button" id="btn-menu" type="button" aria-label="Open menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+        <div class="app-header-text">
+          <h1 class="app-title">Dashboard</h1>
+          <p class="app-subtitle">Welcome, ${escapeHtml(displayName)}</p>
         </div>
-        <h1 class="dash-title">${t('a.app.dashboard')}</h1>
-        <p class="dash-sub">${profile.name ? profile.name + ' - ' : ''}${t('app.subtitle')}</p>
+        <button class="app-avatar" id="btn-profile" aria-label="Open profile"
+          title="${escapeHtml(authEmail ?? 'Profile')}">
+          ${avatar}
+        </button>
       </header>
 
-      <div class="dash-sheet">
-
-      <!-- Signed-in account strip (shown only when logged in) -->
-
-      <!-- Tiles -->
-      <nav class="dash-grid" aria-label="${t('a.app.mainnav')}">
-        ${[
-            ['profile', t('menu.profile'), 'M12 12a4 4 0 100-8 4 4 0 000 8zm-8 9a8 8 0 0116 0'],
-            ['live', t('app.live'), 'M12 21s7-6.2 7-11a7 7 0 10-14 0c0 4.8 7 11 7 11zm0-8.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z'],
-            ['contacts', t('menu.contacts'), 'M16 11a3 3 0 100-6 3 3 0 000 6zM8 11a3 3 0 100-6 3 3 0 000 6zm0 2c-3 0-5 1.5-5 4v2h10v-2c0-2.5-2-4-5-4zm8 0c-.5 0-1 0-1.500.1 1.600 1 2.500 2.300 2.500 3.900v2h4v-2c0-2.500-2-4-5-4z'],
-            ['notes', t('a.app.notes'), 'M6 3h9l4 4v14H6zM9 12h7M9 16h7'],
-            ['safety-plan', t('a.app.plan'), 'M12 3l8 3v6c0 5-3.500 8-8 9-4.500-1-8-4-8-9V6z'],
-            ['chat', t('app.chat'), 'M4 5h16v11H9l-5 4z'],
-            ['companion', t('a.app.help'), 'M12 21a9 9 0 100-18 9 9 0 000 18zm0-6v-1c0-1.500 2-1.700 2-3.500a2 2 0 00-4 0M12 18h.01'],
-            ['settings', t('menu.settings'), 'M12 15a3 3 0 100-6 3 3 0 000 6zM19 12l2-1-2-4-2 .5-1.500-1L15 4h-4l-.5 2.500-1.500 1L7 7l-2 4 2 1v2l-2 1 2 4 2-.5 1.500 1L11 20h4l.5-2.500 1.500-1 2 .5 2-4-2-1z'],
-        ].map(([id, label, d]) => `
-          <button class="dash-tile" data-nav="${id}" aria-label="${label}">
-            <span class="dash-tile-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg></span>
-            <span class="dash-tile-label">${label}</span>
-          </button>`).join('')}
-      </nav>
-
-      <!-- Hold to activate -->
-      <div class="app-activate-wrap">
-        <button
-          class="btn-hold"
-          id="btn-hold"
-          aria-label="${t('app.hold')}"
-          title="${t('app.hint')}">
-          <span class="btn-hold-label">${t('app.hold')}</span>
+      <section class="dashboard-alert-card" aria-label="Emergency alert">
+        <div class="dashboard-alert-copy">
+          <span class="dashboard-eyebrow">PANIC RING</span>
+          <h2>Your safety comes first</h2>
+          <p>Hold the button to alert your trusted circle.</p>
+        </div>
+        <button class="btn-hold" id="btn-hold" aria-label="Hold to send alert" title="Hold for 1.5 seconds to send">
+          <span class="btn-hold-label">Hold to alert</span>
           <div class="btn-hold-ring"></div>
         </button>
-        <p class="app-activate-hint">${t('app.hint')}</p>
-      </div>
+      </section>
+      <p class="app-activate-hint">Hold for 1.5 seconds · release to cancel</p>
 
-      <!-- Trusted circle -->
-      <section class="app-contacts">
-        <div class="section-header">
-          <h2 class="section-label">${t('app.circle')}</h2>
-          <button class="section-action" id="btn-manage-contacts">${t('app.manage')}</button>
+      <section class="dashboard-section">
+        <div class="dashboard-section-heading">
+          <h2>Quick access</h2>
+          <span>${contacts.length} trusted ${contacts.length === 1 ? 'contact' : 'contacts'}</span>
         </div>
-        ${contacts.length === 0
-        ? `<p class="empty-hint">${t('app.nocontacts')}</p>`
-        : `<ul class="contact-list">${contacts.map(contactRow).join('')}</ul>`}
+        <div class="dashboard-grid">
+          ${DASHBOARD_CARDS.map(card => `
+            <button class="dashboard-card" type="button" data-dashboard="${card.screen}">
+              <span class="dashboard-card-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${card.icon}</svg>
+              </span>
+              <span class="dashboard-card-label">${card.label}</span>
+              <span class="dashboard-card-detail">${card.detail}</span>
+            </button>
+          `).join('')}
+        </div>
       </section>
 
-      <!-- Quick settings bar -->
-      <div class="app-quick-bar">
-        <!-- Disguise screen quick-switcher -->
-        <button class="app-quick-btn" id="btn-disguise"         title="${t('a.app.changedisguise')}"
-                  aria-label="${t('a.app.changedisguise')}">
+      <div class="app-quick-bar" aria-label="Display options">
+        <button class="app-quick-btn" id="btn-disguise" title="Change disguise screen"
+          aria-label="Change disguise screen">
           <span class="app-quick-icon">${currentDisguise?.preview ?? 'Calculator'}</span>
-          <span class="app-quick-label">${currentDisguise ? disguiseLabel(currentDisguise.id) : disguiseLabel('calculator')}</span>
+          <span class="app-quick-label">${currentDisguise?.label ?? 'Calculator'}</span>
         </button>
 
-        <!-- Theme toggle -->
-        <button class="app-quick-btn" id="btn-theme"         title="${t('a.app.togglemode')}"
-                  aria-label="${t('a.app.toggletheme')}">
+        <button class="app-quick-btn" id="btn-theme" title="Toggle dark/light mode"
+          aria-label="Toggle theme">
           <span class="app-quick-icon" id="theme-icon">
-            ${appearance.mode === 'light' ? t('a.app.light') : t('a.app.dark')}
+            ${appearance.mode === 'light' ? 'Light' : 'Dark'}
           </span>
-          <span class="app-quick-label">${t('a.app.theme')}</span>
+          <span class="app-quick-label">Theme</span>
         </button>
 
-        <!-- Check-in timer -->
-        <button class="app-quick-btn" id="btn-quick-checkin"         title="${t('a.app.checkintimer')}"
-                  aria-label="${t('a.app.checkintimer')}">
-                  <span class="app-quick-label">${t('a.app.checkin')}</span>
+        <button class="app-quick-btn" id="btn-quick-checkin" title="Check-in timer"
+          aria-label="Check-in timer">
+          <span class="app-quick-label">Check-in</span>
         </button>
       </div>
 
-      </div>
+      <nav class="app-bottom-nav" aria-label="Main navigation">
+        <button class="app-bottom-nav-btn" data-bottom-nav="contacts" type="button">Trusted circle</button>
+        <button class="app-bottom-nav-btn app-bottom-nav-btn--active" data-bottom-nav="app" type="button">Home</button>
+        <button class="app-bottom-nav-btn" data-bottom-nav="profile" type="button">Profile</button>
+      </nav>
 
-      <!-- Bottom bar -->
-      <div class="dash-bottom">
-        <button class="dash-bottom-btn" id="btn-menu-bottom" aria-label="${t('menu.open')}">${t('menu.open')}</button>
-        <button class="dash-fab" id="btn-fab" aria-label="${t('app.hold')}">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.500 8-8 9-4.500-1-8-4-8-9V6z"/></svg>
-        </button>
-        <button class="dash-bottom-btn" data-nav="profile" aria-label="${t('menu.profile')}">${t('menu.profile')}</button>
-      </div>
-
-      <!-- Check-in timer panel -->
       <div class="checkin-bar" id="checkin-bar" style="display:none">
         <div class="checkin-bar-inner">
-          <span class="checkin-label" id="checkin-label">${t('a.app.checkinactive')}</span>
+          <span class="checkin-label" id="checkin-label">Check-in active</span>
           <span class="checkin-countdown" id="checkin-countdown"></span>
-          <button class="checkin-cancel" id="checkin-cancel" aria-label="${t('a.app.cancelcheckin')}">${t('common.cancel')}</button>
+          <button class="checkin-cancel" id="checkin-cancel" aria-label="Cancel check-in">Cancel ✕</button>
         </div>
       </div>
 
-      <!-- Check-in setup sheet (hidden by default) -->
       <div class="checkin-sheet" id="checkin-sheet" aria-hidden="true">
-        <p class="checkin-sheet-title">${t('a.app.settimer')}</p>
+        <p class="checkin-sheet-title">Set a check-in timer</p>
         <p class="checkin-sheet-body">
-          ${t('a.app.timerbody')}
+          If you don't cancel before time runs out, your circle will be alerted.
         </p>
         <input class="text-input" id="checkin-name" type="text"
-          placeholder="${t('a.app.nameph')}" maxlength="40" />
+          placeholder="Walk home / Meeting…" maxlength="40" />
         <div class="checkin-presets">
           ${[15, 30, 60, 90].map(m => `
-            <button class="checkin-preset" data-mins="${m}">${t('a.app.mins', { n: m })}</button>
+            <button class="checkin-preset" data-mins="${m}">${m} min</button>
           `).join('')}
         </div>
         <div class="checkin-sheet-actions">
-          <button class="btn-primary" id="checkin-start-btn">${t('a.app.start')}</button>
-          <button class="checkin-sheet-close" id="checkin-close">${t('common.cancel')}</button>
+          <button class="btn-primary" id="checkin-start-btn">Start timer</button>
+          <button class="checkin-sheet-close" id="checkin-close">Cancel</button>
         </div>
       </div>
 
-      <!-- Disguise picker sheet (hidden by default) -->
       <div class="disguise-sheet" id="disguise-sheet" aria-hidden="true">
-        <p class="disguise-sheet-title">${t('a.app.choosedisguise')}</p>
+        <p class="disguise-sheet-title">Choose disguise screen</p>
         <div class="disguise-sheet-grid">
           ${DISGUISE_OPTIONS.map(d => `
             <button
               class="ap-disguise-card ${appearance.disguise === d.id ? 'ap-disguise-card--active' : ''}"
               data-disguise="${d.id}">
               <span class="ap-disguise-icon">${d.preview}</span>
-              <span class="ap-disguise-label">${disguiseLabel(d.id)}</span>
-              ${appearance.disguise === d.id ? `<span class="ap-disguise-check">${t('a.app.active')}</span>` : ''}
+              <span class="ap-disguise-label">${d.label}</span>
+              ${appearance.disguise === d.id ? '<span class="ap-disguise-check">✓ Active</span>' : ''}
             </button>
           `).join('')}
         </div>
-        <button class="disguise-sheet-close" id="disguise-close" aria-label="${t('common.close')}">${t('common.close')}</button>
+        <button class="disguise-sheet-close" id="disguise-close" aria-label="Close">Close</button>
       </div>
 
     </div>
@@ -185,24 +170,23 @@ export function renderApp(root) {
     holdBtn.addEventListener('mouseleave', cancelHold);
     holdBtn.addEventListener('touchend', cancelHold);
     holdBtn.addEventListener('touchcancel', cancelHold);
-    root.querySelector('#btn-manage-contacts').addEventListener('click', () => {
-        store.navigateTo('contacts');
-    });
     root.querySelector('#btn-profile').addEventListener('click', () => {
         store.navigateTo('profile');
     });
-    root.querySelector('#btn-hide').addEventListener('click', () => store.navigateTo('calculator'));
-    root.querySelector('#btn-menu').addEventListener('click', () => openMenu());
-    root.querySelector('#btn-menu-bottom').addEventListener('click', () => openMenu());
-    root.querySelector('#btn-fab').addEventListener('click', () => {
-        holdBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        holdBtn.classList.add('btn-hold--no-contacts');
-        setTimeout(() => holdBtn.classList.remove('btn-hold--no-contacts'), 800);
+    root.querySelector('#btn-menu').addEventListener('click', openMenu);
+    root.querySelectorAll('[data-dashboard]').forEach(button => {
+        button.addEventListener('click', () => {
+            const screen = (button as HTMLElement).dataset['dashboard'];
+            if (screen === 'checkin') {
+                const sheet = root.querySelector('#checkin-sheet');
+                sheet?.setAttribute('aria-hidden', 'false');
+                sheet?.classList.add('checkin-sheet--open');
+            }
+            else if (screen) store.navigateTo(screen);
+        });
     });
-    root.querySelector('#btn-signout')?.addEventListener('click', async () => {
-        if (confirm(t('a.app.signoutconfirm'))) {
-            await store.signOut();
-        }
+    root.querySelectorAll('[data-bottom-nav]').forEach(button => {
+        button.addEventListener('click', () => store.navigateTo((button as HTMLElement).dataset['bottomNav'] ?? 'app'));
     });
     root.querySelector('#btn-theme').addEventListener('click', () => {
         const ap = loadAppearance();
@@ -210,7 +194,7 @@ export function renderApp(root) {
         saveAppearance(ap);
         applyAppearance(ap);
         const icon = root.querySelector('#theme-icon');
-        icon.textContent = ap.mode === 'light' ? t('a.app.light') : t('a.app.dark');
+        icon.textContent = ap.mode === 'light' ? 'Light' : 'Dark';
     });
     const sheet = root.querySelector('#disguise-sheet');
     root.querySelector('#btn-disguise').addEventListener('click', () => {
@@ -233,10 +217,6 @@ export function renderApp(root) {
         });
     });
     const navRoutes = {
-        profile: () => store.navigateTo('profile'),
-        contacts: () => store.navigateTo('contacts'),
-        live: () => store.navigateTo('live'),
-        chat: () => store.navigateTo('chat'),
         notes: () => store.navigateTo('notes'),
         'safety-plan': () => store.navigateTo('safety-plan'),
         companion: () => store.navigateTo('companion'),
@@ -278,7 +258,7 @@ export function renderApp(root) {
         });
     });
     root.querySelector('#checkin-start-btn').addEventListener('click', () => {
-        const name = checkinName.value.trim() || t('a.app.checkin');
+        const name = checkinName.value.trim() || 'Check-in';
         checkinSheet.setAttribute('aria-hidden', 'true');
         checkinSheet.classList.remove('checkin-sheet--open');
         checkinLabel.textContent = name;
@@ -306,7 +286,7 @@ function contactRow(c) {
       <div class="contact-avatar">${c.initials}</div>
       <div class="contact-info">
         <span class="contact-name">${c.name}</span>
-        <span class="contact-phone">${c.phone}${c.relationship ? ' - ' + t('rel.' + c.relationship) : ''}</span>
+        <span class="contact-phone">${c.phone}</span>
       </div>
     </li>
   `;
