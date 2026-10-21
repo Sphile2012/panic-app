@@ -1,4 +1,4 @@
-import { EMPTY_PROFILE, type Profile, loadPublicSync, loadVault, saveVault, savePinHashes, saveAutoLock, clearAll, hashPin, uid, initials, type Contact as StorageContact, type Note as StorageNote, type SafetyPlan as StorageSafetyPlan, type VaultData } from './storage.js';
+import { EMPTY_PROFILE, type Profile, loadPublicSync, loadVault, saveVault, savePinHashes, saveAutoLock, clearAll, hashPin, recoverVaultWithAnswers, uid, initials, type Contact as StorageContact, type Note as StorageNote, type SafetyPlan as StorageSafetyPlan, type VaultData } from './storage.js';
 import { onAuthStateChange, DB_CONFIGURED, signOut } from './db.js';
 
 type Contact = StorageContact;
@@ -20,6 +20,7 @@ type AppState = {
     locationShared: boolean;
     editingNoteId: string | null;
     isFirstRun: boolean;
+    recoveryConfigured: boolean;
     pinFailures: number;
     lastActivityAt: number;
 };
@@ -44,6 +45,7 @@ function buildInitialState(): AppState {
         locationShared: false,
         editingNoteId: null,
         isFirstRun: pub.pin === '',
+        recoveryConfigured: pub.recoveryQuestionIds !== null,
         pinFailures: 0,
         lastActivityAt: Date.now(),
     };
@@ -84,6 +86,10 @@ class Store {
     navigateTo(screen: string) {
         this.state = { ...this.state, screen, rev: this.state.rev + 1 };
         this.touch();
+        this.notify();
+    }
+    markRecoveryConfigured() {
+        this.state = { ...this.state, recoveryConfigured: true };
         this.notify();
     }
     appendPin(digit: string) {
@@ -254,6 +260,36 @@ class Store {
     }
     async changePins(newPin: string, newDecoy: string) {
         await this.savePin(newPin, newDecoy);
+    }
+    async recoverPins(answers: string[], newPin: string, newDecoy: string): Promise<boolean> {
+        if (!/^\d{4}$/.test(newPin) || !/^\d{4}$/.test(newDecoy) || newPin === newDecoy)
+            return false;
+        try {
+            const pinHash = await hashPin(newPin);
+            const decoyHash = await hashPin(newDecoy);
+            const vault = await recoverVaultWithAnswers(answers, pinHash, decoyHash, this.state.autoLockMinutes);
+            if (!vault)
+                return false;
+            await savePinHashes(pinHash, decoyHash, this.state.autoLockMinutes);
+            this.state = {
+                ...this.state,
+                screen: 'app',
+                pinHash,
+                profile: { ...EMPTY_PROFILE, ...(vault.profile ?? {}) },
+                contacts: vault.contacts.map(c => ({ ...c, status: 'pending' as const })),
+                notes: vault.notes,
+                safetyPlan: vault.safetyPlan,
+                isFirstRun: false,
+                recoveryConfigured: true,
+                pinFailures: 0,
+            };
+            this.touch();
+            this.notify();
+            return true;
+        }
+        catch {
+            return false;
+        }
     }
     async factoryReset() {
         if (this.lockTimer)

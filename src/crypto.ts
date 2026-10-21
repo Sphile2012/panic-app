@@ -1,5 +1,6 @@
 const ALGO = 'AES-GCM';
 const KEY_USAGE: KeyUsage[] = ['encrypt', 'decrypt'];
+const RECOVERY_ITERATIONS = 310_000;
 
 async function keyFromHash(pinHash: string) {
     const raw = new Uint8Array(pinHash.match(/../g).map(h => parseInt(h, 16)));
@@ -12,6 +13,36 @@ function encode(text: string) {
 
 function decode(buf: ArrayBuffer | Uint8Array) {
     return new TextDecoder().decode(buf);
+}
+
+function toHex(bytes: Uint8Array) {
+    return Array.from(bytes).map(byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+export function createRecoverySalt() {
+    return btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(16))));
+}
+
+export function createRecoverySecret() {
+    return toHex(crypto.getRandomValues(new Uint8Array(32)));
+}
+
+export async function deriveRecoveryHash(questionIds: string[], answers: string[], salt: string) {
+    if (questionIds.length !== 2 || answers.length !== 2)
+        throw new Error('Two recovery questions and answers are required.');
+
+    const normalizedAnswers = answers.map(answer =>
+        answer.normalize('NFKC').trim().toLocaleLowerCase('en-US').replace(/\s+/g, ' '));
+    const material = questionIds.map((id, index) => `${id}\u0000${normalizedAnswers[index]}`).join('\u0001');
+    const keyMaterial = await crypto.subtle.importKey('raw', encode(material), 'PBKDF2', false, ['deriveBits']);
+    const saltBytes = Uint8Array.from(atob(salt), character => character.charCodeAt(0));
+    const bits = await crypto.subtle.deriveBits({
+        name: 'PBKDF2',
+        salt: saltBytes,
+        iterations: RECOVERY_ITERATIONS,
+        hash: 'SHA-256',
+    }, keyMaterial, 256);
+    return toHex(new Uint8Array(bits));
 }
 
 function concat(a: Uint8Array, b: Uint8Array) {

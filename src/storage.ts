@@ -1,5 +1,5 @@
 import { upsertDevice, getDeviceId, getUser } from './db.js';
-import { encryptJson, decryptJson } from './crypto.js';
+import { createRecoverySalt, createRecoverySecret, deriveRecoveryHash, encrypt, decrypt, encryptJson, decryptJson } from './crypto.js';
 
 export type Contact = {
     id: string;
@@ -45,24 +45,20 @@ export type VaultData = {
     profile?: Profile;
 };
 
+export type RecoveryRecord = {
+    questionIds: string[];
+    salt: string;
+    answerWrap: string;
+    pinWrap: string;
+    encryptedVault: string;
+};
+
 const KEY_PUBLIC = 'pr_public';
 const KEY_VAULT = 'pr_vault';
 function loadPublic() {
     try {
         const raw = localStorage.getItem(KEY_PUBLIC);
-        if (!raw)
-            return null;
-        const data = JSON.parse(raw);
-        if (data && typeof data === 'object' && 'recovery' in data) {
-            delete data.recovery;
-            try {
-                localStorage.setItem(KEY_PUBLIC, JSON.stringify(data));
-            }
-            catch (error) {
-                console.warn('[storage] Could not remove legacy PIN recovery data:', error);
-            }
-        }
-        return data;
+        return raw ? JSON.parse(raw) : null;
     }
     catch {
         return null;
@@ -126,7 +122,68 @@ export async function loadVault(pinHash: string): Promise<VaultData> {
 
 export async function saveVault(data: VaultData, pinHash: string) {
     const encryptedVault = await encryptJson(data, pinHash);
+    const pub = loadPublic();
+    if (pub?.recovery) {
+        const recoverySecret = await decrypt(pub.recovery.pinWrap, pinHash);
+        pub.recovery.encryptedVault = await encryptJson(data, recoverySecret);
+        savePublic(pub);
+    }
     localStorage.setItem(KEY_VAULT, encryptedVault);
+}
+
+export async function setRecoveryQuestions(pinHash: string, questionIds: string[], answers: string[]) {
+    const pub = loadPublic();
+    if (!pub || pub.pinHash !== pinHash)
+        throw new Error('Unlock with your current PIN before setting recovery questions.');
+    if (new Set(questionIds).size !== 2 || answers.some(answer => answer.trim().length < 8))
+        throw new Error('Choose two different questions and enter both answers.');
+
+    const salt = createRecoverySalt();
+    const recoverySecret = createRecoverySecret();
+    const answerHash = await deriveRecoveryHash(questionIds, answers, salt);
+    const vault = await loadVault(pinHash);
+    const recovery: RecoveryRecord = {
+        questionIds,
+        salt,
+        answerWrap: await encrypt(recoverySecret, answerHash),
+        pinWrap: await encrypt(recoverySecret, pinHash),
+        encryptedVault: await encryptJson(vault, recoverySecret),
+    };
+    pub.recovery = recovery;
+    savePublic(pub);
+}
+
+export async function recoverVaultWithAnswers(answers: string[], pinHash: string, decoyHash: string, autoLock: number) {
+    const pub = loadPublic();
+    const recovery = pub?.recovery as RecoveryRecord | undefined;
+    if (!pub || !recovery)
+        return null;
+
+    let recoverySecret: string;
+    let vault: VaultData | null;
+    try {
+        const answerHash = await deriveRecoveryHash(recovery.questionIds, answers, recovery.salt);
+        recoverySecret = await decrypt(recovery.answerWrap, answerHash);
+        vault = await decryptJson<VaultData>(recovery.encryptedVault, recoverySecret);
+    }
+    catch {
+        return null;
+    }
+    if (!vault)
+        return null;
+
+    pub.pinHash = pinHash;
+    pub.decoyHash = decoyHash;
+    pub.autoLock = autoLock;
+    recovery.pinWrap = await encrypt(recoverySecret, pinHash);
+    savePublic(pub);
+    await saveVault(vault, pinHash);
+    return vault;
+}
+
+export function getRecoveryQuestionIds(): string[] | null {
+    const ids = loadPublic()?.recovery?.questionIds;
+    return Array.isArray(ids) && ids.length === 2 ? ids : null;
 }
 export function loadPublicSync() {
     const pub = loadPublic();
@@ -134,6 +191,7 @@ export function loadPublicSync() {
         pin: pub?.pinHash ?? '',
         decoyPin: pub?.decoyHash ?? '',
         autoLockMinutes: pub?.autoLock ?? 5,
+        recoveryQuestionIds: Array.isArray(pub?.recovery?.questionIds) ? pub.recovery.questionIds : null,
         contacts: [],
         notes: [],
         safetyPlan: { ...EMPTY_PLAN },
@@ -144,6 +202,11 @@ export async function savePinHashes(pinHash, decoyHash, autoLock, oldPinHash?: s
     let vault: VaultData | null = null;
     if (oldPinHash && oldPinHash !== pinHash) {
         vault = await loadVault(oldPinHash);
+        if (pub.recovery) {
+            const recoverySecret = await decrypt(pub.recovery.pinWrap, oldPinHash);
+            pub.recovery.pinWrap = await encrypt(recoverySecret, pinHash);
+            pub.recovery.encryptedVault = await encryptJson(vault, recoverySecret);
+        }
     }
     pub.pinHash = pinHash;
     pub.decoyHash = decoyHash;
