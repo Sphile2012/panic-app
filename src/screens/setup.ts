@@ -211,7 +211,7 @@ export function renderPinRecovery(root: HTMLElement) {
         }
         const recovered = await store.recoverPins(answers.map(answer => answer.value), pin, decoy);
         if (!recovered)
-            error.textContent = 'Incorrect answers or recovery data unavailable. Please try again.';
+            error.textContent = 'Your answers are incorrect. Please check your answers and try again.';
     });
 }
 
