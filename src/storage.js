@@ -57,7 +57,7 @@ export async function setRecoveryQuestions(pinHash, questionIds, answers) {
     const pub = loadPublic();
     if (!pub || pub.pinHash !== pinHash)
         throw new Error('Unlock with your current PIN before setting recovery questions.');
-    if (new Set(questionIds).size !== 2 || answers.some(answer => answer.trim().length < 8))
+    if (new Set(questionIds).size !== 2 || answers.some(answer => !answer.trim()))
         throw new Error('Choose two different questions and enter both answers.');
     const salt = createRecoverySalt();
     const recoverySecret = createRecoverySecret();

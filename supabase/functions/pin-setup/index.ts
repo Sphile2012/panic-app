@@ -91,9 +91,9 @@ serve(async (req) => {
       )
     }
 
-    if (body.question1_answer.trim().length < 8 || body.question2_answer.trim().length < 8) {
+    if (!body.question1_answer.trim() || !body.question2_answer.trim()) {
       return new Response(
-        JSON.stringify({ error: 'Security answers must be at least 8 characters' }),
+        JSON.stringify({ error: 'Both security answers are required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }

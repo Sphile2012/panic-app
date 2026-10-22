@@ -199,16 +199,16 @@ export function renderRecoverySetup(root: HTMLElement, nextScreen: string) {
           <option value="" disabled ${currentQuestions[0] ? '' : 'selected'}>Choose a question</option>
           ${options}
         </select>
-        <label class="field-label" for="recovery-answer-one">Your answer (min 8 characters)</label>
-        <input class="text-input" id="recovery-answer-one" type="password" minlength="8" placeholder="Enter a memorable answer" autocomplete="off" required />
+        <label class="field-label" for="recovery-answer-one">Your answer</label>
+        <input class="text-input" id="recovery-answer-one" type="password" placeholder="Enter a memorable answer" autocomplete="off" required />
         
         <label class="field-label" for="recovery-question-two">Security question 2</label>
         <select class="text-input" id="recovery-question-two" required>
           <option value="" disabled ${currentQuestions[1] ? '' : 'selected'}>Choose a different question</option>
           ${options}
         </select>
-        <label class="field-label" for="recovery-answer-two">Your answer (min 8 characters)</label>
-        <input class="text-input" id="recovery-answer-two" type="password" minlength="8" placeholder="Enter a memorable answer" autocomplete="off" required />
+        <label class="field-label" for="recovery-answer-two">Your answer</label>
+        <input class="text-input" id="recovery-answer-two" type="password" placeholder="Enter a memorable answer" autocomplete="off" required />
         
         <p class="setup-hint" id="recovery-setup-error" aria-live="polite"></p>
         <button class="btn-primary" type="submit">${existing ? 'Save security questions' : 'Continue to contacts →'}</button>
@@ -230,8 +230,8 @@ export function renderRecoverySetup(root: HTMLElement, nextScreen: string) {
             error.textContent = 'You must choose two different questions.';
             return;
         }
-        if (answerOne.value.trim().length < 8 || answerTwo.value.trim().length < 8) {
-            error.textContent = 'Each answer must be at least 8 characters long.';
+        if (!answerOne.value.trim() || !answerTwo.value.trim()) {
+            error.textContent = 'Both security answers are required.';
             return;
         }
         try {

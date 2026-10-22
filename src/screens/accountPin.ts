@@ -44,11 +44,11 @@ function renderSetup(root: HTMLElement) {
         <label class="field-label" for="pin-question-one">Security question 1</label>
         <select class="text-input" id="pin-question-one" required><option value="">Choose a question</option>${options}</select>
         <label class="field-label" for="pin-answer-one">Answer 1</label>
-        <input class="text-input" id="pin-answer-one" type="password" autocomplete="off" minlength="8" required />
+        <input class="text-input" id="pin-answer-one" type="password" autocomplete="off" required />
         <label class="field-label" for="pin-question-two">Security question 2</label>
         <select class="text-input" id="pin-question-two" required><option value="">Choose a different question</option>${options}</select>
         <label class="field-label" for="pin-answer-two">Answer 2</label>
-        <input class="text-input" id="pin-answer-two" type="password" autocomplete="off" minlength="8" required />
+        <input class="text-input" id="pin-answer-two" type="password" autocomplete="off" required />
         <p class="setup-hint" id="account-pin-error" aria-live="polite"></p>
         <button class="btn-primary" id="account-pin-submit" type="submit">Save account PINs</button>
       </form>
@@ -85,8 +85,8 @@ function renderSetup(root: HTMLElement) {
       error.textContent = 'Choose two different security questions.';
       return;
     }
-    if (answer1.trim().length < 8 || answer2.trim().length < 8) {
-      error.textContent = 'Each security answer must be at least 8 characters.';
+    if (!answer1.trim() || !answer2.trim()) {
+      error.textContent = 'Both security answers are required.';
       return;
     }
     submit.disabled = true;

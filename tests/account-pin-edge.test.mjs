@@ -7,6 +7,9 @@ const migration = await readFile(
   'utf8',
 );
 const setup = await readFile(new URL('../supabase/functions/pin-setup/index.ts', import.meta.url), 'utf8');
+const accountPinScreen = await readFile(new URL('../src/screens/accountPin.ts', import.meta.url), 'utf8');
+const recoveryScreen = await readFile(new URL('../src/screens/setup.ts', import.meta.url), 'utf8');
+const recoveryStorage = await readFile(new URL('../src/storage.ts', import.meta.url), 'utf8');
 const verify = await readFile(new URL('../supabase/functions/pin-verify/index.ts', import.meta.url), 'utf8');
 const change = await readFile(new URL('../supabase/functions/pin-change/index.ts', import.meta.url), 'utf8');
 const status = await readFile(new URL('../supabase/functions/pin-status/index.ts', import.meta.url), 'utf8');
@@ -50,6 +53,18 @@ test('setup validates PIN confirmations and status exposes no credential hashes'
   assert.match(status, /question1_id, question2_id/);
   assert.doesNotMatch(status, /pin1_hash|pin2_hash|answer_hash/);
   assert.match(status, /Cache-Control': 'no-store'/);
+});
+
+test('security answers may be shorter than eight characters but cannot be blank', () => {
+  for (const source of [setup, accountPinScreen, recoveryScreen, recoveryStorage]) {
+    assert.doesNotMatch(source, /answer[^\n]*length\s*<\s*8|length\s*<\s*8[^\n]*answer/i);
+  }
+  assert.match(setup, /!body\.question1_answer\.trim\(\)/);
+  assert.match(accountPinScreen, /!answer1\.trim\(\)/);
+  assert.match(recoveryScreen, /!answerOne\.value\.trim\(\)/);
+  assert.match(recoveryStorage, /answers\.some\(answer => !answer\.trim\(\)\)/);
+  assert.doesNotMatch(accountPinScreen, /id="pin-answer-one"[^>]*minlength=/);
+  assert.doesNotMatch(recoveryScreen, /id="recovery-answer-one"[^>]*minlength=/);
 });
 
 test('database verification checks PIN table isolation and service-role RPC grants', () => {

@@ -138,14 +138,14 @@ export function renderRecoverySetup(root, nextScreen) {
           ${options}
         </select>
         <label class="field-label" for="recovery-answer-one">Answer</label>
-        <input class="text-input" id="recovery-answer-one" type="password" minlength="8" autocomplete="off" required />
+        <input class="text-input" id="recovery-answer-one" type="password" autocomplete="off" required />
         <label class="field-label" for="recovery-question-two">Second question</label>
         <select class="text-input" id="recovery-question-two" required>
           <option value="" disabled ${currentQuestions[1] ? '' : 'selected'}>Choose a different question</option>
           ${options}
         </select>
         <label class="field-label" for="recovery-answer-two">Answer</label>
-        <input class="text-input" id="recovery-answer-two" type="password" minlength="8" autocomplete="off" required />
+        <input class="text-input" id="recovery-answer-two" type="password" autocomplete="off" required />
         <p class="setup-hint" id="recovery-setup-error" aria-live="polite"></p>
         <button class="btn-primary" type="submit">Save recovery questions</button>
       </form>
@@ -168,8 +168,8 @@ export function renderRecoverySetup(root, nextScreen) {
             error.textContent = 'Choose two different questions.';
             return;
         }
-        if (answerOne.value.trim().length < 8 || answerTwo.value.trim().length < 8) {
-            error.textContent = 'Each answer must be at least 8 characters.';
+        if (!answerOne.value.trim() || !answerTwo.value.trim()) {
+            error.textContent = 'Both security answers are required.';
             return;
         }
         try {
