@@ -187,6 +187,7 @@ function wireAuthForms() {
             verifyButton.disabled = true;
             const result = await verifyEmailOtp(loginEmail, code.value);
             verifyButton.disabled = false;
+            liErrEl.style.color = result.error ? '' : 'var(--safe)';
             if (result.error)
                 liErrEl.textContent = formatAuthError(result.error);
             return;
@@ -212,6 +213,7 @@ function wireAuthForms() {
         const codeInput = document.createElement('input');
         codeInput.className = 'text-input';
         codeInput.id = 'd-li-otp';
+        codeInput.setAttribute('aria-label', 'Email verification code');
         codeInput.type = 'text';
         codeInput.inputMode = 'numeric';
         codeInput.autocomplete = 'one-time-code';
@@ -250,6 +252,7 @@ function wireAuthForms() {
             suSubmitBtn.disabled = true;
             const result = await verifyEmailOtp(signupEmail, code.value);
             suSubmitBtn.disabled = false;
+            suErrEl.style.color = result.error ? '' : 'var(--safe)';
             if (result.error)
                 suErrEl.textContent = formatAuthError(result.error);
             return;
@@ -276,6 +279,7 @@ function wireAuthForms() {
         const codeInput = document.createElement('input');
         codeInput.className = 'text-input';
         codeInput.id = 'd-su-otp';
+        codeInput.setAttribute('aria-label', 'Email verification code');
         codeInput.type = 'text';
         codeInput.inputMode = 'numeric';
         codeInput.autocomplete = 'one-time-code';
