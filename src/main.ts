@@ -24,6 +24,8 @@ import { renderCompanion } from './screens/companion.js';
 import { renderAbout } from './screens/about.js';
 import { renderTerms } from './screens/terms.js';
 import { renderDecoy } from './screens/decoy.js';
+import { renderWelcome, renderSignup, renderLogin, renderForgotPassword, renderResetPassword, renderVerifyEmail } from './screens/auth.js';
+import { renderAccountPinGate } from './screens/accountPin.js';
 import { runAlertSequence } from './alertService.js';
 import { pruneStaleQueue, watchForReconnect } from './alertQueue.js';
 import { loadAppearance, applyAppearance, watchSystemTheme } from './theme.js';
@@ -32,6 +34,14 @@ import { initPwa, canInstall, isInstalled, isIosSafari, promptInstall, onInstall
 const appRoot = document.getElementById('app-root') as HTMLElement | null;
 if (!appRoot) {
     throw new Error('App root element not found.');
+}
+const recoveryParams = new URLSearchParams(window.location.search);
+const recoveryHash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+if (recoveryParams.get('flow') === 'recovery' ||
+    recoveryHash.get('type') === 'recovery' ||
+    recoveryHash.has('access_token') ||
+    recoveryHash.has('refresh_token')) {
+    store.navigateTo('reset-password');
 }
 
 initPwa();
@@ -76,6 +86,28 @@ function render(screen: string) {
     currentScreen = screen;
     appRoot.scrollTop = 0;
     switch (screen) {
+        case 'welcome':
+            renderWelcome(appRoot);
+            break;
+        case 'signup':
+            renderSignup(appRoot);
+            break;
+        case 'login':
+            renderLogin(appRoot);
+            break;
+        case 'forgot-password':
+            renderForgotPassword(appRoot);
+            break;
+        case 'reset-password':
+            void renderResetPassword(appRoot);
+            break;
+        case 'verify-email':
+            renderVerifyEmail(appRoot);
+            break;
+        case 'account-pin-check':
+        case 'account-pin-login':
+            void renderAccountPinGate(appRoot);
+            break;
         case 'calculator':
             renderDisguise();
             break;
@@ -193,7 +225,11 @@ store.subscribe((state) => {
 
 document.addEventListener('keydown', (event: KeyboardEvent) => {
     if (event.key === 'Escape') {
-        const safe = ['calculator', 'decoy', 'setup-pin', 'setup-profile', 'setup-contacts'];
+        const safe = [
+            'calculator', 'decoy', 'setup-pin', 'setup-profile', 'setup-contacts',
+            'welcome', 'signup', 'login', 'forgot-password', 'reset-password', 'verify-email',
+            'account-pin-check', 'account-pin-login',
+        ];
         if (!safe.includes(store.getState().screen)) {
             window.location.href = 'https://www.google.com';
         }

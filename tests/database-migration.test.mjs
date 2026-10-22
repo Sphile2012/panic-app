@@ -36,7 +36,10 @@ test('migration runner backs up and verifies before a locked, checksummed transa
   assert.match(runner, /pg_restore', \['--list'/);
   assert.match(runner, /createHash\('sha256'\)/);
   assert.match(runner, /pg_advisory_xact_lock/);
-  assert.match(runner, /begin;[\s\S]*\$\{sql\}[\s\S]*insert into panic_ring_private\.schema_migrations[\s\S]*commit;/);
+  assert.match(runner, /begin;[\s\S]*\$\{migrationBody\(sql\)\}[\s\S]*insert into panic_ring_private\.schema_migrations[\s\S]*commit;/);
+  assert.ok(runner.includes(".replace(/(^|\\n)\\s*begin\\s*;\\s*/i, '$1')"));
+  assert.ok(runner.includes(".replace(/\\s*commit\\s*;\\s*$/i, '')"));
+  assert.match(runner, /\$\{migrationBody\(sql\)\}/);
   assert.match(runner, /Migration and rollback commands make and validate a full backup first/);
 });
 

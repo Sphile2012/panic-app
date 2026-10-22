@@ -101,6 +101,65 @@ export async function updatePassword(password) {
         return { error: 'Unable to reach the secure account service. Continue in offline mode.' };
     }
 }
+async function pinFunctionErrorMessage(error) {
+    if (error.context instanceof Response) {
+        try {
+            const body = await error.context.clone().json();
+            if (body.error)
+                return body.error;
+        }
+        catch { }
+    }
+    return error.message;
+}
+export async function setupAccountPins(input) {
+    const { data, error } = await getClient().functions.invoke('pin-setup', {
+        body: {
+            pin1: input.pin1,
+            confirm_pin1: input.confirmPin1,
+            pin2: input.pin2,
+            confirm_pin2: input.confirmPin2,
+            question1_id: input.question1Id,
+            question1_answer: input.question1Answer,
+            question2_id: input.question2Id,
+            question2_answer: input.question2Answer,
+        },
+    });
+    return error ? { success: false, error: await pinFunctionErrorMessage(error) } : data;
+}
+export async function getAccountPinStatus() {
+    const { data, error } = await getClient().functions.invoke('pin-status', { method: 'GET' });
+    if (error)
+        throw new Error(error.message);
+    return data;
+}
+export async function verifyAccountPins(pin1, pin2) {
+    const { data, error } = await getClient().functions.invoke('pin-verify', {
+        body: { pin1, pin2 },
+    });
+    return error ? { success: false, error: await pinFunctionErrorMessage(error) } : data;
+}
+export async function changeAccountPins(input) {
+    const { data, error } = await getClient().functions.invoke('pin-change', {
+        body: {
+            answer1: input.answer1,
+            answer2: input.answer2,
+            new_pin1: input.newPin1,
+            confirm_pin1: input.confirmPin1,
+            new_pin2: input.newPin2,
+            confirm_pin2: input.confirmPin2,
+        },
+    });
+    return error ? { success: false, error: await pinFunctionErrorMessage(error) } : data;
+}
+export async function reauthenticate(password) {
+    const session = await getSession();
+    const email = session?.user.email;
+    if (!email)
+        return 'Your account session expired. Sign in again.';
+    const { error } = await getClient().auth.signInWithPassword({ email, password });
+    return error?.message ?? null;
+}
 export async function signOut() {
     if (!DB_CONFIGURED)
         return;

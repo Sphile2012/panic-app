@@ -3,11 +3,13 @@ import { onAuthStateChange, DB_CONFIGURED, signOut } from './db.js';
 function buildInitialState() {
     const pub = loadPublicSync();
     return {
-        screen: pub.pin === '' ? 'welcome' : 'calculator',
+        screen: pub.pin === '' ? (DB_CONFIGURED ? 'welcome' : 'setup-pin') : 'calculator',
         profile: { ...EMPTY_PROFILE },
         pinBuffer: '',
         pinHash: pub.pin,
         authEmail: null,
+        accountPinUnlocked: false,
+        accountPinQuestionIds: [],
         contacts: [],
         notes: [],
         safetyPlan: {
@@ -67,7 +69,7 @@ class Store {
         this.lockTimer = window.setTimeout(() => {
             const safe = ['calculator', 'decoy', 'setup-pin', 'setup-contacts'];
             if (!safe.includes(this.state.screen))
-                this.navigateTo('calculator');
+                this.navigateTo(this.state.authEmail ? 'account-pin-login' : 'calculator');
         }, mins * 60 * 1000);
     }
     navigateTo(screen) {
@@ -285,28 +287,58 @@ class Store {
         this.notify();
     }
     setAuthEmail(email) {
-        const wasNull = this.state.authEmail === null;
-        this.state = { ...this.state, authEmail: email };
+        const previousEmail = this.state.authEmail;
+        const identityChanged = previousEmail !== email;
+        this.state = {
+            ...this.state,
+            authEmail: email,
+            ...(identityChanged ? { accountPinUnlocked: false, accountPinQuestionIds: [] } : {}),
+        };
         if (this.state.screen === 'reset-password') {
             this.notify();
             return;
         }
-        if (email) {
-            if (this.state.isFirstRun) {
-                this.state = { ...this.state, screen: 'setup-pin' };
-            }
-            else {
-                this.state = { ...this.state, screen: 'calculator' };
-            }
+        if (email && !this.state.accountPinUnlocked &&
+            (previousEmail !== email || ['welcome', 'login', 'signup', 'verify-email'].includes(this.state.screen))) {
+            this.state = { ...this.state, screen: 'account-pin-check' };
         }
-        else if (!wasNull || ['setup-pin', 'calculator'].includes(this.state.screen)) {
-            this.state = { ...this.state, screen: 'login' };
+        else if (!email && previousEmail && ['account-pin-check', 'account-pin-setup', 'account-pin-login'].includes(this.state.screen)) {
+            this.state = { ...this.state, screen: buildInitialState().screen };
         }
+        this.notify();
+    }
+    async unlockAccountWithPrimaryPin(primaryPin, secondPin) {
+        const pinHash = await hashPin(primaryPin);
+        const pub = loadPublicSync();
+        if (pub.pin && pub.pin !== pinHash)
+            return false;
+        if (!pub.pin)
+            await this.savePin(primaryPin, secondPin);
+        const vault = await loadVault(pinHash);
+        this.state = {
+            ...this.state,
+            pinHash,
+            profile: { ...EMPTY_PROFILE, ...(vault.profile ?? {}) },
+            contacts: vault.contacts.map(contact => ({ ...contact, status: 'pending' })),
+            notes: vault.notes,
+            safetyPlan: vault.safetyPlan,
+            pinFailures: 0,
+            accountPinUnlocked: true,
+        };
+        this.notify();
+        return true;
+    }
+    markAccountPinUnlocked() {
+        this.state = { ...this.state, accountPinUnlocked: true };
+        this.notify();
+    }
+    setAccountPinQuestionIds(questionIds) {
+        this.state = { ...this.state, accountPinQuestionIds: [...questionIds] };
         this.notify();
     }
     async signOut() {
         await signOut();
-        this.state = { ...buildInitialState(), screen: 'login', authEmail: null };
+        this.state = buildInitialState();
         this.notify();
     }
     async initAuth() {

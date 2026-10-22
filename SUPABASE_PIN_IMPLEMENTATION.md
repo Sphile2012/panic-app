@@ -1,13 +1,11 @@
 # Supabase Two-PIN Authentication Implementation
 
-## ⚠️ CRITICAL ARCHITECTURAL NOTE
+## Current Architecture
 
-**Your current app uses local-only PIN storage with NO user accounts required.**
-
-This implementation adds **optional Supabase-backed PIN authentication** for users who want cloud backup and multi-device sync. The app will work in two modes:
-
-1. **Local Mode** (current): PINs stored on device only, no account needed
-2. **Cloud Mode** (new): PINs backed up to Supabase, requires user account
+The app supports guest/device-local use and authenticated accounts. Authenticated
+users pass through Supabase password authentication and then a separate two-PIN
+gate before the app opens. The local encrypted vault remains device-local; the
+account PIN records are credentials, not cloud backup or vault synchronization.
 
 ## 📋 Implementation Overview
 
@@ -25,11 +23,12 @@ This implementation adds **optional Supabase-backed PIN authentication** for use
 
 ### Supabase Edge Functions
 
-Three serverless functions handle all PIN operations:
+Four serverless functions handle all account PIN operations:
 
-1. **pin-setup**: Create/update PINs and security questions
-2. **pin-verify**: Verify both PINs for login
-3. **pin-change**: Change PINs after answering security questions
+1. **pin-status**: Return setup status, security-question IDs, and lockout expiry; never returns hashes
+2. **pin-setup**: Create PINs and security questions once; existing credentials cannot be overwritten
+3. **pin-verify**: Verify both PINs and enforce lockout
+4. **pin-change**: Change both PINs after recent password reauthentication and both security answers
 
 ## 🚀 Deployment Steps
 
@@ -40,6 +39,7 @@ Three serverless functions handle all PIN operations:
 cd c:\Users\Phumeh\Luyanda1\panic-app
 
 # Apply migration (requires Supabase CLI)
+npx supabase link --project-ref <project-ref>
 npx supabase db push
 ```
 
@@ -50,12 +50,18 @@ npx supabase db push
 npx supabase functions deploy pin-setup
 npx supabase functions deploy pin-verify
 npx supabase functions deploy pin-change
+npx supabase functions deploy pin-status
 
 # Set required secrets
 npx supabase secrets set SUPABASE_URL=https://azirifnakrxmuiqpqwbc.supabase.co
 npx supabase secrets set SUPABASE_ANON_KEY=<your-anon-key>
 npx supabase secrets set SUPABASE_SERVICE_ROLE_KEY=<your-service-role-key>
 ```
+
+Deploy `20261022130000_harden_pin_edge_functions.sql` as part of `db push`.
+It removes direct app-role access to the hash tables and adds service-role-only
+transactional setup and atomic lockout RPCs. Never set the service-role key as a
+frontend/build variable.
 
 ### 3. Environment Variables
 
@@ -72,17 +78,10 @@ SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 ### Current Implementation
 
-The app currently stores PINs locally using SHA-256. You need to decide:
-
-**Option A: Hybrid Approach (Recommended)**
-- Keep local storage for offline-first operation
-- Optionally sync to Supabase for backup
-- User can choose "Cloud Backup" during setup
-
-**Option B: Cloud-Only Approach**
-- Require user account and authentication
-- All PIN operations go through Supabase
-- No offline access
+The account PIN gate is separate from the device vault's legacy local PIN
+derivation. The UI calls the same-origin Supabase proxy; PIN and answer hashes
+are computed server-side by the Edge Functions and are never returned to the
+browser.
 
 ### API Integration Examples
 
@@ -218,22 +217,18 @@ async function changePins(answer1: string, answer2: string, newPin1: string, new
    - Emergency contacts
 
 ### Login Flow
-1. User opens app (sees calculator)
-2. Enters PIN 1
-3. Enters PIN 2
-4. System verifies both PINs
-5. If correct: Access granted
-6. If incorrect: Error + remaining attempts shown
+1. User signs into the Supabase account with the existing account password.
+2. The app checks PIN setup status.
+3. User enters both 4–6 digit PINs.
+4. The server verifies both and returns success only when both match.
+5. Five failures cause a 15-minute lockout.
 
 ### PIN Change Flow
-1. User clicks "Forgot PIN?" on calculator
-2. Answers security question 1
-3. Answers security question 2
-4. If correct:
-   - Enter new PIN 1 + confirm
-   - Enter new PIN 2 + confirm
-   - PINs updated
-5. If incorrect: Error message
+1. User opens Settings and enters the current account password.
+2. User answers both configured security questions.
+3. User enters and confirms both new PINs.
+4. The Edge Function requires a recent authentication timestamp and correct answers.
+5. Incorrect answers count toward the same temporary lockout.
 
 ## 🧪 Testing Checklist
 

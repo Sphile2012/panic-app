@@ -1,7 +1,16 @@
 import { store } from '../state.js';
 import { getRecoveryQuestionIds } from '../storage.js';
+import { changeAccountPins, reauthenticate } from '../db.js';
+const PIN_QUESTIONS = {
+  'first-school': 'What was the name of your first school?',
+  'childhood-street': 'What street did you live on as a child?',
+  'first-pet': 'What was the name of your first pet?',
+  'childhood-friend': 'What was the first name of a childhood friend?',
+  'special-place': 'What is the name of a special place?',
+  'family-nickname': 'What nickname did your family use for you?',
+};
 export function renderSettings(root) {
-    const { autoLockMinutes, authEmail } = store.getState();
+  const { autoLockMinutes, authEmail, accountPinQuestionIds } = store.getState();
     const hasRecovery = getRecoveryQuestionIds() !== null;
     root.innerHTML = `
     <div class="screen settings-screen">
@@ -66,6 +75,26 @@ export function renderSettings(root) {
 
       <section class="settings-section">
         <h3 class="settings-section-title">Change PINs</h3>
+        ${authEmail ? `
+        <form class="setup-form" id="account-change-pin-form" autocomplete="off">
+          <label class="field-label" for="account-change-pin-one">New secret PIN</label>
+          <input class="pin-input" id="account-change-pin-one" type="password" inputmode="numeric" maxlength="6" pattern="[0-9]{4,6}" autocomplete="new-password" required />
+          <label class="field-label" for="account-change-pin-one-confirm">Confirm secret PIN</label>
+          <input class="pin-input" id="account-change-pin-one-confirm" type="password" inputmode="numeric" maxlength="6" pattern="[0-9]{4,6}" autocomplete="new-password" required />
+          <label class="field-label" for="account-change-pin-two">New second PIN</label>
+          <input class="pin-input" id="account-change-pin-two" type="password" inputmode="numeric" maxlength="6" pattern="[0-9]{4,6}" autocomplete="new-password" required />
+          <label class="field-label" for="account-change-pin-two-confirm">Confirm second PIN</label>
+          <input class="pin-input" id="account-change-pin-two-confirm" type="password" inputmode="numeric" maxlength="6" pattern="[0-9]{4,6}" autocomplete="new-password" required />
+          <label class="field-label" for="account-change-password">Current account password</label>
+          <input class="text-input" id="account-change-password" type="password" autocomplete="current-password" required />
+          <label class="field-label" for="account-change-answer-one">${PIN_QUESTIONS[accountPinQuestionIds[0]] ?? 'Security answer 1'}</label>
+          <input class="text-input" id="account-change-answer-one" type="password" autocomplete="off" required />
+          <label class="field-label" for="account-change-answer-two">${PIN_QUESTIONS[accountPinQuestionIds[1]] ?? 'Security answer 2'}</label>
+          <input class="text-input" id="account-change-answer-two" type="password" autocomplete="off" required />
+          <p class="setup-hint" id="account-pin-change-error" aria-live="polite"></p>
+          <button class="btn-secondary-outline" type="submit">Change account PINs</button>
+        </form>
+        ` : `
         <form class="setup-form" id="change-pin-form" autocomplete="off">
           <label class="field-label" for="new-pin">New secret PIN</label>
           <input class="pin-input" id="new-pin" type="password" inputmode="numeric"
@@ -76,6 +105,7 @@ export function renderSettings(root) {
           <p class="setup-hint" id="pin-change-error" aria-live="polite"></p>
           <button class="btn-secondary-outline" type="submit">Update PINs</button>
         </form>
+        `}
       </section>
 
       <section class="settings-section">
@@ -118,20 +148,21 @@ export function renderSettings(root) {
         r.addEventListener('change', () => store.setAutoLock(Number(r.value)));
     });
     const pinForm = root.querySelector('#change-pin-form');
-    const newPin = root.querySelector('#new-pin');
-    const newDecoy = root.querySelector('#new-decoy');
-    const pinErr = root.querySelector('#pin-change-error');
-    pinForm.addEventListener('submit', async (e) => {
+    if (pinForm) {
+      const newPin = root.querySelector('#new-pin');
+      const newDecoy = root.querySelector('#new-decoy');
+      const pinErr = root.querySelector('#pin-change-error');
+      pinForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const p = newPin.value.trim();
         const d = newDecoy.value.trim();
         if (!/^\d{4}$/.test(p) || !/^\d{4}$/.test(d)) {
-            pinErr.textContent = 'Both PINs must be exactly 4 digits.';
-            return;
+          pinErr.textContent = 'Both PINs must be exactly 4 digits.';
+          return;
         }
         if (p === d) {
-            pinErr.textContent = 'PINs must be different.';
-            return;
+          pinErr.textContent = 'PINs must be different.';
+          return;
         }
         pinErr.textContent = '';
         await store.changePins(p, d);
@@ -139,6 +170,45 @@ export function renderSettings(root) {
         pinErr.textContent = '✓ PINs updated';
         pinForm.reset();
         setTimeout(() => { pinErr.textContent = ''; pinErr.style.color = ''; }, 3000);
+      });
+    }
+    const accountPinForm = root.querySelector('#account-change-pin-form');
+    accountPinForm?.addEventListener('submit', async event => {
+      event.preventDefault();
+      const error = root.querySelector('#account-pin-change-error');
+      const first = root.querySelector('#account-change-pin-one').value.trim();
+      const firstConfirm = root.querySelector('#account-change-pin-one-confirm').value.trim();
+      const second = root.querySelector('#account-change-pin-two').value.trim();
+      const secondConfirm = root.querySelector('#account-change-pin-two-confirm').value.trim();
+      const password = root.querySelector('#account-change-password').value;
+      const answer1 = root.querySelector('#account-change-answer-one').value;
+      const answer2 = root.querySelector('#account-change-answer-two').value;
+      if (!/^\d{4,6}$/.test(first) || !/^\d{4,6}$/.test(second)) {
+        error.textContent = 'Each PIN must contain 4 to 6 digits.';
+        return;
+      }
+      if (first !== firstConfirm || second !== secondConfirm) {
+        error.textContent = 'PIN confirmations do not match.';
+        return;
+      }
+      if (first === second) {
+        error.textContent = 'The two PINs must be different.';
+        return;
+      }
+      const authError = await reauthenticate(password);
+      if (authError) {
+        error.textContent = authError;
+        return;
+      }
+      const result = await changeAccountPins({ answer1, answer2, newPin1: first, confirmPin1: firstConfirm, newPin2: second, confirmPin2: secondConfirm });
+      if (!result.success) {
+        error.textContent = result.error ?? 'PINs could not be changed.';
+        return;
+      }
+      await store.changePins(first, second);
+      accountPinForm.reset();
+      error.style.color = 'var(--safe)';
+      error.textContent = 'PINs updated.';
     });
     root.querySelector('#btn-reset').addEventListener('click', async () => {
         if (confirm('Delete ALL data? This cannot be undone.'))

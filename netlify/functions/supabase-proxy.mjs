@@ -35,7 +35,9 @@ function upstreamPath(event) {
       return null;
     path = `/${path.slice(functionPrefix.length)}`;
   }
-  if (!/^\/(?:auth|rest)\/v1(?:\/|$)/.test(path) ||
+  const isAuthOrRestPath = /^\/(?:auth|rest)\/v1(?:\/|$)/.test(path);
+  const isPinFunctionPath = /^\/functions\/v1\/(?:pin-status|pin-setup|pin-verify|pin-change)$/.test(path);
+  if ((!isAuthOrRestPath && !isPinFunctionPath) ||
       /(?:^|\/)\.\.?\/|\\|%2f|%5c/i.test(path))
     return null;
   return `${path}${requestUrl.search}`;

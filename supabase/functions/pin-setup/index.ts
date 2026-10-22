@@ -12,7 +12,9 @@ const corsHeaders = {
 
 interface SetupRequest {
   pin1: string
+  confirm_pin1: string
   pin2: string
+  confirm_pin2: string
   question1_id: string
   question1_answer: string
   question2_id: string
@@ -56,6 +58,13 @@ serve(async (req) => {
     if (!/^\d{4,6}$/.test(body.pin1) || !/^\d{4,6}$/.test(body.pin2)) {
       return new Response(
         JSON.stringify({ error: 'PINs must be 4-6 digits' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    if (body.pin1 !== body.confirm_pin1 || body.pin2 !== body.confirm_pin2) {
+      return new Response(
+        JSON.stringify({ error: 'PIN confirmations do not match', success: false }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -106,41 +115,24 @@ serve(async (req) => {
     const answer1Hash = await bcrypt.hash(normalizeAnswer(body.question1_answer), 12)
     const answer2Hash = await bcrypt.hash(normalizeAnswer(body.question2_answer), 12)
 
-    // Upsert PIN hashes
-    const { error: pinError } = await supabaseAdmin
-      .from('user_pins')
-      .upsert({
-        user_id: user.id,
-        pin1_hash: pin1Hash,
-        pin2_hash: pin2Hash,
-        failed_attempts: 0,
-        locked_until: null,
-      }, { onConflict: 'user_id' })
+    const { error: setupError } = await supabaseAdmin.rpc('store_account_pin_setup', {
+      p_user_id: user.id,
+      p_pin1_hash: pin1Hash,
+      p_pin2_hash: pin2Hash,
+      p_question1_id: body.question1_id,
+      p_question1_answer_hash: answer1Hash,
+      p_question2_id: body.question2_id,
+      p_question2_answer_hash: answer2Hash,
+    })
 
-    if (pinError) {
-      console.error('PIN upsert error:', pinError)
+    if (setupError) {
+      console.error('PIN setup RPC failed:', setupError.code ?? 'unknown')
       return new Response(
-        JSON.stringify({ error: 'Failed to save PINs' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    // Upsert security questions
-    const { error: securityError } = await supabaseAdmin
-      .from('security_questions')
-      .upsert({
-        user_id: user.id,
-        question1_id: body.question1_id,
-        question1_answer_hash: answer1Hash,
-        question2_id: body.question2_id,
-        question2_answer_hash: answer2Hash,
-      }, { onConflict: 'user_id' })
-
-    if (securityError) {
-      console.error('Security questions upsert error:', securityError)
-      return new Response(
-        JSON.stringify({ error: 'Failed to save security questions' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({
+          error: setupError.code === '23505' ? 'PINs are already configured' : 'Failed to save PINs',
+          success: false,
+        }),
+        { status: setupError.code === '23505' ? 409 : 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 

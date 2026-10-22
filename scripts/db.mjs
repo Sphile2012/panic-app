@@ -45,6 +45,26 @@ union all select 'user alert timeline index|' || exists (
   select 1 from pg_indexes where schemaname = 'public' and indexname = 'alertlogs_user_fired_idx'
 )::text
 union all select 'alert statistics view|' || (to_regclass('public.alert_stats') is not null)::text
+union all select 'PIN credential tables have RLS|' || (
+  coalesce((select relrowsecurity from pg_class where oid = to_regclass('public.user_pins')), false)
+  and coalesce((select relrowsecurity from pg_class where oid = to_regclass('public.security_questions')), false)
+)::text
+union all select 'PIN credential tables inaccessible to app roles|' || (
+  not has_table_privilege('anon', 'public.user_pins', 'SELECT')
+  and not has_table_privilege('authenticated', 'public.user_pins', 'SELECT')
+  and not has_table_privilege('anon', 'public.security_questions', 'SELECT')
+  and not has_table_privilege('authenticated', 'public.security_questions', 'SELECT')
+)::text
+union all select 'PIN setup RPC restricted to service role|' || (
+  has_function_privilege('service_role', to_regprocedure('public.store_account_pin_setup(uuid,text,text,text,text,text,text)'), 'EXECUTE')
+  and not has_function_privilege('anon', to_regprocedure('public.store_account_pin_setup(uuid,text,text,text,text,text,text)'), 'EXECUTE')
+  and not has_function_privilege('authenticated', to_regprocedure('public.store_account_pin_setup(uuid,text,text,text,text,text,text)'), 'EXECUTE')
+)::text
+union all select 'PIN lockout RPC restricted to service role|' || (
+  has_function_privilege('service_role', to_regprocedure('public.record_pin_failure(uuid)'), 'EXECUTE')
+  and not has_function_privilege('anon', to_regprocedure('public.record_pin_failure(uuid)'), 'EXECUTE')
+  and not has_function_privilege('authenticated', to_regprocedure('public.record_pin_failure(uuid)'), 'EXECUTE')
+)::text
 union all select 'authenticated tracking write|' || has_function_privilege(
   'authenticated', to_regprocedure('public.push_track(text,double precision,double precision,real,smallint,boolean)'), 'EXECUTE'
 )::text
@@ -140,6 +160,12 @@ function migrationChecksum(sql) {
   return createHash('sha256').update(sql.replace(/\r\n/g, '\n')).digest('hex');
 }
 
+function migrationBody(sql) {
+  return sql
+    .replace(/(^|\n)\s*begin\s*;\s*/i, '$1')
+    .replace(/\s*commit\s*;\s*$/i, '');
+}
+
 async function ensureBackupDirectory() {
   await mkdir(backupDirectory, { recursive: true, mode: 0o700 });
   if (process.platform !== 'win32')
@@ -170,13 +196,15 @@ function query(sql) {
   return runTool('psql', ['--no-psqlrc', '--tuples-only', '--no-align', '--set=ON_ERROR_STOP=1', '--command', sql]);
 }
 
-function verifyDatabase() {
+function verifyDatabase(requirePinAuth = false) {
   const rows = query(postconditionSql).split(/\r?\n/).filter(Boolean);
   const failed = [];
   for (const row of rows) {
     const separator = row.lastIndexOf('|');
     const label = row.slice(0, separator);
     const passed = row.slice(separator + 1) === 'true';
+    if (!requirePinAuth && label.startsWith('PIN '))
+      continue;
     console.log(`[database] ${passed ? 'OK' : 'FAIL'} ${label}`);
     if (!passed)
       failed.push(label);
@@ -242,7 +270,7 @@ create table if not exists panic_ring_private.schema_migrations (
   applied_at timestamptz not null default now()
 );
 revoke all on panic_ring_private.schema_migrations from public, anon, authenticated;
-${sql}
+${migrationBody(sql)}
 insert into panic_ring_private.schema_migrations (version, checksum)
 values ('${version}', '${checksum}')
 on conflict (version) do nothing;
@@ -257,7 +285,7 @@ commit;
         transaction,
       );
       committed = true;
-      verifyDatabase();
+      verifyDatabase(version >= '20261022130000');
     }
     catch (error) {
       const outcome = committed ? 'The migration committed but verification failed.' : 'The migration transaction was rolled back.';
@@ -265,7 +293,7 @@ commit;
     }
     console.log(`[database] Migration ${version} applied successfully.`);
   }
-  verifyDatabase();
+  verifyDatabase(true);
 }
 
 async function rollback(version, confirmed) {
@@ -309,7 +337,7 @@ async function main() {
   if (command === 'check') {
     runTool('psql', ['--no-psqlrc', '--set=ON_ERROR_STOP=1', '--command', 'select 1']);
     console.log('[database] Connection check passed.');
-    verifyDatabase();
+    verifyDatabase(true);
     return;
   }
   if (command === 'migrate') {

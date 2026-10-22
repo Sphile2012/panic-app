@@ -28,6 +28,22 @@ token store. Database tables use user ownership policies and foreign keys to
 `auth.users`. Supabase Auth supplies duplicate-account handling and password
 hashing.
 
+## PIN Edge Function hardening status
+
+PIN hashes and security-answer hashes are handled by the `pin-setup`,
+`pin-verify`, and `pin-change` Supabase Edge Functions. The follow-up migration
+`20261022130000_harden_pin_edge_functions.sql` revokes direct app-role access
+to the two credential tables and adds service-role-only transactional setup and
+atomic lockout RPCs. PIN changes require a Supabase JWT with `auth_time` within
+five minutes and count incorrect security answers toward the same lockout.
+
+The primary app now routes authenticated sessions through account PIN setup or
+two-PIN verification before opening the local vault. Guests retain the existing
+device-local PIN flow. Account PIN changes require password reauthentication,
+both security answers, server-side PIN confirmations, and a recent Supabase
+`auth_time`; the local vault is re-encrypted only after the server accepts the
+change. Account PIN credentials are not read directly by frontend roles.
+
 Automated tests cover proxy configuration and path allowlisting, key injection
 and bearer-token forwarding, timeouts and sanitized failures, what3words input
 validation, production/local redirect construction, invalid recovery callbacks,
@@ -45,12 +61,12 @@ backup/rollback safety requirements.
 2. **Medium — no application-owned durable rate limiter:** the app relies on
    Supabase Auth limits. Set appropriate provider limits and enable CAPTCHA
    before public launch; these provider settings were not verifiable here.
-3. **High — migration not executed against a live project:** Docker is not
-   running in this workspace, no PostgreSQL client tools were available, and
-   no `DATABASE_URL` was configured. The migration SQL, database runner, and
-   rollback path could not be executed against PostgreSQL. Obtain a separate
-   provider backup first, run the migration in staging, review any preflight
-   failures, verify `npm run db:check`, then schedule a production window.
+3. **High — production migration and functions are not deployed:** the local
+   Supabase database has the migrations applied and its RLS/grant postconditions
+   verified, but the production site still serves an older frontend and returns
+   404 for `pin-status`. Apply the migration to the production project using its
+   backup-first process, deploy all four Edge Functions, deploy the frontend,
+   then verify the production status endpoint and account flows.
 4. **Medium — deployment and email delivery not exercised:** no production
    Netlify project, SMTP account, or deployed Supabase instance was available.
    Configure `SUPABASE_URL` and `SUPABASE_ANON_KEY` as server-side environment
@@ -82,15 +98,19 @@ backup/rollback safety requirements.
 
 ## Validation performed
 
-- `npm test` — 20 tests passed.
-- `npm run build` — TypeScript check and Vite production build passed.
+- `npm test` — 29 tests passed.
+- `npm run build:web` — TypeScript check and Vite production build passed.
 - Built once with sentinel backend URL/key environment values and confirmed
   those values did not appear in `dist`.
 - `git diff --check` — passed.
-- The database check/migrate/rollback tools were syntax-checked locally, but no
-  database connection, migration, backup restore, or performance test was
-  available in this environment.
+- Applied the three versioned migrations to the local Supabase database after
+   verifying full custom-format backups outside the repository.
+- Verified local RLS, denied `anon`/`authenticated` table reads, service-role-only
+   setup/lockout RPC grants, validated constraints, and the migration ledger.
+- The local migration runner's transaction-wrapper handling was corrected and
+   regression-tested. A production database connection was not available.
 
-No live migration, production redirect, SMTP delivery, cross-provider email,
-mobile-browser, penetration, or emergency-response test was possible in this
-workspace. Treat the operator setup and verification above as launch blockers.
+No production migration, deployed Edge Function, live account/PIN flow, SMTP
+delivery, mobile-browser, penetration, or emergency-response test was possible
+in this workspace. Treat production deployment and verification as launch
+blockers.

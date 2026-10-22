@@ -61,6 +61,34 @@ test('Supabase proxy rejects paths outside the Auth and REST APIs', async () => 
   assert.equal(result.statusCode, 404);
 });
 
+test('Supabase proxy allows only the PIN Edge Functions and forwards the session token', async () => {
+  process.env.SUPABASE_URL = 'https://project.supabase.co';
+  process.env.SUPABASE_ANON_KEY = 'server-side-anon-key';
+  let requestUrl;
+  let requestHeaders;
+  globalThis.fetch = async (url, options) => {
+    requestUrl = url.toString();
+    requestHeaders = options.headers;
+    return new Response('{"success":true}', { status: 200 });
+  };
+
+  const result = await supabaseProxy({
+    httpMethod: 'POST',
+    path: '/api/functions/v1/pin-verify',
+    rawUrl: 'https://panic-ring.example/api/functions/v1/pin-verify',
+    headers: {
+      authorization: 'Bearer signed-user-session',
+      'content-type': 'application/json',
+    },
+    body: '{"pin1":"1234","pin2":"5678"}',
+  });
+
+  assert.equal(result.statusCode, 200);
+  assert.equal(requestUrl, 'https://project.supabase.co/functions/v1/pin-verify');
+  assert.equal(requestHeaders.get('apikey'), 'server-side-anon-key');
+  assert.equal(requestHeaders.get('authorization'), 'Bearer signed-user-session');
+});
+
 test('Supabase proxy injects its anon key and substitutes only the placeholder bearer token', async () => {
   process.env.SUPABASE_URL = 'https://project.supabase.co';
   process.env.SUPABASE_ANON_KEY = 'server-side-anon-key';

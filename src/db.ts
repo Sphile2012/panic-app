@@ -106,6 +106,106 @@ export async function updatePassword(password) {
         return { error: 'Unable to reach the secure account service. Continue in offline mode.' };
     }
 }
+export type PinOperationResult = {
+    success: boolean;
+    error?: string;
+    locked?: boolean;
+    minutesRemaining?: number;
+    remainingAttempts?: number;
+};
+
+async function pinFunctionErrorMessage(error: { message: string; context?: unknown }) {
+    if (error.context instanceof Response) {
+        try {
+            const body = await error.context.clone().json() as { error?: string };
+            if (body.error)
+                return body.error;
+        } catch { }
+    }
+    return error.message;
+}
+
+export type AccountPinStatus = {
+    configured: boolean;
+    questionIds: string[];
+    lockedUntil: string | null;
+};
+
+export async function getAccountPinStatus() {
+    const { data, error } = await getClient().functions.invoke('pin-status', { method: 'GET' });
+    if (error)
+        throw new Error(error.message);
+    return data as AccountPinStatus;
+}
+
+export async function setupAccountPins(input: {
+    pin1: string;
+    confirmPin1: string;
+    pin2: string;
+    confirmPin2: string;
+    question1Id: string;
+    question1Answer: string;
+    question2Id: string;
+    question2Answer: string;
+}) {
+    const { data, error } = await getClient().functions.invoke('pin-setup', {
+        body: {
+            pin1: input.pin1,
+            confirm_pin1: input.confirmPin1,
+            pin2: input.pin2,
+            confirm_pin2: input.confirmPin2,
+            question1_id: input.question1Id,
+            question1_answer: input.question1Answer,
+            question2_id: input.question2Id,
+            question2_answer: input.question2Answer,
+        },
+    });
+    if (error)
+        return { success: false, error: await pinFunctionErrorMessage(error) } as PinOperationResult;
+    return data as PinOperationResult;
+}
+
+export async function verifyAccountPins(pin1: string, pin2: string) {
+    const { data, error } = await getClient().functions.invoke('pin-verify', {
+        body: { pin1, pin2 },
+    });
+    if (error)
+        return { success: false, error: await pinFunctionErrorMessage(error) } as PinOperationResult;
+    return data as PinOperationResult;
+}
+
+export async function changeAccountPins(input: {
+    answer1: string;
+    answer2: string;
+    newPin1: string;
+    confirmPin1: string;
+    newPin2: string;
+    confirmPin2: string;
+}) {
+    const { data, error } = await getClient().functions.invoke('pin-change', {
+        body: {
+            answer1: input.answer1,
+            answer2: input.answer2,
+            new_pin1: input.newPin1,
+            confirm_pin1: input.confirmPin1,
+            new_pin2: input.newPin2,
+            confirm_pin2: input.confirmPin2,
+        },
+    });
+    if (error)
+        return { success: false, error: await pinFunctionErrorMessage(error) } as PinOperationResult;
+    return data as PinOperationResult;
+}
+
+export async function reauthenticate(password: string) {
+    const session = await getSession();
+    const email = session?.user.email;
+    if (!email)
+        return 'Your account session expired. Sign in again.';
+    const { error } = await getClient().auth.signInWithPassword({ email, password });
+    return error?.message ?? null;
+}
+
 export async function signOut() {
     if (!DB_CONFIGURED)
         return;

@@ -75,6 +75,51 @@ export function renderSetupPin(root) {
         store.navigateTo('recovery-setup');
     });
 }
+export function renderSetupProfile(root) {
+    const currentProfile = store.getState().profile;
+    root.innerHTML = `
+    <div class="screen setup-screen">
+      <div class="setup-logo">○</div>
+      <h1 class="setup-title">Update your profile</h1>
+      <p class="setup-body">
+        Add your name and phone number. This information will be included in emergency alerts to your contacts.
+      </p>
+
+      <form class="setup-form" id="setup-profile-form" autocomplete="on">
+        <label class="field-label" for="profile-name">Your full name</label>
+        <input class="text-input" id="profile-name" type="text"
+          placeholder="Enter your full name" autocomplete="name"
+          value="${currentProfile.name}" required />
+        <label class="field-label" for="profile-phone">Your phone number</label>
+        <input class="text-input" id="profile-phone" type="tel"
+          placeholder="+27 82 123 4567" autocomplete="tel"
+          value="${currentProfile.phone}" required />
+        <p class="setup-hint" id="profile-error" aria-live="polite"></p>
+        <button class="btn-primary" type="submit">Continue →</button>
+      </form>
+    </div>
+  `;
+    const form = root.querySelector('#setup-profile-form');
+    const nameInput = root.querySelector('#profile-name');
+    const phoneInput = root.querySelector('#profile-phone');
+    const errorEl = root.querySelector('#profile-error');
+    form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const name = nameInput.value.trim();
+        const phone = phoneInput.value.trim();
+        if (!name) {
+            errorEl.textContent = 'Please enter your full name.';
+            return;
+        }
+        if (!phone) {
+            errorEl.textContent = 'Please enter your phone number.';
+            return;
+        }
+        errorEl.textContent = '';
+        store.saveProfile({ name, phone, photo: currentProfile.photo });
+        store.navigateTo('recovery-setup');
+    });
+}
 export function renderRecoverySetup(root, nextScreen) {
     const currentQuestions = getRecoveryQuestionIds() ?? [];
     const existing = nextScreen === 'settings';

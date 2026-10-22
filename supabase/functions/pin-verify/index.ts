@@ -104,36 +104,28 @@ serve(async (req) => {
 
     if (pin1Valid && pin2Valid) {
       // Reset failed attempts on successful login
-      await supabaseAdmin
-        .from('user_pins')
-        .update({ 
-          failed_attempts: 0, 
-          locked_until: null 
-        })
-        .eq('user_id', user.id)
+      await supabaseAdmin.rpc('clear_pin_failures', { p_user_id: user.id })
 
       return new Response(
         JSON.stringify({ success: true, message: 'PINs verified successfully' }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     } else {
-      // Increment failed attempts
-      const newFailedAttempts = pinData.failed_attempts + 1
-      const updates: any = { failed_attempts: newFailedAttempts }
+      const { data: failureState, error: failureError } = await supabaseAdmin
+        .rpc('record_pin_failure', { p_user_id: user.id })
 
-      // Lock account if max attempts reached
-      if (newFailedAttempts >= MAX_FAILED_ATTEMPTS) {
-        const lockUntil = new Date()
-        lockUntil.setMinutes(lockUntil.getMinutes() + LOCKOUT_DURATION_MINUTES)
-        updates.locked_until = lockUntil.toISOString()
+      if (failureError || !failureState) {
+        console.error('PIN failure counter update failed:', failureError?.code ?? 'unknown')
+        return new Response(
+          JSON.stringify({ error: 'PIN verification is temporarily unavailable', success: false }),
+          { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
       }
 
-      await supabaseAdmin
-        .from('user_pins')
-        .update(updates)
-        .eq('user_id', user.id)
+      const newFailedAttempts = failureState.failedAttempts
+      const locked = Boolean(failureState.lockedUntil && new Date(failureState.lockedUntil) > new Date())
 
-      const remainingAttempts = MAX_FAILED_ATTEMPTS - newFailedAttempts
+      const remainingAttempts = Math.max(0, MAX_FAILED_ATTEMPTS - newFailedAttempts)
       const message = remainingAttempts > 0
         ? `Incorrect PINs. ${remainingAttempts} attempt(s) remaining before lockout`
         : `Account locked for ${LOCKOUT_DURATION_MINUTES} minutes due to too many failed attempts`
@@ -143,7 +135,7 @@ serve(async (req) => {
           error: message, 
           success: false,
           remainingAttempts: Math.max(0, remainingAttempts),
-          locked: remainingAttempts <= 0
+          locked
         }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
