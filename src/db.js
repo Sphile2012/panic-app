@@ -31,22 +31,26 @@ export function getClient() {
     }
     return _client;
 }
-export async function signUp(email, password, fullName = '') {
+export async function sendEmailAuthLink(email, purpose, fullName = '') {
     if (!DB_CONFIGURED)
         return { error: 'Secure account service unavailable. Continue in offline mode.' };
     try {
-        const { data, error } = await getClient().auth.signUp({
+        const { error } = await getClient().auth.signInWithOtp({
             email,
-            password,
             options: {
-                emailRedirectTo: getFrontendRedirectUrl(FRONTEND_URL, window.location.origin),
+                shouldCreateUser: purpose === 'signup',
+                emailRedirectTo: getFrontendRedirectUrl(
+                    FRONTEND_URL,
+                    window.location.origin,
+                    purpose === 'reauth' ? 'reauth' : undefined,
+                ),
                 ...(fullName ? { data: { full_name: fullName } } : {}),
             },
         });
-        return { error: error?.message ?? null, session: data.session };
+        return { error: error?.message ?? null };
     }
     catch {
-        return { error: 'Unable to reach the secure account service. Continue in offline mode.', session: null };
+        return { error: 'Unable to reach the secure account service. Continue in offline mode.' };
     }
 }
 export async function signInWithGoogle() {
@@ -65,40 +69,6 @@ export async function signInWithGoogle() {
     catch {
         console.warn('[auth] Google sign-in could not reach the account service.');
         return { error: 'Unable to start Google sign-in. Check your connection and try again.' };
-    }
-}
-export async function signIn(email, password) {
-    if (!DB_CONFIGURED)
-        return { error: 'Secure account service unavailable. Continue in offline mode.' };
-    try {
-        const { error } = await getClient().auth.signInWithPassword({ email, password });
-        return { error: error?.message ?? null };
-    }
-    catch {
-        return { error: 'Unable to reach the secure account service. Continue in offline mode.' };
-    }
-}
-export async function resetPasswordForEmail(email, redirectTo) {
-    if (!DB_CONFIGURED)
-        return { error: 'Secure account service unavailable. Continue in offline mode.' };
-    try {
-        const { error } = await getClient().auth.resetPasswordForEmail(email.trim(), redirectTo ? { redirectTo } : undefined);
-        return { error: error?.message ?? null };
-    }
-    catch {
-        console.warn('[auth] Password recovery request could not reach the account service.');
-        return { error: 'Unable to reach the secure account service. Continue in offline mode.' };
-    }
-}
-export async function updatePassword(password) {
-    if (!DB_CONFIGURED)
-        return { error: 'Secure account service unavailable. Continue in offline mode.' };
-    try {
-        const { error } = await getClient().auth.updateUser({ password });
-        return { error: error?.message ?? null };
-    }
-    catch {
-        return { error: 'Unable to reach the secure account service. Continue in offline mode.' };
     }
 }
 async function pinFunctionErrorMessage(error) {
@@ -152,13 +122,13 @@ export async function changeAccountPins(input) {
     });
     return error ? { success: false, error: await pinFunctionErrorMessage(error) } : data;
 }
-export async function reauthenticate(password) {
+export async function sendReauthenticationLink() {
     const session = await getSession();
     const email = session?.user.email;
     if (!email)
         return 'Your account session expired. Sign in again.';
-    const { error } = await getClient().auth.signInWithPassword({ email, password });
-    return error?.message ?? null;
+    const { error } = await sendEmailAuthLink(email, 'reauth');
+    return error;
 }
 export async function signOut() {
     if (!DB_CONFIGURED)

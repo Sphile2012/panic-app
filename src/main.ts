@@ -24,7 +24,7 @@ import { renderCompanion } from './screens/companion.js';
 import { renderAbout } from './screens/about.js';
 import { renderTerms } from './screens/terms.js';
 import { renderDecoy } from './screens/decoy.js';
-import { renderWelcome, renderSignup, renderLogin, renderForgotPassword, renderResetPassword, renderVerifyEmail } from './screens/auth.js';
+import { renderWelcome, renderSignup, renderLogin, renderVerifyEmail } from './screens/auth.js';
 import { renderAccountPinGate } from './screens/accountPin.js';
 import { runAlertSequence } from './alertService.js';
 import { pruneStaleQueue, watchForReconnect } from './alertQueue.js';
@@ -35,13 +35,10 @@ const appRoot = document.getElementById('app-root') as HTMLElement | null;
 if (!appRoot) {
     throw new Error('App root element not found.');
 }
-const recoveryParams = new URLSearchParams(window.location.search);
-const recoveryHash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
-if (recoveryParams.get('flow') === 'recovery' ||
-    recoveryHash.get('type') === 'recovery' ||
-    recoveryHash.has('access_token') ||
-    recoveryHash.has('refresh_token')) {
-    store.navigateTo('reset-password');
+const authCallbackParams = new URLSearchParams(window.location.search);
+const authCallbackHash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+if (authCallbackParams.has('flow') && authCallbackHash.has('access_token')) {
+    store.navigateTo('account-pin-check');
 }
 
 initPwa();
@@ -94,12 +91,6 @@ function render(screen: string) {
             break;
         case 'login':
             renderLogin(appRoot);
-            break;
-        case 'forgot-password':
-            renderForgotPassword(appRoot);
-            break;
-        case 'reset-password':
-            void renderResetPassword(appRoot);
             break;
         case 'verify-email':
             renderVerifyEmail(appRoot);
@@ -227,7 +218,7 @@ document.addEventListener('keydown', (event: KeyboardEvent) => {
     if (event.key === 'Escape') {
         const safe = [
             'calculator', 'decoy', 'setup-pin', 'setup-profile', 'setup-contacts',
-            'welcome', 'signup', 'login', 'forgot-password', 'reset-password', 'verify-email',
+            'welcome', 'signup', 'login', 'verify-email',
             'account-pin-check', 'account-pin-login',
         ];
         if (!safe.includes(store.getState().screen)) {

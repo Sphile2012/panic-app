@@ -1,8 +1,6 @@
 export type Screen =
   | 'signup'
   | 'login'
-  | 'forgot-password'
-  | 'reset-password'
   | 'profile'
   | 'records'
   | 'history'

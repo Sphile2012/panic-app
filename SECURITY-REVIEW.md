@@ -22,11 +22,10 @@ safety-data synchronization, and the database migration/backup workflow.
 | High | The previous migration approach had no version history, preflight backup, or migration runner; bootstrap SQL could be mistaken for an upgrade. | Added a checksummed, advisory-locked migration runner that makes and verifies a full database dump before each migration, applies each migration and ledger update in one transaction, validates constraints and postconditions, and provides an explicitly destructive restore-based rollback. The bootstrap schema is now reserved for empty databases and is shared with fresh Docker initialization. |
 | Medium | Existing migration constraints could silently remain unvalidated, while stricter token constraints could fail on legacy rows. | Migration preflights duplicate/invalid records, aborts rather than deleting them, recreates and validates checks in the transaction, and verifies key access/index postconditions. Existing bad data requires manual review before retrying. |
 
-Authentication persistence, account status, verification, and recovery remain
-owned by Supabase Auth; the app does not maintain a duplicate password or reset
-token store. Database tables use user ownership policies and foreign keys to
-`auth.users`. Supabase Auth supplies duplicate-account handling and password
-hashing.
+Authentication persistence, account status, and email-link verification remain
+owned by Supabase Auth; the app does not maintain an account password or token
+store. Database tables use user ownership policies and foreign keys to
+`auth.users`.
 
 ## PIN Edge Function hardening status
 
@@ -35,11 +34,13 @@ PIN hashes and security-answer hashes are handled by the `pin-setup`,
 `20261022130000_harden_pin_edge_functions.sql` revokes direct app-role access
 to the two credential tables and adds service-role-only transactional setup and
 atomic lockout RPCs. PIN changes require a Supabase JWT with `auth_time` within
-five minutes and count incorrect security answers toward the same lockout.
+five minutes and count incorrect security answers toward the same lockout. A
+fresh email OTP link provides the reauthentication; the app does not request an
+account password.
 
 The primary app now routes authenticated sessions through account PIN setup or
 two-PIN verification before opening the local vault. Guests retain the existing
-device-local PIN flow. Account PIN changes require password reauthentication,
+device-local PIN flow. Account PIN changes require email-link reauthentication,
 both security answers, server-side PIN confirmations, and a recent Supabase
 `auth_time`; the local vault is re-encrypted only after the server accepts the
 change. Account PIN credentials are not read directly by frontend roles.
@@ -71,9 +72,10 @@ backup/rollback safety requirements.
    Netlify project, SMTP account, or deployed Supabase instance was available.
    Configure `SUPABASE_URL` and `SUPABASE_ANON_KEY` as server-side environment
    variables, set the build-time `VITE_FRONTEND_URL` to the deployed origin,
-   add that origin to Supabase's allowed redirects, configure the Site URL,
-   recovery expiry, email templates and SMTP sender, then test actual signup,
-   verification, login, reset, expired-link and reused-link behavior.
+   add that origin and the `?flow=reauth` redirect to Supabase's allowed redirects,
+   configure the Site URL, email OTP expiry, email templates and SMTP sender, then
+   test actual signup, sign-in, reauthentication, expired-link and reused-link
+   behavior.
 5. **Medium — local vault is not backed up:** contacts, profile, safety plan,
    notes, and PIN remain in the browser's encrypted local storage. Clearing
    browser data or losing the device loses this data. Account sign-in does not
@@ -98,8 +100,8 @@ backup/rollback safety requirements.
 
 ## Validation performed
 
-- `npm test` — 29 tests passed.
-- `npm run build:web` — TypeScript check and Vite production build passed.
+- `npm test` — 31 tests passed.
+- `npm run build` — web, mobile, and API production builds passed.
 - Built once with sentinel backend URL/key environment values and confirmed
   those values did not appear in `dist`.
 - `git diff --check` — passed.

@@ -1,4 +1,4 @@
-import { getClient, DB_CONFIGURED, signUp, signIn, signOut, getUser, onAuthStateChange, fetchAlertStats, fetchRecentAlerts, } from './db.js';
+import { getClient, DB_CONFIGURED, sendEmailAuthLink, signOut, getUser, onAuthStateChange, fetchAlertStats, fetchRecentAlerts, } from './db.js';
 import './strings/groupC.js';
 import { loadAppearance, applyAppearance } from './theme.js';
 import { t, getLang, languageBarHtml, bindLanguageBar } from './i18n.js';
@@ -173,74 +173,52 @@ function wireAuthForms() {
     });
     const loginForm = document.getElementById('dash-login-form');
     const liEmailEl = document.getElementById('d-li-email');
-    const liPwEl = document.getElementById('d-li-pw');
     const liErrEl = document.getElementById('d-li-error');
     const liSubmitBtn = document.getElementById('d-li-submit');
-    if (!loginForm || !liEmailEl || !liPwEl || !liErrEl || !liSubmitBtn)
+    if (!loginForm || !liEmailEl || !liErrEl || !liSubmitBtn)
         return;
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         liErrEl.textContent = '';
         const email = liEmailEl.value.trim();
-        const pw = liPwEl.value;
-        if (!email || !pw) {
+        if (!email) {
             liErrEl.textContent = t('c.dashboard.fillFields');
             return;
         }
         liSubmitBtn.disabled = true;
-        liSubmitBtn.textContent = t('c.dashboard.signingIn');
-        const { error } = await signIn(email, pw);
+        liSubmitBtn.textContent = 'Sending email link…';
+        const { error } = await sendEmailAuthLink(email, 'login');
         liSubmitBtn.disabled = false;
-        liSubmitBtn.textContent = t('c.dashboard.signIn');
+        liSubmitBtn.textContent = 'Email me a sign-in link';
         if (error) {
             liErrEl.textContent = formatAuthError(error);
             return;
         }
-        const { data, error: sessionError } = await getClient().auth.getSession();
-        if (sessionError || !data.session) {
-            liErrEl.textContent = 'Sign-in succeeded, but your session could not be restored. Please try again.';
-            return;
-        }
-        showDashboard(data.session.user.email ?? email);
+        liErrEl.style.color = 'var(--safe)';
+        liErrEl.textContent = 'Check your email for a secure sign-in link.';
     });
     const signupForm = document.getElementById('dash-signup-form');
     const suEmailEl = document.getElementById('d-su-email');
-    const suPwEl = document.getElementById('d-su-pw');
-    const suCfEl = document.getElementById('d-su-cf');
     const suErrEl = document.getElementById('d-su-error');
     const suSubmitBtn = document.getElementById('d-su-submit');
-    if (!signupForm || !suEmailEl || !suPwEl || !suCfEl || !suErrEl || !suSubmitBtn)
+    if (!signupForm || !suEmailEl || !suErrEl || !suSubmitBtn)
         return;
     signupForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         suErrEl.textContent = '';
         suErrEl.style.color = '';
         const email = suEmailEl.value.trim();
-        const pw = suPwEl.value;
-        const cf = suCfEl.value;
-        if (!email || !pw) {
+        if (!email) {
             suErrEl.textContent = t('c.dashboard.fillFields');
             return;
         }
-        if (pw.length < 8) {
-            suErrEl.textContent = t('c.dashboard.passwordTooShort');
-            return;
-        }
-        if (pw !== cf) {
-            suErrEl.textContent = t('c.dashboard.passwordMismatch');
-            return;
-        }
         suSubmitBtn.disabled = true;
-        suSubmitBtn.textContent = t('c.dashboard.creating');
-        const { error, session } = await signUp(email, pw);
+        suSubmitBtn.textContent = 'Sending email link…';
+        const { error } = await sendEmailAuthLink(email, 'signup');
         suSubmitBtn.disabled = false;
-        suSubmitBtn.textContent = t('c.dashboard.createAccount');
+        suSubmitBtn.textContent = 'Create account with email';
         if (error) {
             suErrEl.textContent = formatAuthError(error);
-            return;
-        }
-        if (session) {
-            showDashboard(session.user.email ?? email);
             return;
         }
         suErrEl.style.color = 'var(--safe)';

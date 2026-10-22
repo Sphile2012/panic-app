@@ -1,6 +1,6 @@
 import { store } from '../state.js';
 import { getRecoveryQuestionIds } from '../storage.js';
-import { changeAccountPins, reauthenticate } from '../db.js';
+import { changeAccountPins, sendReauthenticationLink } from '../db.js';
 const PIN_QUESTIONS = {
   'first-school': 'What was the name of your first school?',
   'childhood-street': 'What street did you live on as a child?',
@@ -85,8 +85,8 @@ export function renderSettings(root) {
           <input class="pin-input" id="account-change-pin-two" type="password" inputmode="numeric" maxlength="6" pattern="[0-9]{4,6}" autocomplete="new-password" required />
           <label class="field-label" for="account-change-pin-two-confirm">Confirm second PIN</label>
           <input class="pin-input" id="account-change-pin-two-confirm" type="password" inputmode="numeric" maxlength="6" pattern="[0-9]{4,6}" autocomplete="new-password" required />
-          <label class="field-label" for="account-change-password">Current account password</label>
-          <input class="text-input" id="account-change-password" type="password" autocomplete="current-password" required />
+          <button class="btn-secondary-outline" id="account-pin-reauth" type="button">Email me a fresh verification link</button>
+          <p class="settings-section-body">Follow the link, unlock with both PINs, then return here to change them.</p>
           <label class="field-label" for="account-change-answer-one">${PIN_QUESTIONS[accountPinQuestionIds[0]] ?? 'Security answer 1'}</label>
           <input class="text-input" id="account-change-answer-one" type="password" autocomplete="off" required />
           <label class="field-label" for="account-change-answer-two">${PIN_QUESTIONS[accountPinQuestionIds[1]] ?? 'Security answer 2'}</label>
@@ -173,6 +173,16 @@ export function renderSettings(root) {
       });
     }
     const accountPinForm = root.querySelector('#account-change-pin-form');
+    const reauthButton = root.querySelector('#account-pin-reauth');
+    reauthButton?.addEventListener('click', async () => {
+      const error = root.querySelector('#account-pin-change-error');
+      error.textContent = '';
+      reauthButton.disabled = true;
+      const authError = await sendReauthenticationLink();
+      reauthButton.disabled = false;
+      error.style.color = authError ? '' : 'var(--safe)';
+      error.textContent = authError ?? 'Verification link sent. Open it in this browser, unlock with both PINs, then return to Settings.';
+    });
     accountPinForm?.addEventListener('submit', async event => {
       event.preventDefault();
       const error = root.querySelector('#account-pin-change-error');
@@ -180,7 +190,6 @@ export function renderSettings(root) {
       const firstConfirm = root.querySelector('#account-change-pin-one-confirm').value.trim();
       const second = root.querySelector('#account-change-pin-two').value.trim();
       const secondConfirm = root.querySelector('#account-change-pin-two-confirm').value.trim();
-      const password = root.querySelector('#account-change-password').value;
       const answer1 = root.querySelector('#account-change-answer-one').value;
       const answer2 = root.querySelector('#account-change-answer-two').value;
       if (!/^\d{4,6}$/.test(first) || !/^\d{4,6}$/.test(second)) {
@@ -195,14 +204,12 @@ export function renderSettings(root) {
         error.textContent = 'The two PINs must be different.';
         return;
       }
-      const authError = await reauthenticate(password);
-      if (authError) {
-        error.textContent = authError;
-        return;
-      }
       const result = await changeAccountPins({ answer1, answer2, newPin1: first, confirmPin1: firstConfirm, newPin2: second, confirmPin2: secondConfirm });
       if (!result.success) {
-        error.textContent = result.error ?? 'PINs could not be changed.';
+        const message = result.error ?? 'PINs could not be changed.';
+        error.textContent = /reauth|recent authentication/i.test(message)
+          ? 'Request a fresh verification link, follow it, unlock with both PINs, then try again.'
+          : message;
         return;
       }
       await store.changePins(first, second);

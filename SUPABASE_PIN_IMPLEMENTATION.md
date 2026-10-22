@@ -3,7 +3,7 @@
 ## Current Architecture
 
 The app supports guest/device-local use and authenticated accounts. Authenticated
-users pass through Supabase password authentication and then a separate two-PIN
+users pass through Supabase email-link authentication and then a separate two-PIN
 gate before the app opens. The local encrypted vault remains device-local; the
 account PIN records are credentials, not cloud backup or vault synchronization.
 
@@ -28,7 +28,7 @@ Four serverless functions handle all account PIN operations:
 1. **pin-status**: Return setup status, security-question IDs, and lockout expiry; never returns hashes
 2. **pin-setup**: Create PINs and security questions once; existing credentials cannot be overwritten
 3. **pin-verify**: Verify both PINs and enforce lockout
-4. **pin-change**: Change both PINs after recent password reauthentication and both security answers
+4. **pin-change**: Change both PINs after recent email-link reauthentication and both security answers
 
 ## 🚀 Deployment Steps
 
@@ -81,7 +81,9 @@ SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 The account PIN gate is separate from the device vault's legacy local PIN
 derivation. The UI calls the same-origin Supabase proxy; PIN and answer hashes
 are computed server-side by the Edge Functions and are never returned to the
-browser.
+browser. Signup and sign-in use Supabase email OTP links; no account password is
+requested or stored by this app. PIN changes use a fresh email link for recent
+authentication, then require both security answers.
 
 ### API Integration Examples
 

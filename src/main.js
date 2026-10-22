@@ -16,7 +16,7 @@ import { renderSafetyPlan } from './screens/safetyPlan.js';
 import { renderSupport } from './screens/support.js';
 import { renderSettings } from './screens/settings.js';
 import { renderAppearance } from './screens/appearance.js';
-import { renderWelcome, renderSignup, renderLogin, renderForgotPassword, renderResetPassword, renderVerifyEmail } from './screens/auth.js';
+import { renderWelcome, renderSignup, renderLogin, renderVerifyEmail } from './screens/auth.js';
 import { renderBudget } from './screens/disguise/budget.js';
 import { renderWeather } from './screens/disguise/weather.js';
 import { renderNotesPlain } from './screens/disguise/notesPlain.js';
@@ -33,13 +33,10 @@ const appRoot = document.getElementById('app-root');
 if (!appRoot) {
     throw new Error('App root element not found.');
 }
-const recoveryParams = new URLSearchParams(window.location.search);
-const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
-if (recoveryParams.get('flow') === 'recovery' ||
-    hashParams.get('type') === 'recovery' ||
-    hashParams.has('access_token') ||
-    hashParams.has('refresh_token')) {
-    store.navigateTo('reset-password');
+const authCallbackParams = new URLSearchParams(window.location.search);
+const authCallbackHash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+if (authCallbackParams.has('flow') && authCallbackHash.has('access_token')) {
+    store.navigateTo('account-pin-check');
 }
 initPwa();
 let currentScreen = null;
@@ -87,12 +84,6 @@ function render(screen) {
             break;
         case 'login':
             renderLogin(appRoot);
-            break;
-        case 'forgot-password':
-            renderForgotPassword(appRoot);
-            break;
-        case 'reset-password':
-            renderResetPassword(appRoot);
             break;
         case 'verify-email':
             renderVerifyEmail(appRoot);
@@ -205,7 +196,7 @@ store.subscribe((state) => {
 });
 document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') {
-        const safe = ['calculator', 'decoy', 'setup-pin', 'setup-contacts', 'welcome', 'signup', 'login', 'forgot-password', 'reset-password', 'verify-email'];
+        const safe = ['calculator', 'decoy', 'setup-pin', 'setup-profile', 'setup-contacts', 'welcome', 'signup', 'login', 'verify-email', 'account-pin-check', 'account-pin-login'];
         if (!safe.includes(store.getState().screen)) {
             window.location.href = 'https://www.google.com';
         }
