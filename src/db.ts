@@ -36,7 +36,7 @@ export function getClient() {
     }
     return _client;
 }
-export async function sendEmailAuthLink(email: string, purpose: 'signup' | 'login' | 'reauth', fullName = '') {
+export async function sendEmailAuthOtp(email: string, purpose: 'signup' | 'login' | 'reauth', fullName = '') {
     if (!DB_CONFIGURED)
         return { error: 'Secure account service unavailable. Continue in offline mode.' };
     try {
@@ -44,11 +44,6 @@ export async function sendEmailAuthLink(email: string, purpose: 'signup' | 'logi
             email,
             options: {
                 shouldCreateUser: purpose === 'signup',
-                emailRedirectTo: getFrontendRedirectUrl(
-                    FRONTEND_URL,
-                    window.location.origin,
-                    purpose === 'reauth' ? 'reauth' : undefined,
-                ),
                 ...(fullName ? { data: { full_name: fullName } } : {}),
             },
         });
@@ -56,6 +51,17 @@ export async function sendEmailAuthLink(email: string, purpose: 'signup' | 'logi
     }
     catch {
         return { error: 'Unable to reach the secure account service. Continue in offline mode.' };
+    }
+}
+export async function verifyEmailOtp(email: string, token: string) {
+    if (!DB_CONFIGURED)
+        return { error: 'Secure account service unavailable. Continue in offline mode.' };
+    try {
+        const { error } = await getClient().auth.verifyOtp({ email, token: token.trim(), type: 'email' });
+        return { error: error?.message ?? null };
+    }
+    catch {
+        return { error: 'Unable to verify the email code. Request a new code and try again.' };
     }
 }
 export async function signInWithGoogle() {
@@ -167,12 +173,12 @@ export async function changeAccountPins(input: {
     return data as PinOperationResult;
 }
 
-export async function sendReauthenticationLink() {
+export async function sendReauthenticationCode() {
     const session = await getSession();
     const email = session?.user.email;
     if (!email)
         return 'Your account session expired. Sign in again.';
-    const { error } = await sendEmailAuthLink(email, 'reauth');
+    const { error } = await sendEmailAuthOtp(email, 'reauth');
     return error;
 }
 

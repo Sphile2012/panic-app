@@ -1,5 +1,5 @@
 import { store } from '../state.js';
-import { sendEmailAuthLink, signInWithGoogle } from '../db.js';
+import { sendEmailAuthOtp, signInWithGoogle, verifyEmailOtp } from '../db.js';
 import { resolveIdentifier } from '../authConfig.mjs';
 import { formatAuthError, SIGNUP_CONFIRMATION_MESSAGE } from '../authMessages.js';
 
@@ -35,6 +35,24 @@ function wireGoogleSignIn(root: HTMLElement, errorSelector: string, buttonId: st
 
 function validateEmail(rawEmail: string) {
   return resolveIdentifier(rawEmail);
+}
+
+function showEmailCodeForm(form: HTMLFormElement, email: string, purpose: 'signup' | 'login', fullName = '') {
+  form.innerHTML = `
+    <label class="auth-visually-hidden" for="email-otp-code">Email verification code</label>
+    <input class="text-input" id="email-otp-code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="Enter verification code" required />
+    <p class="auth-error" id="email-otp-error" aria-live="polite">Enter the code sent to your email.</p>
+    <button class="btn-primary auth-entry-btn" type="submit" id="email-otp-submit">Verify code</button>
+    <button class="auth-link-btn" id="email-otp-resend" type="button">Send another code</button>`;
+  const error = form.querySelector<HTMLElement>('#email-otp-error')!;
+  form.querySelector<HTMLButtonElement>('#email-otp-resend')?.addEventListener('click', async event => {
+    const button = event.currentTarget as HTMLButtonElement;
+    button.disabled = true;
+    const result = await sendEmailAuthOtp(email, purpose, fullName);
+    button.disabled = false;
+    error.textContent = result.error ? formatAuthError(result.error) : 'A new code has been sent.';
+  });
+  form.querySelector<HTMLInputElement>('#email-otp-code')?.focus();
 }
 
 export function renderWelcome(root: HTMLElement) {
@@ -85,23 +103,39 @@ export function renderSignup(root: HTMLElement) {
   const emailInput = root.querySelector<HTMLInputElement>('#su-email')!;
   const error = root.querySelector<HTMLElement>('#su-error')!;
   const submit = root.querySelector<HTMLButtonElement>('#su-submit')!;
+  let pendingEmail = '';
+  let pendingName = '';
+  let awaitingCode = false;
   form.addEventListener('submit', async event => {
     event.preventDefault();
+    if (awaitingCode) {
+      const code = form.querySelector<HTMLInputElement>('#email-otp-code')!;
+      const codeError = form.querySelector<HTMLElement>('#email-otp-error')!;
+      const verifyButton = form.querySelector<HTMLButtonElement>('#email-otp-submit')!;
+      verifyButton.disabled = true;
+      const result = await verifyEmailOtp(pendingEmail, code.value);
+      verifyButton.disabled = false;
+      if (result.error) codeError.textContent = formatAuthError(result.error);
+      return;
+    }
     error.textContent = '';
     const fullName = nameInput.value.trim();
     const email = validateEmail(emailInput.value);
     if (!fullName) { error.textContent = 'Please enter your name.'; return; }
     if (!email) { error.textContent = 'Enter a valid email address.'; return; }
     submit.disabled = true;
-    submit.textContent = 'Sending email link…';
-    const result = await sendEmailAuthLink(email, 'signup', fullName);
+    submit.textContent = 'Sending code…';
+    const result = await sendEmailAuthOtp(email, 'signup', fullName);
     submit.disabled = false;
     submit.textContent = 'Continue with email';
     if (result.error) {
       error.textContent = formatAuthError(result.error);
       return;
     }
-    store.navigateTo('verify-email');
+    pendingEmail = email;
+    pendingName = fullName;
+    awaitingCode = true;
+    showEmailCodeForm(form, pendingEmail, 'signup', pendingName);
   });
 }
 
@@ -114,7 +148,7 @@ export function renderLogin(root: HTMLElement) {
           <label class="auth-visually-hidden" for="li-email">Email address</label>
           <input class="text-input" id="li-email" type="email" placeholder="Email address" autocomplete="email" required />
           <p class="auth-error" id="li-error" aria-live="polite"></p>
-          <button class="btn-primary auth-entry-btn" type="submit" id="li-submit">Email me a sign-in link</button>
+          <button class="btn-primary auth-entry-btn" type="submit" id="li-submit">Email me a sign-in code</button>
         </form>
         <p class="auth-switch">Don't have an account? <button class="auth-link-btn" id="btn-to-signup" type="button">Sign up</button></p>
         <button class="auth-back-btn" id="btn-to-welcome" type="button">Back</button>
@@ -133,21 +167,35 @@ export function renderLogin(root: HTMLElement) {
   const emailInput = root.querySelector<HTMLInputElement>('#li-email')!;
   const error = root.querySelector<HTMLElement>('#li-error')!;
   const submit = root.querySelector<HTMLButtonElement>('#li-submit')!;
+  let pendingEmail = '';
+  let awaitingCode = false;
   form.addEventListener('submit', async event => {
     event.preventDefault();
+    if (awaitingCode) {
+      const code = form.querySelector<HTMLInputElement>('#email-otp-code')!;
+      const codeError = form.querySelector<HTMLElement>('#email-otp-error')!;
+      const verifyButton = form.querySelector<HTMLButtonElement>('#email-otp-submit')!;
+      verifyButton.disabled = true;
+      const result = await verifyEmailOtp(pendingEmail, code.value);
+      verifyButton.disabled = false;
+      if (result.error) codeError.textContent = formatAuthError(result.error);
+      return;
+    }
     error.textContent = '';
     const email = validateEmail(emailInput.value);
     if (!email) { error.textContent = 'Enter a valid email address.'; return; }
     submit.disabled = true;
-    submit.textContent = 'Sending email link…';
-    const result = await sendEmailAuthLink(email, 'login');
+    submit.textContent = 'Sending code…';
+    const result = await sendEmailAuthOtp(email, 'login');
     submit.disabled = false;
-    submit.textContent = 'Email me a sign-in link';
+    submit.textContent = 'Email me a sign-in code';
     if (result.error) {
       error.textContent = formatAuthError(result.error);
       return;
     }
-    store.navigateTo('verify-email');
+    pendingEmail = email;
+    awaitingCode = true;
+    showEmailCodeForm(form, pendingEmail, 'login');
   });
 }
 
@@ -155,7 +203,7 @@ export function renderVerifyEmail(root: HTMLElement) {
   root.innerHTML = `
     <div class="screen auth-screen">
       <div class="auth-card">
-        <h2 class="auth-title">Check your email</h2>
+        <h2 class="auth-title">Enter your email code</h2>
         <p class="auth-subtitle">${SIGNUP_CONFIRMATION_MESSAGE}</p>
         <button class="btn-primary" id="btn-done" style="margin-top:20px">Back to sign in</button>
       </div>

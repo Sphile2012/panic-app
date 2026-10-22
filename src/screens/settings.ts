@@ -1,6 +1,7 @@
 import { store } from '../state.js';
 import { getRecoveryQuestionIds } from '../storage.js';
-import { changeAccountPins, sendReauthenticationLink } from '../db.js';
+import { changeAccountPins, sendReauthenticationCode, verifyEmailOtp } from '../db.js';
+import { formatAuthError } from '../authMessages.js';
 const PIN_QUESTIONS: Record<string, string> = {
   'first-school': 'What was the name of your first school?',
   'childhood-street': 'What street did you live on as a child?',
@@ -85,8 +86,13 @@ export function renderSettings(root: HTMLElement) {
           <input class="pin-input" id="account-change-pin-two" type="password" inputmode="numeric" maxlength="6" pattern="[0-9]{4,6}" autocomplete="new-password" required />
           <label class="field-label" for="account-change-pin-two-confirm">Confirm second PIN</label>
           <input class="pin-input" id="account-change-pin-two-confirm" type="password" inputmode="numeric" maxlength="6" pattern="[0-9]{4,6}" autocomplete="new-password" required />
-          <button class="btn-secondary-outline" id="account-pin-reauth" type="button">Email me a fresh verification link</button>
-          <p class="settings-section-body">Follow the link, unlock with both PINs, then return here to change them.</p>
+          <button class="btn-secondary-outline" id="account-pin-reauth" type="button">Email me a verification code</button>
+          <p class="settings-section-body" id="account-pin-reauth-message">Verify your email before changing account PINs.</p>
+          <div id="account-pin-reauth-code-wrap" hidden>
+            <label class="field-label" for="account-pin-reauth-code">Email verification code</label>
+            <input class="text-input" id="account-pin-reauth-code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="8" required />
+            <button class="btn-secondary-outline" id="account-pin-verify-reauth" type="button">Verify code</button>
+          </div>
           <label class="field-label" for="account-change-answer-one">${PIN_QUESTIONS[accountPinQuestionIds[0]] ?? 'Security answer 1'}</label>
           <input class="text-input" id="account-change-answer-one" type="password" autocomplete="off" required />
           <label class="field-label" for="account-change-answer-two">${PIN_QUESTIONS[accountPinQuestionIds[1]] ?? 'Security answer 2'}</label>
@@ -178,10 +184,19 @@ export function renderSettings(root: HTMLElement) {
       const error = root.querySelector<HTMLElement>('#account-pin-change-error')!;
       error.textContent = '';
       reauthButton.disabled = true;
-      const authError = await sendReauthenticationLink();
+      const authError = await sendReauthenticationCode();
       reauthButton.disabled = false;
       error.style.color = authError ? '' : 'var(--safe)';
-      error.textContent = authError ?? 'Verification link sent. Open it in this browser, unlock with both PINs, then return to Settings.';
+      error.textContent = authError ?? 'Verification code sent. Enter it here to continue.';
+      if (!authError) root.querySelector<HTMLElement>('#account-pin-reauth-code-wrap')!.hidden = false;
+    });
+    root.querySelector('#account-pin-verify-reauth')?.addEventListener('click', async () => {
+      const email = store.getState().authEmail;
+      const code = root.querySelector<HTMLInputElement>('#account-pin-reauth-code')!.value;
+      const error = root.querySelector<HTMLElement>('#account-pin-change-error')!;
+      const result = email ? await verifyEmailOtp(email, code) : { error: 'Your account session expired. Sign in again.' };
+      error.style.color = result.error ? '' : 'var(--safe)';
+      error.textContent = result.error ? formatAuthError(result.error) : 'Email verified. You can now change your account PINs.';
     });
     accountPinForm?.addEventListener('submit', async event => {
       event.preventDefault();
@@ -208,7 +223,7 @@ export function renderSettings(root: HTMLElement) {
       if (!result.success) {
         const message = result.error ?? 'PINs could not be changed.';
         error.textContent = /reauth|recent authentication/i.test(message)
-          ? 'Request a fresh verification link, follow it, unlock with both PINs, then try again.'
+          ? 'Request and verify a fresh email code, then try again.'
           : message;
         return;
       }

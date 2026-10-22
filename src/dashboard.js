@@ -1,4 +1,4 @@
-import { getClient, DB_CONFIGURED, sendEmailAuthLink, signOut, getUser, onAuthStateChange, fetchAlertStats, fetchRecentAlerts, } from './db.js';
+import { getClient, DB_CONFIGURED, sendEmailAuthOtp, verifyEmailOtp, signOut, getUser, onAuthStateChange, fetchAlertStats, fetchRecentAlerts, } from './db.js';
 import './strings/groupC.js';
 import { loadAppearance, applyAppearance } from './theme.js';
 import { t, getLang, languageBarHtml, bindLanguageBar } from './i18n.js';
@@ -177,8 +177,20 @@ function wireAuthForms() {
     const liSubmitBtn = document.getElementById('d-li-submit');
     if (!loginForm || !liEmailEl || !liErrEl || !liSubmitBtn)
         return;
+    let loginEmail = '';
+    let loginAwaitingOtp = false;
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
+        if (loginAwaitingOtp) {
+            const code = loginForm.querySelector('#d-li-otp');
+            const verifyButton = loginForm.querySelector('#d-li-submit');
+            verifyButton.disabled = true;
+            const result = await verifyEmailOtp(loginEmail, code.value);
+            verifyButton.disabled = false;
+            if (result.error)
+                liErrEl.textContent = formatAuthError(result.error);
+            return;
+        }
         liErrEl.textContent = '';
         const email = liEmailEl.value.trim();
         if (!email) {
@@ -186,16 +198,42 @@ function wireAuthForms() {
             return;
         }
         liSubmitBtn.disabled = true;
-        liSubmitBtn.textContent = 'Sending email link…';
-        const { error } = await sendEmailAuthLink(email, 'login');
+        liSubmitBtn.textContent = 'Sending code…';
+        const { error } = await sendEmailAuthOtp(email, 'login');
         liSubmitBtn.disabled = false;
-        liSubmitBtn.textContent = 'Email me a sign-in link';
+        liSubmitBtn.textContent = 'Email me a sign-in code';
         if (error) {
             liErrEl.textContent = formatAuthError(error);
             return;
         }
+        loginEmail = email;
+        loginAwaitingOtp = true;
+        liEmailEl.hidden = true;
+        const codeInput = document.createElement('input');
+        codeInput.className = 'text-input';
+        codeInput.id = 'd-li-otp';
+        codeInput.type = 'text';
+        codeInput.inputMode = 'numeric';
+        codeInput.autocomplete = 'one-time-code';
+        codeInput.maxLength = 8;
+        codeInput.placeholder = 'Enter verification code';
+        codeInput.required = true;
+        loginForm.insertBefore(codeInput, liErrEl);
+        const resendButton = document.createElement('button');
+        resendButton.type = 'button';
+        resendButton.className = 'auth-link-btn';
+        resendButton.textContent = 'Send another code';
+        resendButton.addEventListener('click', async () => {
+            resendButton.disabled = true;
+            const resendResult = await sendEmailAuthOtp(loginEmail, 'login');
+            resendButton.disabled = false;
+            liErrEl.textContent = resendResult.error ? formatAuthError(resendResult.error) : 'A new code has been sent.';
+        });
+        loginForm.insertBefore(resendButton, liSubmitBtn);
+        liSubmitBtn.textContent = 'Verify code';
         liErrEl.style.color = 'var(--safe)';
-        liErrEl.textContent = 'Check your email for a secure sign-in link.';
+        liErrEl.textContent = 'Enter the verification code sent to your email.';
+        codeInput.focus();
     });
     const signupForm = document.getElementById('dash-signup-form');
     const suEmailEl = document.getElementById('d-su-email');
@@ -203,8 +241,19 @@ function wireAuthForms() {
     const suSubmitBtn = document.getElementById('d-su-submit');
     if (!signupForm || !suEmailEl || !suErrEl || !suSubmitBtn)
         return;
+    let signupEmail = '';
+    let signupAwaitingOtp = false;
     signupForm.addEventListener('submit', async (e) => {
         e.preventDefault();
+        if (signupAwaitingOtp) {
+            const code = signupForm.querySelector('#d-su-otp');
+            suSubmitBtn.disabled = true;
+            const result = await verifyEmailOtp(signupEmail, code.value);
+            suSubmitBtn.disabled = false;
+            if (result.error)
+                suErrEl.textContent = formatAuthError(result.error);
+            return;
+        }
         suErrEl.textContent = '';
         suErrEl.style.color = '';
         const email = suEmailEl.value.trim();
@@ -213,16 +262,42 @@ function wireAuthForms() {
             return;
         }
         suSubmitBtn.disabled = true;
-        suSubmitBtn.textContent = 'Sending email link…';
-        const { error } = await sendEmailAuthLink(email, 'signup');
+        suSubmitBtn.textContent = 'Sending code…';
+        const { error } = await sendEmailAuthOtp(email, 'signup');
         suSubmitBtn.disabled = false;
         suSubmitBtn.textContent = 'Create account with email';
         if (error) {
             suErrEl.textContent = formatAuthError(error);
             return;
         }
+        signupEmail = email;
+        signupAwaitingOtp = true;
+        suEmailEl.hidden = true;
+        const codeInput = document.createElement('input');
+        codeInput.className = 'text-input';
+        codeInput.id = 'd-su-otp';
+        codeInput.type = 'text';
+        codeInput.inputMode = 'numeric';
+        codeInput.autocomplete = 'one-time-code';
+        codeInput.maxLength = 8;
+        codeInput.placeholder = 'Enter verification code';
+        codeInput.required = true;
+        signupForm.insertBefore(codeInput, suErrEl);
+        suSubmitBtn.textContent = 'Verify code';
         suErrEl.style.color = 'var(--safe)';
         suErrEl.textContent = SIGNUP_CONFIRMATION_MESSAGE;
+        const resendButton = document.createElement('button');
+        resendButton.type = 'button';
+        resendButton.className = 'auth-link-btn';
+        resendButton.textContent = 'Send another code';
+        resendButton.addEventListener('click', async () => {
+            resendButton.disabled = true;
+            const resendResult = await sendEmailAuthOtp(signupEmail, 'signup');
+            resendButton.disabled = false;
+            suErrEl.textContent = resendResult.error ? formatAuthError(resendResult.error) : 'A new code has been sent.';
+        });
+        signupForm.insertBefore(resendButton, suSubmitBtn);
+        codeInput.focus();
     });
     authFormsWired = true;
 }

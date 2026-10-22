@@ -42,7 +42,7 @@ const en: Dict = {
     'auth.busy.signin': 'Signing in...',
     'auth.busy.create': 'Creating account...',
     'auth.verify.title': 'Check your email',
-    'auth.verify.body': 'We sent a confirmation link to your email address. Tap it to activate your account, then come back and sign in.',
+    'auth.verify.body': 'Enter the verification code sent to your email address to activate your account and continue.',
     'auth.verify.done': 'I have confirmed, sign in',
     'auth.back': 'Back to sign in',
     'auth.forgot': 'Forgot password?',
