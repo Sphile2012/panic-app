@@ -1,5 +1,5 @@
 import { store } from '../state.js';
-import { sendEmailAuthOtp, sendPhoneAuthOtp, verifyPhoneOtp, setAuthenticatedPassword, signInWithGoogle, signInWithPassword, verifyEmailOtp, sendPasswordResetEmail, updatePassword } from '../db.js';
+import { sendEmailAuthOtp, sendPhoneAuthOtp, setAuthenticatedPassword, signInWithGoogle, signInWithPassword, verifyEmailOtp, sendPasswordResetEmail, updatePassword } from '../db.js';
 import { resolveIdentifier } from '../authConfig.mjs';
 import { formatAuthError, SIGNUP_CONFIRMATION_MESSAGE } from '../authMessages.js';
 function googleButtonHtml(id) {
@@ -113,17 +113,7 @@ export function renderSignup(root) {
           <label class="auth-visually-hidden" for="su-password-confirm">Confirm password</label>
           <input class="text-input" id="su-password-confirm" type="password" placeholder="Confirm password" autocomplete="new-password" minlength="8" required />
           
-          <div class="auth-otp-choice" style="margin: 12px 0; padding: 12px; background: var(--surface2); border-radius: 8px;">
-            <p style="font-size: 0.85rem; margin-bottom: 8px; color: var(--text);">Verification method:</p>
-            <label style="display: flex; align-items: center; margin-bottom: 6px; cursor: pointer;">
-              <input type="radio" name="otp-method" value="email" checked style="margin-right: 8px;" />
-              <span style="font-size: 0.85rem;">Email verification code</span>
-            </label>
-            <label style="display: flex; align-items: center; cursor: pointer;">
-              <input type="radio" name="otp-method" value="sms" style="margin-right: 8px;" />
-              <span style="font-size: 0.85rem;">SMS verification code</span>
-            </label>
-          </div>
+
           
           <p class="auth-subtitle">Verify it with the code we send to activate your account.</p>
           <p class="auth-error" id="su-error" aria-live="polite"></p>
@@ -153,51 +143,26 @@ export function renderSignup(root) {
     form.addEventListener('submit', async (event) => {
         event.preventDefault();
         if (awaitingCode) {
-            if (otpMethod === 'sms') {
-                const code = form.querySelector('#phone-otp-code');
-                const codeError = form.querySelector('#phone-otp-error');
-                const verifyButton = form.querySelector('#phone-otp-submit');
-                verifyButton.disabled = true;
-                const verificationResult = await verifyPhoneOtp(pendingPhone, code.value);
-                if (!verificationResult.error) {
-                    // Phone verified, now set password
-                    const result = await setAuthenticatedPassword(pendingPassword);
-                    verifyButton.disabled = false;
-                    if (result.error) {
-                        codeError.textContent = formatAuthError(result.error);
-                        return;
-                    }
-                    pendingPassword = '';
-                    return;
-                }
-                verifyButton.disabled = false;
-                codeError.textContent = formatAuthError(verificationResult.error, 'otp');
+            const code = form.querySelector('#email-otp-code');
+            const codeError = form.querySelector('#email-otp-error');
+            const verifyButton = form.querySelector('#email-otp-submit');
+            verifyButton.disabled = true;
+            const verificationResult = emailVerified ? { error: null } : await verifyEmailOtp(pendingEmail, code.value);
+            if (!verificationResult.error)
+                emailVerified = true;
+            const result = verificationResult.error ? verificationResult : await setAuthenticatedPassword(pendingPassword);
+            verifyButton.disabled = false;
+            if (result.error) {
+                codeError.textContent = formatAuthError(result.error, 'otp');
                 return;
             }
-            else {
-                const code = form.querySelector('#email-otp-code');
-                const codeError = form.querySelector('#email-otp-error');
-                const verifyButton = form.querySelector('#email-otp-submit');
-                verifyButton.disabled = true;
-                const verificationResult = emailVerified ? { error: null } : await verifyEmailOtp(pendingEmail, code.value);
-                if (!verificationResult.error)
-                    emailVerified = true;
-                const result = verificationResult.error ? verificationResult : await setAuthenticatedPassword(pendingPassword);
-                verifyButton.disabled = false;
-                if (result.error) {
-                    codeError.textContent = formatAuthError(result.error, 'otp');
-                    return;
-                }
-                pendingPassword = '';
-                return;
-            }
+            pendingPassword = '';
+            return;
         }
         error.textContent = '';
         const fullName = nameInput.value.trim();
         const email = validateEmail(emailInput.value);
         const phone = phoneInput.value.trim();
-        const otpMethodRadio = form.querySelector('input[name="otp-method"]:checked');
-        otpMethod = otpMethodRadio?.value || 'email';
         if (!fullName) {
             error.textContent = 'Please enter your name.';
             return;
@@ -224,10 +189,8 @@ export function renderSignup(root) {
         }
         submit.disabled = true;
         submit.textContent = 'Sending code…';
-        // Send OTP based on selected method
-        const result = otpMethod === 'sms'
-            ? await sendPhoneAuthOtp(phone, 'signup')
-            : await sendEmailAuthOtp(email, 'signup', fullName, phone);
+        // Send Email OTP only (free)
+        const result = await sendEmailAuthOtp(email, 'signup', fullName, phone);
         submit.disabled = false;
         submit.textContent = 'Create account';
         if (result.error) {
@@ -243,12 +206,7 @@ export function renderSignup(root) {
         if (phone) {
             sessionStorage.setItem('temp_signup_phone', phone);
         }
-        if (otpMethod === 'sms') {
-            showPhoneCodeForm(form, pendingPhone, 'signup');
-        }
-        else {
-            showEmailCodeForm(form, pendingEmail, 'signup', pendingName);
-        }
+        showEmailCodeForm(form, pendingEmail, 'signup', pendingName);
     });
 }
 export function renderLogin(root) {
