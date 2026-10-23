@@ -531,18 +531,23 @@ export function authErrorKey(failure: string): string {
 
 export function languageBarHtml(): string {
     return `
-    <div class="lang-bar" role="group" aria-label="${t('lang.title')}">
-      ${LANGS.map(l => `<button type="button" class="lang-btn${l.code === current ? ' lang-btn--active' : ''}" data-lang="${l.code}">${l.label}</button>`).join('')}
+    <div class="lang-bar">
+      <label class="auth-visually-hidden" for="language-select">${t('lang.title')}</label>
+      <select class="lang-select" id="language-select" aria-label="${t('lang.title')}" data-language-select>
+        ${LANGS.map(l => `<option value="${l.code}"${l.code === current ? ' selected' : ''}>${l.label}</option>`).join('')}
+      </select>
     </div>
   `;
 }
 
 export function bindLanguageBar(root: HTMLElement, rerender: () => void) {
-    root.querySelectorAll<HTMLElement>('[data-lang]').forEach(btn => {
-        btn.addEventListener('click', () => {
-            setLang(btn.dataset['lang'] as LangCode);
-            rerender();
-        });
+    const select = root.querySelector<HTMLSelectElement>('[data-language-select]');
+    select?.addEventListener('change', () => {
+        const selected = LANGS.find(language => language.code === select.value);
+        if (!selected)
+            return;
+        setLang(selected.code);
+        rerender();
     });
 }
 

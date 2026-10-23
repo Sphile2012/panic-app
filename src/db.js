@@ -1,11 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
 import { getFrontendRedirectUrl, resolveIdentifier } from './authConfig.mjs';
-const SUPABASE_URL = `${window.location.origin}/api`;
-const PROXY_API_KEY = 'panic-ring-public-proxy-key';
+const ACCOUNT_API_URL = `${window.location.origin}/api`;
+const API_PROXY_KEY = 'panic-ring-public-proxy-key';
 const FRONTEND_URL = import.meta.env['VITE_FRONTEND_URL'];
 const AUTH_ENABLED = import.meta.env['VITE_AUTH_ENABLED'] === 'true';
-const LEGACY_CLIENT_CONFIGURED = Boolean(import.meta.env['VITE_SUPABASE_URL'] && import.meta.env['VITE_SUPABASE_ANON_KEY']);
-export const DB_CONFIGURED = AUTH_ENABLED || LEGACY_CLIENT_CONFIGURED;
+export const DB_CONFIGURED = AUTH_ENABLED || import.meta.env.DEV;
 const PHONE_DOMAIN = 'phone.panicring.app';
 export function isPhoneIdentity(email) {
     return Boolean(email && email.endsWith(`@${PHONE_DOMAIN}`));
@@ -19,9 +18,9 @@ let _client = null;
 export function getClient() {
     if (!_client) {
         if (!DB_CONFIGURED) {
-            throw new Error('Account service is disabled — set VITE_AUTH_ENABLED=true and configure server-side SUPABASE_URL and SUPABASE_ANON_KEY.');
+            throw new Error('Account service is disabled — enable account access in the deployment configuration.');
         }
-        _client = createClient(SUPABASE_URL, PROXY_API_KEY, {
+        _client = createClient(ACCOUNT_API_URL, API_PROXY_KEY, {
             auth: {
                 persistSession: true,
                 autoRefreshToken: true,
