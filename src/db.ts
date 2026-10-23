@@ -33,7 +33,7 @@ export function getClient() {
     }
     return _client;
 }
-export async function sendEmailAuthOtp(email: string, purpose: 'signup' | 'login' | 'reauth', fullName = '') {
+export async function sendEmailAuthOtp(email: string, purpose: 'signup' | 'login' | 'reauth', fullName = '', phone = '') {
     const verifiedEmail = resolveIdentifier(email);
     if (!verifiedEmail)
         return { error: 'Enter a valid email address.' };
@@ -44,13 +44,49 @@ export async function sendEmailAuthOtp(email: string, purpose: 'signup' | 'login
             email: verifiedEmail,
             options: {
                 shouldCreateUser: purpose === 'signup',
-                ...(fullName ? { data: { full_name: fullName } } : {}),
+                ...(fullName ? { data: { full_name: fullName, phone: phone } } : {}),
             },
         });
         return { error: error?.message ?? null };
     }
     catch {
         return { error: 'Unable to reach the secure account service. Continue in offline mode.' };
+    }
+}
+
+export async function sendPhoneAuthOtp(phone: string, purpose: 'signup' | 'login') {
+    // Normalize phone number (remove spaces, ensure + prefix)
+    const normalizedPhone = phone.replace(/\s/g, '').startsWith('+') ? phone.replace(/\s/g, '') : `+${phone.replace(/\s/g, '')}`;
+    
+    if (!DB_CONFIGURED)
+        return { error: 'Secure account service unavailable. Continue in offline mode.' };
+    try {
+        const { error } = await getClient().auth.signInWithOtp({
+            phone: normalizedPhone,
+            options: {
+                shouldCreateUser: purpose === 'signup',
+            },
+        });
+        return { error: error?.message ?? null };
+    }
+    catch {
+        return { error: 'Unable to reach the secure account service. Continue in offline mode.' };
+    }
+}
+
+export async function verifyPhoneOtp(phone: string, token: string) {
+    const normalizedPhone = phone.replace(/\s/g, '').startsWith('+') ? phone.replace(/\s/g, '') : `+${phone.replace(/\s/g, '')}`;
+    
+    if (!token.trim())
+        return { error: 'Enter the verification code sent to your phone.' };
+    if (!DB_CONFIGURED)
+        return { error: 'Secure account service unavailable. Continue in offline mode.' };
+    try {
+        const { error } = await getClient().auth.verifyOtp({ phone: normalizedPhone, token: token.trim(), type: 'sms' });
+        return { error: error?.message ?? null };
+    }
+    catch {
+        return { error: 'Unable to verify the phone code. Request a new code and try again.' };
     }
 }
 export async function verifyEmailOtp(email: string, token: string) {
