@@ -11,11 +11,17 @@ import {
 import { readFile } from 'node:fs/promises';
 
 const originalFetch = globalThis.fetch;
+const netlifyConfig = await readFile(new URL('../netlify.toml', import.meta.url), 'utf8');
 const originalEnv = {
   SUPABASE_URL: process.env.SUPABASE_URL,
   SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY,
   WHAT3WORDS_API_KEY: process.env.WHAT3WORDS_API_KEY,
 };
+
+test('Netlify keeps Supabase credentials in private site environment settings, not source config', () => {
+  assert.doesNotMatch(netlifyConfig, /^\s*(?:VITE_)?SUPABASE_(?:URL|ANON_KEY)\s*=/m);
+  assert.match(netlifyConfig, /^\s*VITE_AUTH_ENABLED\s*=\s*"true"/m);
+});
 
 beforeEach(() => {
   delete process.env.SUPABASE_URL;

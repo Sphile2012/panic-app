@@ -6,10 +6,6 @@
    NODE_VERSION = "20"
    VITE_AUTH_ENABLED = "true"
    VITE_FRONTEND_URL = "https://panic-ring-app.netlify.app"
-   VITE_SUPABASE_URL = "https://bnmzydhlmhwxejfuydeb.supabase.co"
-   VITE_SUPABASE_ANON_KEY = "sb_publishable_7hQCMDk28DIB0pUv9V945A_vPsC-OOZ"
-   SUPABASE_URL = "https://bnmzydhlmhwxejfuydeb.supabase.co"
-   SUPABASE_ANON_KEY = "sb_publishable_7hQCMDk28DIB0pUv9V945A_vPsC-OOZ"
 
 [[redirects]]
  from = "/api/what3words"
