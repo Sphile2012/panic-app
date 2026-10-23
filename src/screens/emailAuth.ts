@@ -128,7 +128,7 @@ export function renderSignup(root: HTMLElement) {
       const result = verificationResult.error ? verificationResult : await setAuthenticatedPassword(pendingPassword);
       verifyButton.disabled = false;
       if (result.error) {
-        codeError.textContent = formatAuthError(result.error);
+        codeError.textContent = formatAuthError(result.error, 'otp');
         return;
       }
       pendingPassword = '';
@@ -217,7 +217,7 @@ export function renderLogin(root: HTMLElement) {
       verifyButton.disabled = true;
       const result = await verifyEmailOtp(pendingEmail, code.value);
       verifyButton.disabled = false;
-      if (result.error) codeError.textContent = formatAuthError(result.error);
+      if (result.error) codeError.textContent = formatAuthError(result.error, 'otp');
       return;
     }
     error.textContent = '';
@@ -228,7 +228,7 @@ export function renderLogin(root: HTMLElement) {
     const result = await signInWithPassword(email, passwordInput.value);
     submit.disabled = false;
     if (result.error) {
-      error.textContent = formatAuthError(result.error);
+      error.textContent = formatAuthError(result.error, 'password');
     }
   });
 }

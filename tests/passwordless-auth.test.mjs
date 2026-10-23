@@ -6,6 +6,7 @@ const emailAuth = await readFile(new URL('../src/screens/emailAuth.ts', import.m
 const database = await readFile(new URL('../src/db.ts', import.meta.url), 'utf8');
 const dashboardSource = await readFile(new URL('../src/dashboard.ts', import.meta.url), 'utf8');
 const settings = await readFile(new URL('../src/screens/settings.ts', import.meta.url), 'utf8');
+const settingsRuntime = await readFile(new URL('../src/screens/settings.js', import.meta.url), 'utf8');
 const dashboard = await readFile(new URL('../dashboard.html', import.meta.url), 'utf8');
 const dashboardScript = await readFile(new URL('../src/dashboard.ts', import.meta.url), 'utf8');
 
@@ -17,10 +18,14 @@ test('signup verifies email before setting a password and sign-in supports passw
   assert.match(emailAuth, /passwordInput\.value\.length < 8/);
   assert.match(emailAuth, /passwordInput\.value !== passwordConfirmInput\.value/);
   assert.match(emailAuth, /signInWithPassword\(email, passwordInput\.value\)/);
+  assert.match(emailAuth, /formatAuthError\(result\.error, 'password'\)/);
+  assert.match(emailAuth, /formatAuthError\(result\.error, 'otp'\)/);
   assert.match(emailAuth, /autocomplete="one-time-code"/);
   assert.match(dashboard, /id="d-li-password" type="password"/);
   assert.match(dashboard, /id="d-su-password" type="password"/);
   assert.match(dashboardScript, /signInWithPassword/);
+  assert.match(dashboardScript, /formatAuthError\(error, 'password'\)/);
+  assert.match(dashboardScript, /formatAuthError\(result\.error, 'otp'\)/);
 });
 
 test('email codes create accounts only for signup and reauthenticate sensitive PIN changes', () => {
@@ -34,6 +39,8 @@ test('email codes create accounts only for signup and reauthenticate sensitive P
   assert.match(database, /auth\.updateUser\(\{ password \}\)/);
   assert.doesNotMatch(settings, /account-change-password|reauthenticate\(/);
   assert.match(settings, /sendReauthenticationCode\(/);
+  assert.match(settings, /formatAuthError\(result\.error, 'otp'\)/);
+  assert.match(settingsRuntime, /formatAuthError\(result\.error, 'otp'\)/);
   assert.match(dashboardScript, /sendEmailAuthOtp\(email, 'login'\)/);
   assert.match(dashboardScript, /verifyEmailOtp\(loginEmail, code\.value\)/);
 });

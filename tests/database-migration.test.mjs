@@ -29,6 +29,11 @@ test('live tracking base migration creates a missing table before hardening and 
     '20261017100000' < '20261018103000',
     'the base table migration must run before the hardening migration',
   );
+  const baseTablePreflight = runner.match(/const hasCoreTables = query\(`([\s\S]*?)`\)/);
+  assert.ok(baseTablePreflight, 'the migration runner must preflight core application tables');
+  assert.match(baseTablePreflight[1], /public\.devices/);
+  assert.match(baseTablePreflight[1], /public\.alert_logs/);
+  assert.doesNotMatch(baseTablePreflight[1], /public\.live_tracks/);
   assert.match(liveTracksBase, /create table if not exists public\.live_tracks/i);
   assert.match(liveTracksBase, /user_id uuid references auth\.users\(id\) on delete cascade/i);
   assert.match(liveTracksBase, /enable row level security/i);

@@ -7,7 +7,18 @@ test('duplicate account errors are translated into sign-in guidance', () => {
 });
 
 test('email-code authentication and confirmation errors are understandable', () => {
-  assert.equal(formatAuthError('Invalid login credentials'), 'Could not verify this code. Check it and try again.');
+  assert.equal(
+    formatAuthError('Invalid login credentials', 'password'),
+    'Email or password is incorrect. Check your details or sign in with an email code.',
+  );
+  assert.equal(
+    formatAuthError('Token has expired or is invalid', 'otp'),
+    'This code is invalid or expired. Request a new code and try again.',
+  );
+  assert.equal(
+    formatAuthError('Invalid login credentials', 'otp'),
+    'This code is invalid or expired. Request a new code and try again.',
+  );
   assert.equal(formatAuthError('email_not_confirmed'), 'Please confirm your email using the code we sent.');
 });
 

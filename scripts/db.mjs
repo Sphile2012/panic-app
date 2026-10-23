@@ -240,12 +240,11 @@ async function discoverMigrations() {
 }
 
 async function migrate() {
-  const hasBaseTables = query(`select
+  const hasCoreTables = query(`select
     to_regclass('public.devices') is not null
-    and to_regclass('public.alert_logs') is not null
-    and to_regclass('public.live_tracks') is not null`);
-  if (hasBaseTables !== 't')
-    throw new Error('The application tables are missing. Initialize an empty database with supabase/schema.sql before using the upgrade migration.');
+    and to_regclass('public.alert_logs') is not null`);
+  if (hasCoreTables !== 't')
+    throw new Error('The core application tables are missing. Initialize an empty database with supabase/schema.sql before using the upgrade migration.');
 
   for (const migration of await discoverMigrations()) {
     const { version, sql } = migration;

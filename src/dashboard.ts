@@ -234,7 +234,7 @@ function wireAuthForms() {
             const result = await verifyEmailOtp(loginEmail, code.value);
             verifyButton.disabled = false;
             liErrEl.style.color = result.error ? '' : 'var(--safe)';
-            if (result.error) liErrEl.textContent = formatAuthError(result.error);
+            if (result.error) liErrEl.textContent = formatAuthError(result.error, 'otp');
             return;
         }
         liErrEl.textContent = '';
@@ -251,7 +251,7 @@ function wireAuthForms() {
         const { error } = await signInWithPassword(email, liPasswordEl.value);
         liSubmitBtn.disabled = false;
         if (error) {
-            liErrEl.textContent = formatAuthError(error);
+            liErrEl.textContent = formatAuthError(error, 'password');
         }
     });
     const signupForm = document.getElementById('dash-signup-form');
@@ -277,7 +277,7 @@ function wireAuthForms() {
             suSubmitBtn.disabled = false;
             suErrEl.style.color = result.error ? '' : 'var(--safe)';
             if (result.error) {
-                suErrEl.textContent = formatAuthError(result.error);
+                suErrEl.textContent = formatAuthError(result.error, 'otp');
                 return;
             }
             signupPassword = '';

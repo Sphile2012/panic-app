@@ -196,7 +196,7 @@ export function renderSettings(root: HTMLElement) {
       const error = root.querySelector<HTMLElement>('#account-pin-change-error')!;
       const result = email ? await verifyEmailOtp(email, code) : { error: 'Your account session expired. Sign in again.' };
       error.style.color = result.error ? '' : 'var(--safe)';
-      error.textContent = result.error ? formatAuthError(result.error) : 'Email verified. You can now change your account PINs.';
+      error.textContent = result.error ? formatAuthError(result.error, 'otp') : 'Email verified. You can now change your account PINs.';
     });
     accountPinForm?.addEventListener('submit', async event => {
       event.preventDefault();
