@@ -329,3 +329,156 @@ export async function fetchRecentAlerts(limit = 10) {
         return [];
     }
 }
+
+// PIN Authentication Functions
+const EDGE_FUNCTION_URL = import.meta.env['VITE_SUPABASE_URL'] || 'https://azirifnakrxmuiqpqwbc.supabase.co';
+
+export async function setupPinsInCloud(
+    pin1: string,
+    pin2: string,
+    question1_id: string,
+    answer1: string,
+    question2_id: string,
+    answer2: string
+): Promise<{ error: string | null; success: boolean }> {
+    if (!DB_CONFIGURED)
+        return { error: 'Cloud backup not available in offline mode', success: false };
+
+    try {
+        const session = await getSession();
+        if (!session?.access_token) {
+            return { error: 'Authentication required for cloud backup', success: false };
+        }
+
+        const response = await fetch(`${EDGE_FUNCTION_URL}/functions/v1/pin-setup`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${session.access_token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                pin1,
+                pin2,
+                question1_id,
+                question1_answer: answer1,
+                question2_id,
+                question2_answer: answer2,
+            }),
+        });
+
+        const result = await response.json();
+        if (!response.ok) {
+            return { error: result.error || 'Failed to save PINs', success: false };
+        }
+
+        return { error: null, success: true };
+    }
+    catch (error) {
+        console.error('[pin-setup] Error:', error);
+        return { error: 'Unable to connect to cloud backup service', success: false };
+    }
+}
+
+export async function verifyPinsInCloud(
+    pin1: string,
+    pin2: string
+): Promise<{ error: string | null; success: boolean; locked?: boolean; remainingAttempts?: number }> {
+    if (!DB_CONFIGURED)
+        return { error: 'Cloud verification not available', success: false };
+
+    try {
+        const session = await getSession();
+        if (!session?.access_token) {
+            return { error: 'Authentication required', success: false };
+        }
+
+        const response = await fetch(`${EDGE_FUNCTION_URL}/functions/v1/pin-verify`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${session.access_token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ pin1, pin2 }),
+        });
+
+        const result = await response.json();
+        if (!response.ok) {
+            return {
+                error: result.error || 'PIN verification failed',
+                success: false,
+                locked: result.locked,
+                remainingAttempts: result.remainingAttempts,
+            };
+        }
+
+        return { error: null, success: true };
+    }
+    catch (error) {
+        console.error('[pin-verify] Error:', error);
+        return { error: 'Unable to verify PINs', success: false };
+    }
+}
+
+export async function changePinsInCloud(
+    answer1: string,
+    answer2: string,
+    newPin1: string,
+    newPin2: string
+): Promise<{ error: string | null; success: boolean }> {
+    if (!DB_CONFIGURED)
+        return { error: 'Cloud backup not available', success: false };
+
+    try {
+        const session = await getSession();
+        if (!session?.access_token) {
+            return { error: 'Authentication required', success: false };
+        }
+
+        const response = await fetch(`${EDGE_FUNCTION_URL}/functions/v1/pin-change`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${session.access_token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                answer1,
+                answer2,
+                new_pin1: newPin1,
+                new_pin2: newPin2,
+            }),
+        });
+
+        const result = await response.json();
+        if (!response.ok) {
+            return { error: result.error || 'Failed to change PINs', success: false };
+        }
+
+        return { error: null, success: true };
+    }
+    catch (error) {
+        console.error('[pin-change] Error:', error);
+        return { error: 'Unable to change PINs', success: false };
+    }
+}
+
+export async function checkCloudPinsExist(): Promise<boolean> {
+    if (!DB_CONFIGURED)
+        return false;
+
+    try {
+        const user = await getUser();
+        if (!user)
+            return false;
+
+        const { data, error } = await getClient()
+            .from('user_pins')
+            .select('id')
+            .eq('user_id', user.id)
+            .maybeSingle();
+
+        return !error && data !== null;
+    }
+    catch {
+        return false;
+    }
+}

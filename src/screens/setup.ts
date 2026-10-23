@@ -1,5 +1,6 @@
 import { store } from '../state.js';
-import { getRecoveryQuestionIds, setRecoveryQuestions } from '../storage.js';
+import { getRecoveryQuestionIds, setRecoveryQuestions, setCloudBackup, hasCloudBackup } from '../storage.js';
+import { setupPinsInCloud, DB_CONFIGURED, getUser, changePinsInCloud } from '../db.js';
 
 const RECOVERY_QUESTIONS = [
   { id: 'first-school', label: 'What was the name of your first school?' },
@@ -83,6 +84,7 @@ export function renderSetupPin(root: HTMLElement) {
     const decoyInput = root.querySelector('#decoy-input') as HTMLInputElement;
     const decoyConfirm = root.querySelector('#decoy-confirm') as HTMLInputElement;
     const errorEl = root.querySelector('#pin-error') as HTMLElement;
+    
     form.addEventListener('submit', async (e: SubmitEvent) => {
         e.preventDefault();
         const pin = pinInput.value.trim();
@@ -111,6 +113,11 @@ export function renderSetupPin(root: HTMLElement) {
             return;
         }
         errorEl.textContent = '';
+        
+        // Store PINs temporarily for cloud backup after security questions
+        sessionStorage.setItem('temp_pin1', pin);
+        sessionStorage.setItem('temp_pin2', decoy);
+        
         await store.savePin(pin, decoy);
         store.navigateTo('setup-profile');
     });
@@ -234,13 +241,56 @@ export function renderRecoverySetup(root: HTMLElement, nextScreen: string) {
             error.textContent = 'Both security answers are required.';
             return;
         }
+        
+        const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Saving...';
+        
         try {
+            // Save security questions locally
             await setRecoveryQuestions(store.getState().pinHash, [questionOne.value, questionTwo.value], [answerOne.value, answerTwo.value]);
-          store.markRecoveryConfigured();
+            store.markRecoveryConfigured();
+            
+            // Attempt cloud backup if user is authenticated
+            if (DB_CONFIGURED && !existing) {
+                const user = await getUser();
+                if (user) {
+                    const pin1 = sessionStorage.getItem('temp_pin1');
+                    const pin2 = sessionStorage.getItem('temp_pin2');
+                    
+                    if (pin1 && pin2) {
+                        const { error: cloudError } = await setupPinsInCloud(
+                            pin1,
+                            pin2,
+                            questionOne.value,
+                            answerOne.value,
+                            questionTwo.value,
+                            answerTwo.value
+                        );
+                        
+                        if (!cloudError) {
+                            setCloudBackup(true);
+                            console.log('[setup] Cloud backup enabled');
+                        } else {
+                            console.warn('[setup] Cloud backup failed:', cloudError);
+                        }
+                        
+                        // Clear temporary PIN storage
+                        sessionStorage.removeItem('temp_pin1');
+                        sessionStorage.removeItem('temp_pin2');
+                    }
+                }
+            }
+            
             store.navigateTo(nextScreen);
         }
-        catch {
+        catch (err) {
             error.textContent = 'Security questions could not be saved. Please try again.';
+            console.error('[recovery-setup] Error:', err);
+        }
+        finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = existing ? 'Save security questions' : 'Continue to contacts →';
         }
     });
 }
@@ -309,9 +359,47 @@ export function renderPinRecovery(root: HTMLElement) {
             error.textContent = 'Secret PIN and decoy PIN must be different.';
             return;
         }
-        const recovered = await store.recoverPins(answers.map(answer => answer.value), pin, decoy);
-        if (!recovered)
-            error.textContent = 'Your answers are incorrect. Please check your answers and try again.';
+        
+        const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Verifying...';
+        error.textContent = '';
+        
+        try {
+            // Attempt cloud PIN change if cloud backup is enabled
+            if (hasCloudBackup() && DB_CONFIGURED) {
+                const user = await getUser();
+                if (user) {
+                    const { error: cloudError } = await changePinsInCloud(
+                        answers[0].value,
+                        answers[1].value,
+                        pin,
+                        decoy
+                    );
+                    
+                    if (cloudError) {
+                        error.textContent = cloudError;
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = 'Verify and reset PINs';
+                        return;
+                    }
+                }
+            }
+            
+            // Recover local PINs
+            const recovered = await store.recoverPins(answers.map(answer => answer.value), pin, decoy);
+            if (!recovered) {
+                error.textContent = 'Your answers are incorrect. Please check your answers and try again.';
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Verify and reset PINs';
+            }
+        }
+        catch (err) {
+            error.textContent = 'Failed to reset PINs. Please try again.';
+            console.error('[pin-recovery] Error:', err);
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Verify and reset PINs';
+        }
     });
 }
 
