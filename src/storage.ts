@@ -7,7 +7,7 @@ export type Contact = {
     name: string;
     phone: string;
     initials: string;
-    status: 'pending' | 'sending' | 'delivered' | 'failed';
+    status: 'pending' | 'sending' | 'opened' | 'failed';
 };
 
 export type Note = {
@@ -192,8 +192,10 @@ export async function savePinHashes(pinHash, decoyHash, autoLock, oldPinHash?: s
     if (vault)
         await saveVault(vault, pinHash);
     getUser().then(user => {
-        upsertDevice({
-            user_id: user?.id ?? '',
+        if (!user)
+            return;
+        return upsertDevice({
+            user_id: user.id,
             device_id: getDeviceId(),
             pin_hash: pinHash,
             decoy_hash: decoyHash,
@@ -208,8 +210,10 @@ export function saveAutoLock(minutes) {
     pub.autoLock = minutes;
     savePublic(pub);
     getUser().then(user => {
-        upsertDevice({
-            user_id: user?.id ?? '',
+        if (!user)
+            return;
+        return upsertDevice({
+            user_id: user.id,
             device_id: getDeviceId(),
             pin_hash: pub.pinHash,
             decoy_hash: pub.decoyHash,
@@ -236,19 +240,39 @@ export function uid() {
 export function dialable(phone) {
     return phone.replace(/[\s\-().]/g, '');
 }
-export function buildSmsBody(contactName, locationText, locationShared) {
+export function buildSmsBody(contactName, locationText, locationShared, notes = []) {
     const header = `ALERT — ${contactName} may need urgent help.`;
     const loc = locationShared
         ? locationText
         : 'Location was not shared. Please call them immediately.';
+    const notesSection = notes.length
+        ? `\n\nSaved notes:\n${notes.map(note => `${note.title}\nCreated: ${formatNoteTimestamp(note.createdAt)}\nLast updated: ${formatNoteTimestamp(note.updatedAt)}\n${note.body}`).join('\n\n')}`
+        : '';
     const footer = `If you cannot reach them: SAPS 10111 | GBV Command Centre 0800 428 428`;
-    return `${header}\n\n${loc}\n\n${footer}`;
+    return `${header}\n\n${loc}${notesSection}\n\n${footer}`;
+}
+export function formatNoteTimestamp(timestamp: number): string {
+    if (!Number.isFinite(timestamp))
+        return 'Unknown date and time';
+    return new Date(timestamp).toLocaleString('en-ZA', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
 }
 export function isOnline() {
     return typeof navigator !== 'undefined' ? navigator.onLine : true;
 }
 export function smsUri(phone, body) {
     return `sms:${dialable(phone)}?body=${encodeURIComponent(body)}`;
+}
+export function whatsappUri(phone, body) {
+    let number = dialable(phone).replace(/\D/g, '');
+    if (number.startsWith('0'))
+        number = `27${number.slice(1)}`;
+    return `https://wa.me/${number}?text=${encodeURIComponent(body)}`;
 }
 export function telUri(phone) {
     return `tel:${dialable(phone)}`;

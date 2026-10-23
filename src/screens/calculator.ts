@@ -1,46 +1,4 @@
 import { store } from '../state.js';
-function safeEval(expr) {
-    const tokens = expr.trim().match(/[\d.]+|[+\-*/]/g);
-    if (!tokens)
-        return 'Error';
-    try {
-        const prec = { '+': 1, '-': 1, '*': 2, '/': 2 };
-        const out = [];
-        const ops = [];
-        const applyOp = () => {
-            const op = ops.pop();
-            const b = out.pop();
-            const a = out.pop();
-            if (op === '+')
-                out.push(a + b);
-            else if (op === '-')
-                out.push(a - b);
-            else if (op === '*')
-                out.push(a * b);
-            else if (op === '/')
-                out.push(a / b);
-        };
-        for (const tok of tokens) {
-            if (/[\d.]/.test(tok)) {
-                out.push(parseFloat(tok));
-            }
-            else {
-                while (ops.length && prec[ops[ops.length - 1]] >= prec[tok])
-                    applyOp();
-                ops.push(tok);
-            }
-        }
-        while (ops.length)
-            applyOp();
-        const result = out[0] ?? NaN;
-        if (!isFinite(result))
-            return 'Error';
-        return parseFloat(result.toPrecision(12)).toString();
-    }
-    catch {
-        return 'Error';
-    }
-}
 const KEYS = [
     ['7', '7'], ['8', '8'], ['9', '9'], ['÷', '/'],
     ['4', '4'], ['5', '5'], ['6', '6'], ['×', '*'],
@@ -55,7 +13,9 @@ export function renderCalculator(root) {
         <div class="calc-expression" id="calc-expression">&nbsp;</div>
         <div class="calc-result" id="calc-result">0</div>
       </div>
-            ${recoveryConfigured ? '<button class="calc-forgot-pin" id="btn-forgot-pin" type="button">Forgot app PIN? Answer your security questions</button>' : ''}
+      <p class="calc-login-error" id="calc-login-error" role="alert" hidden></p>
+      <button class="calc-create-account" id="btn-create-account" type="button" hidden>Create account</button>
+      ${recoveryConfigured ? '<button class="calc-forgot-pin" id="btn-forgot-pin" type="button">Forgot app PIN? Answer your security questions</button>' : ''}
       <div class="calc-keys">
         ${KEYS.map(([label, value]) => `
           <button
@@ -70,9 +30,16 @@ export function renderCalculator(root) {
   `;
     const display = root.querySelector('#calc-result');
     const expression = root.querySelector('#calc-expression');
+    const loginError = root.querySelector('#calc-login-error') as HTMLElement;
+    const createAccount = root.querySelector('#btn-create-account') as HTMLButtonElement;
     const recoveryButton = root.querySelector('#btn-forgot-pin') as HTMLButtonElement | null;
     recoveryButton?.addEventListener('click', () => store.navigateTo('pin-recovery'));
+    createAccount.addEventListener('click', () => store.navigateTo('setup-pin'));
     let calcBuffer = '';
+    function clearLoginFeedback() {
+        loginError.hidden = true;
+        createAccount.hidden = true;
+    }
     root.querySelector('.calc-keys').addEventListener('click', e => {
         const btn = e.target.closest('.calc-key');
         if (!btn)
@@ -83,6 +50,7 @@ export function renderCalculator(root) {
         if (v === 'C') {
             store.clearPin();
             calcBuffer = '';
+            clearLoginFeedback();
             display.textContent = '0';
             expression.innerHTML = '&nbsp;';
             return;
@@ -90,20 +58,25 @@ export function renderCalculator(root) {
         if (v === '=') {
             store.evaluatePin().then(route => {
                 if (!route) {
-                    display.textContent = safeEval(calcBuffer || '0');
-                    expression.textContent = calcBuffer + ' =';
+                    display.textContent = 'Incorrect PIN';
+                    expression.textContent = '';
                     calcBuffer = '';
+                    loginError.textContent = 'Please try again or create an account.';
+                    loginError.hidden = false;
+                    createAccount.hidden = false;
                 }
             });
             return;
         }
         if (/\d/.test(v)) {
+            clearLoginFeedback();
             store.appendPin(v);
             expression.textContent = '•'.repeat(store.getState().pinBuffer.length);
             calcBuffer += v;
             display.textContent = calcBuffer;
             return;
         }
+        clearLoginFeedback();
         store.clearPin();
         calcBuffer += ` ${v} `;
         display.textContent = v;

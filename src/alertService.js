@@ -1,7 +1,6 @@
 import { store } from './state.js';
-import { buildSmsBody, smsUri, isOnline } from './storage.js';
+import { buildSmsBody, smsUri } from './storage.js';
 import { insertAlertLog, getDeviceId, getUser } from './db.js';
-import { enqueueAlert } from './alertQueue.js';
 import { hasValidCoordinates, isShareableAccuracy } from './locationConfig.mjs';
 async function nominatimFetch(lat, lng, zoom) {
     try {
@@ -132,34 +131,24 @@ export async function getLocation(timeoutMs = 12000) {
     });
 }
 export async function runAlertSequence(locationText, locationShared, onStep) {
-    const { contacts } = store.getState();
+    const { contacts, notes } = store.getState();
     if (contacts.length === 0) {
         store.navigateTo('sent');
         return;
     }
-    if (!isOnline()) {
-        enqueueAlert(locationText, locationShared);
-        contacts.forEach(c => store.updateContactStatus(c.id, 'failed'));
-        onStep();
-        await delay(400);
-        void logAlert(contacts.length, locationShared, 0, contacts.length);
-        store.navigateTo('sent');
-        return;
-    }
     let opened = 0;
-    let failed = 0;
     for (let i = 0; i < contacts.length; i++) {
         const contact = contacts[i];
-        const body = buildSmsBody(contact.name, locationText, locationShared);
+        const body = buildSmsBody(contact.name, locationText, locationShared, notes);
         window.location.href = smsUri(contact.phone, body);
         await waitForReturn();
-        store.updateContactStatus(contact.id, 'delivered');
+        store.updateContactStatus(contact.id, 'opened');
         opened++;
         onStep();
         if (i < contacts.length - 1)
             await delay(600);
     }
-    void logAlert(contacts.length, locationShared, opened, failed);
+    void logAlert(contacts.length, locationShared, opened, 0);
     await delay(500);
     store.navigateTo('sent');
 }
@@ -186,8 +175,10 @@ function waitForReturn() {
 }
 async function logAlert(contactCount, locationShared, opened, failed) {
     const user = await getUser();
+    if (!user)
+        return;
     await insertAlertLog({
-        user_id: user?.id ?? '',
+        user_id: user.id,
         device_id: getDeviceId(),
         contact_count: contactCount,
         location_shared: locationShared,

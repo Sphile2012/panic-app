@@ -52,8 +52,8 @@ export function closeMenu() {
 }
 export function openMenu() {
     closeMenu();
-    const { screen, authEmail, profile } = store.getState();
-    const displayName = escapeHtml(profile.name || authEmail?.split('@')[0] || 'Your profile');
+    const { screen, profile } = store.getState();
+    const displayName = escapeHtml(profile.name || 'Your profile');
     const avatar = profile.photo
         ? `<img src="${escapeHtml(profile.photo)}" alt="" />`
         : `<span>${displayName[0]?.toUpperCase() ?? '?'}</span>`;
@@ -68,7 +68,7 @@ export function openMenu() {
           <span class="side-menu-avatar">${avatar}</span>
           <span class="side-menu-user-copy">
             <strong>${displayName}</strong>
-            <small>${escapeHtml(authEmail ?? 'Panic Ring')}</small>
+            <small>On this device</small>
           </span>
         </button>
         <button class="side-menu-close" data-close="1" aria-label="${t('common.close')}">${t('common.close')}</button>
@@ -84,15 +84,11 @@ export function openMenu() {
         `).join('')}
       </nav>
       <div class="side-menu-foot">
-        <button class="side-menu-item" id="side-menu-auth" type="button">
-          <span class="side-menu-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18M10.6 5.1A10 10 0 0 1 22 12a14 14 0 0 1-2.6 3.6M6.1 6.1A14 14 0 0 0 2 12s3.5 7 10 7a9.7 9.7 0 0 0 4-.9"/></svg></span>
-          <span>${authEmail ? t('menu.signout') : t('menu.signin')}</span>
-        </button>
         <p class="side-menu-version">Panic Ring v1.0</p>
       </div>
     </aside>`;
     document.body.appendChild(wrap);
-    wrap.addEventListener('click', async (e) => {
+    wrap.addEventListener('click', (e) => {
         const el = e.target;
         if (el.closest('[data-close]')) {
             closeMenu();
@@ -103,13 +99,6 @@ export function openMenu() {
             closeMenu();
             store.navigateTo(go.dataset['go']);
             return;
-        }
-        if (el.closest('#side-menu-auth')) {
-            closeMenu();
-            if (store.getState().authEmail)
-                await store.signOut();
-            else
-                store.navigateTo('login');
         }
     });
 }

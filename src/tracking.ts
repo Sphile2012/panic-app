@@ -14,7 +14,7 @@ export type TrackListener = () => void;
 const TOKEN_KEY = 'pr_track_token';
 const ACTIVE_KEY = 'pr_track_active';
 const INTERVAL_MS = 10_000;
-const LOW_LEVELS = [0.2, 0.1];
+const LOW_LEVELS = [0.2];
 
 let timer: number | null = null;
 let last: TrackSnapshot | null = null;
@@ -87,6 +87,11 @@ async function initBattery() {
     } catch {
         batteryRef = null;
     }
+}
+
+export async function startBatteryMonitoring(): Promise<void> {
+    await initBattery();
+    checkBattery();
 }
 
 function checkBattery() {

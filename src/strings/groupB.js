@@ -126,7 +126,6 @@ registerStrings({
         'b.terms.s1.p1': 'Panic Ring is a personal safety tool that helps you alert trusted contacts, record incidents privately and find verified support services. It is not an emergency dispatch service and does not guarantee that help will arrive.',
         'b.terms.s2.h': '2. No guarantee of delivery',
         'b.terms.s2.p1': 'Panic Ring prepares messages using the SMS application on your device. You must review and tap Send for each message. Delivery depends on your device and both mobile networks; Panic Ring cannot confirm that a message was sent or received.',
-        'b.terms.s2.p2': 'If the app has no network connection, the alert handoff is queued and retried when connectivity returns while the app is available. You still need to review and send each SMS. Queued alerts older than 30 minutes are discarded.',
         'b.terms.s2.p3': 'In an emergency, always call <strong>10111</strong> (SAPS) or <strong>0800 428 428</strong> (GBV Command Centre) directly if you are able to.',
         'b.terms.s2.p4': 'Level 1 contacts are included in emergency alert drafts. Level 2 contacts are only offered for referral requests, and Level 3 contacts are only offered for check-in requests. Safe-word messages are manual SMS drafts; the app does not monitor incoming messages or detect a safe word.',
         'b.terms.s2.p5': 'Circle Check appears only when you open the app. Browser timers and check-ins may be delayed while the app is suspended or closed. The app does not send silent alerts, run background location tracking, or guarantee that a check-in will be noticed.',
@@ -154,6 +153,9 @@ registerStrings({
         'b.terms.s9.p1': 'We may update these terms. Significant changes will be shown in the app before taking effect. Continued use after that point means you accept the updated terms.',
         'b.terms.s10.h': '10. Applicable law',
         'b.terms.s10.p1': 'These terms are governed by the laws of the Republic of South Africa. The Protection of Personal Information Act (POPIA) applies to how we handle personal information.',
+        'b.terms.s11.h': '11. Alert messages and platform limits',
+        'b.terms.s11.p1': 'Each prepared emergency message includes all notes saved in the app. Review the recipient and message before sending. Once sent, the recipient, mobile carrier, or messaging provider handles its contents.',
+        'b.terms.s11.p2': 'The SMS composer requires mobile service and may use airtime or incur charges. The WhatsApp backup opens a prepared message and requires you to tap Send; internet access and a WhatsApp account are required. Panic Ring cannot confirm delivery. On supported browsers, a low-battery warning appears at 20% while the app is open and offers SMS drafts for your contacts; you must review and send them. This browser version does not capture or attach photos and shares one location snapshot only; it does not send automatic location updates every 10 seconds or track location in the background.',
         'b.terms.emerg': '<strong>In an emergency, call 10111 (SAPS) or 0800 428 428 (GBV Command Centre).</strong> Do not rely solely on this app.',
     },
     zu: {
@@ -164,7 +166,6 @@ registerStrings({
         'b.terms.s1.p1': 'I-Panic Ring iyithuluzi lokuphepha komuntu siqu elikusiza ukuthi uxwayise oxhumana nabo abathembekile, urekhode izigameko ngasese futhi ufune amasevisi okwesekwa aqinisekisiwe. Akuyona isevisi yokuthumela usizo oluphuthumayo futhi ayiqinisekisi ukuthi usizo luzofika.',
         'b.terms.s2.h': '2. Akukho siqinisekiso sokulethwa',
         'b.terms.s2.p1': 'I-Panic Ring ilungisa imiyalezo isebenzisa uhlelo lwe-SMS kudivayisi yakho. Kufanele ubuyekeze bese uthinta okuthi Thumela kumyalezo ngamunye. Ukulethwa kuncike kudivayisi yakho nakumanethiwekhi womabili eselula; i-Panic Ring ayikwazi ukuqinisekisa ukuthi umyalezo uthunyelwe noma wemukelwe.',
-        'b.terms.s2.p2': 'Uma uhlelo lungenakho ukuxhumana nenethiwekhi, ukudluliswa kwesexwayiso kuyalinganiswa bese kuzanywa kabusha uma ukuxhumana kubuya ngenkathi uhlelo lutholakala. Usadinga ukubuyekeza nokuthumela i-SMS ngayinye. Izexwayiso ezilindile ezindala ngaphezu kwemizuzu engu-30 ziyalahlwa.',
         'b.terms.s2.p3': 'Esimweni esiphuthumayo, shayela njalo ngokuqondile ku-<strong>10111</strong> (SAPS) noma ku-<strong>0800 428 428</strong> (GBV Command Centre) umaukwazi.',
         'b.terms.s2.p4': 'Oxhumana nabo be-Level 1 bafakwa emidwebeni yezexwayiso eziphuthumayo. Oxhumana nabo be-Level 2 banikezwa kuphela izicelo zokudluliselwa, kanti abe-Level 3 banikezwa kuphela izicelo zokubheka. Imiyalezo yegama eliyisihloko iyimidwebo ye-SMS eyenziwa ngesandla; uhlelo alubheki imiyalezo engenayo futhi aluwutholi igama eliyisihloko.',
         'b.terms.s2.p5': 'I-Circle Check ivela kuphela uma uvula uhlelo. Izikhathi zesiphequluli nokubhekwa kungahlehliswa ngenkathi uhlelo luvaliwe noma lumisiwe. Uhlelo aluthumeli izexwayiso ezithulile, alulandeli indawo ngemuva, futhi aluqinisekisi ukuthi ukubheka kuzonakwa.',
@@ -202,7 +203,6 @@ registerStrings({
         'b.terms.s1.p1': 'Panic Ring ke sesebediswa sa polokeho ya motho ya o thusang ho tsebisa metswalle e tshepehang, ho rekota diketsahalo ka lekunutu le ho fumana ditshebeletso tsa tshehetso tse netefalitsweng. Ha se ts\'ebeletso ya ho romela thuso ya tshohanyetso mme ha e tiise hore thuso e tla fihla.',
         'b.terms.s2.h': '2. Ha ho tiisetso ya ho fihla',
         'b.terms.s2.p1': 'Panic Ring e lokisetsa melaetsa e sebedisa app ya SMS ho sesebediswa sa hao. O tlameha ho e sheba le ho tobetsa Romela molaetsa o mong le o mong. Ho fihla ho itshetlehile ka sesebediswa sa hao le marang-rang ka bobedi a mohala; Panic Ring e ke ke ya netefatsa hore molaetsa o rometswe kapa o amohetswe.',
-        'b.terms.s2.p2': 'Haeba app e se na marang-rang, ho fetisetsa tlhokomediso ho a lekanngwa mme ho lekwa hape ha marang-rang a khutla ha app e le teng. O ntse o hloka ho sheba le ho romela SMS e nngwe le e nngwe. Ditlhokomediso tse emetseng tse fetang metsotso e 30 di lahlwa.',
         'b.terms.s2.p3': 'Tshohanyetsong, kamehla letsetsa ka ho toba ho <strong>10111</strong> (SAPS) kapa <strong>0800 428 428</strong> (GBV Command Centre) ha o khona.',
         'b.terms.s2.p4': 'Metswalle ya Level 1 e kenyeletswa dikgatisong tsa ditlhokomediso tsa tshohanyetso. Metswalle ya Level 2 e fanwa feela bakeng sa dikopo tsa ho fetisetsa, mme ya Level 3 e fanwa feela bakeng sa dikopo tsa ho sheba. Melaetsa ya lentswe la polokeho ke dikgatiso tsa SMS tsa letsoho; app ha e hlokomele melaetsa e kenang kapa ho lemoha lentswe la polokeho.',
         'b.terms.s2.p5': 'Circle Check e hlaha feela ha o bula app. Dihlaha tsa sebadi le ho sheba di ka diehiswa ha app e emisitswe kapa e koetswe. App ha e romele ditlhokomediso tse khutsitseng, ha e latele sebaka ka morao, kapa ha e tiise hore ho sheba ho tla elwa hloko.',
@@ -240,7 +240,6 @@ registerStrings({
         'b.terms.s1.p1': 'Panic Ring is \'n persoonlike veiligheidsgereedskap wat jou help om vertroude kontakte te waarsku, voorvalle privaat aan te teken en geverifieerde ondersteuningsdienste te vind. Dit is nie \'n nooddiens-versendingsdiens nie en waarborg nie dat hulp sal opdaag nie.',
         'b.terms.s2.h': '2. Geen waarborg van aflewering',
         'b.terms.s2.p1': 'Panic Ring berei boodskappe voor met die SMS-toepassing op jou toestel. Jy moet elke boodskap hersien en Stuur tik. Aflewering hang af van jou toestel en albei mobiele netwerke; Panic Ring kan nie bevestig dat \'n boodskap gestuur of ontvang is nie.',
-        'b.terms.s2.p2': 'As die toep geen netwerkverbinding het nie, word die waarskuwingoordrag in \'n tou geplaas en weer probeer wanneer konnektiwiteit terugkeer terwyl die toep beskikbaar is. Jy moet steeds elke SMS hersien en stuur. Waarskuwings in die tou wat ouer as 30 minute is, word weggegooi.',
         'b.terms.s2.p3': 'Bel in \'n noodgeval altyd direk <strong>10111</strong> (SAPD) of <strong>0800 428 428</strong> (GBV-bevelsentrum) as jy kan.',
         'b.terms.s2.p4': 'Vlak 1-kontakte word by noodwaarskuwingkonsepte ingesluit. Vlak 2-kontakte word slegs vir verwysingsversoeke aangebied, en Vlak 3-kontakte slegs vir inklokversoeke. Veiligwoord-boodskappe is handmatige SMS-konsepte; die toep monitor nie inkomende boodskappe nie en bespeur nie \'n veiligwoord nie.',
         'b.terms.s2.p5': 'Kringkontrole verskyn slegs wanneer jy die toep oopmaak. Blaaiertimers en inklokke kan vertraag word terwyl die toep opgeskort of toe is. Die toep stuur nie stil waarskuwings nie, doen nie agtergrond-liggingopsporing nie, en waarborg nie dat \'n inklok raakgesien sal word nie.',
@@ -303,7 +302,7 @@ registerStrings({
         'b.pages.faq.q2': 'I forgot my PIN.', 'b.pages.faq.a2': 'Use the recovery option on the PIN screen with your recovery details.',
         'b.pages.faq.q3': 'Can I change the language?', 'b.pages.faq.a3': 'Yes. Open Settings and pick English, isiZulu, Sesotho or Afrikaans.',
         'b.pages.faq.q4': 'Why does it ask for my location?', 'b.pages.faq.a4': 'So your contacts can see where you are during an alert or live sharing.',
-        'b.pages.faq.q5': 'Does it work offline?', 'b.pages.faq.a5': 'Alerts are queued and sent as soon as you are back online.',
+        'b.pages.faq.q5': 'Does it work offline?', 'b.pages.faq.a5': 'No. Panic Ring prepares SMS messages for you to review and send; it does not queue or send alerts offline. WhatsApp requires internet access.',
     },
     zu: {
         'b.pages.hist.none': 'Azikho izexwayiso ezikathunyelwa.',
@@ -336,7 +335,7 @@ registerStrings({
         'b.pages.faq.q2': 'Ngikhohlwe i-PIN yami.', 'b.pages.faq.a2': 'Sebenzisa inketho yokululama esikrinini se-PIN ngemininingwane yakho yokululama.',
         'b.pages.faq.q3': 'Ngingayishintsha ulimi?', 'b.pages.faq.a3': 'Yebo. Vula i-Settings ukhethe isiNgisi, isiZulu, isiSotho noma isiBhunu.',
         'b.pages.faq.q4': 'Kungani icela indawo yami?', 'b.pages.faq.a4': 'Ukuze oxhumana nabo babone lapho ukhona ngesikhathi sesexwayiso noma ukwabelana bukhoma.',
-        'b.pages.faq.q5': 'Ingabe isebenza ngaphandle kwe-inthanethi?', 'b.pages.faq.a5': 'Izexwayiso ziyalinganiswa bese zithunyelwa uma uphinde uxhume ku-inthanethi.',
+        'b.pages.faq.q5': 'Ingabe isebenza ngaphandle kwe-inthanethi?', 'b.pages.faq.a5': 'Cha. I-Panic Ring ilungisa imilayezo ye-SMS ukuze uyibuyekeze bese uyithumela; ayigcini noma ithumele izexwayiso uma ungekho ku-inthanethi. I-WhatsApp idinga i-inthanethi.',
     },
     st: {
         'b.pages.hist.none': 'Ha ho ditlhokomediso tse so romelwe.',
@@ -369,7 +368,7 @@ registerStrings({
         'b.pages.faq.q2': 'Ke lebetse PIN ya ka.', 'b.pages.faq.a2': 'Sebedisa kgetho ya phumolo skrineng sa PIN ka dintlha tsa hao tsa phumolo.',
         'b.pages.faq.q3': 'Na nka fetola puo?', 'b.pages.faq.a3': 'E. Bula Settings mme o kgethe Senyesemane, isiZulu, Sesotho kapa Afrikaans.',
         'b.pages.faq.q4': 'Hobaneng ha e kopa sebaka sa ka?', 'b.pages.faq.a4': 'Hore metswalle ya hao e bone moo o leng teng nakong ya tlhokomediso kapa ho arolelana ka bophelo.',
-        'b.pages.faq.q5': 'Na e sebetsa ntle le inthanete?', 'b.pages.faq.a5': 'Ditlhokomediso di lekanngwa mme di romelwa hang ha o khutlela inthaneteng.',
+        'b.pages.faq.q5': 'Na e sebetsa ntle le inthanete?', 'b.pages.faq.a5': 'Tjhe. Panic Ring e lokisa melaetsa ya SMS hore o e hlahlobe le ho e romela; ha e e boloke moleng kapa ho e romela ha o se inthaneteng. WhatsApp e hloka inthanete.',
     },
     af: {
         'b.pages.hist.none': 'Nog geen waarskuwings is gestuur nie.',
@@ -402,7 +401,7 @@ registerStrings({
         'b.pages.faq.q2': 'Ek het my PIN vergeet.', 'b.pages.faq.a2': 'Gebruik die herstelopsie op die PIN-skerm met jou herstelbesonderhede.',
         'b.pages.faq.q3': 'Kan ek die taal verander?', 'b.pages.faq.a3': 'Ja. Maak Instellings oop en kies Engels, isiZulu, Sesotho of Afrikaans.',
         'b.pages.faq.q4': 'Hoekom vra dit vir my ligging?', 'b.pages.faq.a4': 'Sodat jou kontakte kan sien waar jy is tydens \'n waarskuwing of regstreekse deling.',
-        'b.pages.faq.q5': 'Werk dit aflyn?', 'b.pages.faq.a5': 'Waarskuwings word in \'n tou geplaas en gestuur sodra jy weer aanlyn is.',
+        'b.pages.faq.q5': 'Werk dit aflyn?', 'b.pages.faq.a5': 'Nee. Panic Ring berei SMS-boodskappe voor sodat jy dit kan nagaan en stuur; dit plaas nie waarskuwings in \'n tou of stuur dit vanlyn nie. WhatsApp vereis internettoegang.',
     },
 });
 registerStrings({

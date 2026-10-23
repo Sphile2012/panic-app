@@ -41,60 +41,45 @@ function renderContact(contact: ReturnType<typeof store.getState>['contacts'][nu
 }
 
 export function renderContacts(root: HTMLElement): void {
-  const { contacts, authEmail } = store.getState();
+  const { contacts } = store.getState();
   root.innerHTML = `
     <div class="screen contacts-screen">
       <header class="screen-header">
         <button class="btn-back-small" id="btn-back" aria-label="Back">←</button>
         <h2 class="screen-title">Trusted circle</h2>
-        ${authEmail ? '<button class="contacts-add-shortcut" id="btn-add-contact" type="button" aria-label="Add trusted contact">＋</button>' : ''}
+        <button class="contacts-add-shortcut" id="btn-add-contact" type="button" aria-label="Add trusted contact">＋</button>
       </header>
 
-      ${authEmail ? `
-        <label class="contacts-search">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.3"/><path d="m16 16 4.2 4.2"/></svg>
-          <input id="contact-search" type="search" placeholder="Search trusted contacts" aria-label="Search trusted contacts" />
-        </label>
-        <p class="contacts-caption">People you can reach when you need support</p>
-        <ul class="contact-list" id="contact-list">
-          ${contacts.length === 0
-            ? '<li class="empty-hint">No contacts yet. Add someone you trust.</li>'
-            : contacts.map(renderContact).join('')}
-          <li class="empty-hint" id="contact-no-results" hidden>No matching contacts.</li>
-        </ul>
+      <label class="contacts-search">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.3"/><path d="m16 16 4.2 4.2"/></svg>
+        <input id="contact-search" type="search" placeholder="Search trusted contacts" aria-label="Search trusted contacts" />
+      </label>
+      <p class="contacts-caption">People you can reach when you need support · ${contacts.length}/5</p>
+      <p class="setup-hint" id="contact-action-error" role="alert" aria-live="polite"></p>
+      <ul class="contact-list" id="contact-list">
+        ${contacts.length === 0
+          ? '<li class="empty-hint">No contacts yet. Add someone you trust.</li>'
+          : contacts.map(renderContact).join('')}
+        <li class="empty-hint" id="contact-no-results" hidden>No matching contacts.</li>
+      </ul>
 
-        <form class="setup-form contacts-form" id="contact-form" autocomplete="off">
-          <h3 class="form-section-title" id="form-title">Add contact</h3>
-          <input type="hidden" id="edit-id" value="" />
-          <label class="field-label" for="c-name">Name</label>
-          <input class="text-input" id="c-name" type="text" placeholder="Full name" required />
-          <label class="field-label" for="c-phone">Phone</label>
-          <input class="text-input" id="c-phone" type="tel" placeholder="+27 82 123 4567" required />
-          <p class="setup-hint" id="c-error" aria-live="polite"></p>
-          <div class="form-row">
-            <button class="btn-primary" type="submit" id="btn-save">Add</button>
-            <button class="btn-secondary-outline" type="button" id="btn-cancel-edit" style="display:none">Cancel</button>
-          </div>
-        </form>
-      ` : `
-        <section class="settings-section">
-          <h3 class="settings-section-title">Account required</h3>
-          <p class="settings-section-body">Sign in or create an account before adding trusted contacts.</p>
-          <div class="settings-auth-buttons">
-            <button class="btn-primary" id="btn-contact-signup" type="button">Create account</button>
-            <button class="btn-secondary-outline" id="btn-contact-login" type="button">Sign in</button>
-          </div>
-        </section>
-      `}
+      <form class="setup-form contacts-form" id="contact-form" autocomplete="off">
+        <h3 class="form-section-title" id="form-title">Add contact</h3>
+        <input type="hidden" id="edit-id" value="" />
+        <label class="field-label" for="c-name">Name</label>
+        <input class="text-input" id="c-name" type="text" placeholder="Full name" required />
+        <label class="field-label" for="c-phone">Phone</label>
+        <input class="text-input" id="c-phone" type="tel" placeholder="+27 82 123 4567" required />
+        <p class="setup-hint" id="c-error" aria-live="polite"></p>
+        <div class="form-row">
+          <button class="btn-primary" type="submit" id="btn-save">Add</button>
+          <button class="btn-secondary-outline" type="button" id="btn-cancel-edit" style="display:none">Cancel</button>
+        </div>
+      </form>
     </div>
   `;
 
   root.querySelector('#btn-back')?.addEventListener('click', () => store.navigateTo('app'));
-  if (!authEmail) {
-    root.querySelector('#btn-contact-signup')?.addEventListener('click', () => store.navigateTo('signup'));
-    root.querySelector('#btn-contact-login')?.addEventListener('click', () => store.navigateTo('login'));
-    return;
-  }
 
   const list = root.querySelector<HTMLUListElement>('#contact-list');
   const form = root.querySelector<HTMLFormElement>('#contact-form');
@@ -107,8 +92,16 @@ export function renderContacts(root: HTMLElement): void {
   const cancelBtn = root.querySelector<HTMLButtonElement>('#btn-cancel-edit');
   const search = root.querySelector<HTMLInputElement>('#contact-search');
   const noResults = root.querySelector<HTMLElement>('#contact-no-results');
+  const actionError = root.querySelector<HTMLElement>('#contact-action-error');
 
   root.querySelector('#btn-add-contact')?.addEventListener('click', () => {
+    editIdEl.value = '';
+    form.reset();
+    formTitle.textContent = 'Add contact';
+    saveBtn.textContent = 'Add';
+    cancelBtn.style.display = 'none';
+    errorEl.textContent = '';
+    actionError.textContent = '';
     form.scrollIntoView({ behavior: 'smooth', block: 'start' });
     nameEl.focus({ preventScroll: true });
   });
@@ -126,12 +119,14 @@ export function renderContacts(root: HTMLElement): void {
   });
 
   list.addEventListener('click', event => {
-    const target = event.target as HTMLElement;
-    const editBtn = target.closest<HTMLButtonElement>('.contact-edit');
-    const deleteBtn = target.closest<HTMLButtonElement>('.contact-delete');
+    const target = event.target instanceof Element ? event.target : null;
+    const editBtn = target?.closest<HTMLButtonElement>('.contact-edit');
+    const deleteBtn = target?.closest<HTMLButtonElement>('.contact-delete');
     if (editBtn) {
       const contact = store.getState().contacts.find(item => item.id === editBtn.dataset['id']);
       if (!contact) return;
+      actionError.textContent = '';
+      errorEl.textContent = '';
       editIdEl.value = contact.id;
       nameEl.value = contact.name;
       phoneEl.value = contact.phone;
@@ -144,8 +139,15 @@ export function renderContacts(root: HTMLElement): void {
     if (deleteBtn) {
       const contact = store.getState().contacts.find(item => item.id === deleteBtn.dataset['id']);
       if (contact && confirm(`Remove ${contact.name} from your circle?`)) {
-        store.deleteContact(contact.id);
-        store.navigateTo('contacts');
+        deleteBtn.disabled = true;
+        actionError.textContent = '';
+        void store.deleteContact(contact.id).then(saved => {
+          if (!saved) throw new Error('Contact could not be removed.');
+          store.navigateTo('contacts');
+        }).catch(() => {
+          deleteBtn.disabled = false;
+          actionError.textContent = 'Could not remove this contact. Please try again.';
+        });
       }
     }
   });
@@ -156,9 +158,11 @@ export function renderContacts(root: HTMLElement): void {
     formTitle.textContent = 'Add contact';
     saveBtn.textContent = 'Add';
     cancelBtn.style.display = 'none';
+    errorEl.textContent = '';
+    actionError.textContent = '';
   });
 
-  form.addEventListener('submit', event => {
+  form.addEventListener('submit', async event => {
     event.preventDefault();
     const name = nameEl.value.trim();
     const phone = phoneEl.value.trim();
@@ -170,12 +174,36 @@ export function renderContacts(root: HTMLElement): void {
       errorEl.textContent = 'Enter a phone number.';
       return;
     }
-    errorEl.textContent = '';
-    if (editIdEl.value) store.updateContact(editIdEl.value, name, phone);
-    else if (!store.addContact(name, phone)) {
-      store.navigateTo('signup');
+    const digits = phone.replace(/\D/g, '');
+    if (digits.length < 7 || digits.length > 15) {
+      errorEl.textContent = 'Enter a valid phone number with 7 to 15 digits.';
       return;
     }
-    store.navigateTo('contacts');
+    errorEl.textContent = '';
+    actionError.textContent = '';
+    saveBtn.disabled = true;
+    try {
+      let saved: boolean;
+      if (editIdEl.value) {
+        saved = await store.updateContact(editIdEl.value, name, phone);
+        if (!saved) {
+          errorEl.textContent = 'This contact could not be updated. Check the number and try again.';
+          return;
+        }
+      } else {
+        saved = await store.addContact(name, phone);
+        if (!saved) {
+          errorEl.textContent = store.getState().contacts.length >= 5
+            ? 'You can add up to 5 trusted contacts.'
+            : 'That phone number is already in your circle, or is not valid.';
+          return;
+        }
+      }
+      store.navigateTo('contacts');
+    } catch {
+      errorEl.textContent = 'Could not save this contact on this device. Please try again.';
+    } finally {
+      saveBtn.disabled = false;
+    }
   });
 }

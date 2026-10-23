@@ -7,8 +7,8 @@ export function renderLocation(root) {
       <div class="location-icon" aria-hidden="true">GPS</div>
       <h2 class="location-title">Share your location?</h2>
       <p class="location-body">
-        Your contacts receive the alert either way.
-        Sharing your location helps them find you faster. We only share a fresh GPS fix with accuracy within 50 m.
+      Your SMS app will open either way; review the message and tap Send.
+      Sharing your location helps your contacts find you faster. Saved notes are included in the alert message.
       </p>
 
       <div class="loc-accuracy-wrap" id="loc-accuracy-wrap" style="display:none">
@@ -49,9 +49,10 @@ export function renderLocation(root) {
             <li>A Google Maps link to the GPS coordinates, with the device-reported accuracy</li>
           </ul>
           <p>
-            Location is captured when you tap Share. The app rejects stale and low-accuracy fixes.
-            It is not tracked continuously and is not stored on any server.
+            Location is captured once when you tap Share. This browser-only SMS flow cannot send automatic location updates every 10 seconds.
+            Location is not stored on a server.
           </p>
+          <p>SMS and WhatsApp links cannot attach photo files in this browser flow.</p>
           <p>
             <strong>This browser-based app cannot access your phone's IMEI or
             locate it remotely.</strong> To locate a lost device, use its

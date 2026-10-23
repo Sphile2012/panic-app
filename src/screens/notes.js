@@ -1,5 +1,6 @@
 import { store } from '../state.js';
 import { exportNotes } from '../export.js';
+import { formatNoteTimestamp } from '../storage.js';
 export function renderNotes(root) {
     const { notes } = store.getState();
     root.innerHTML = `
@@ -86,7 +87,7 @@ export function renderNoteEdit(root) {
           rows="12">${existing ? escHtml(existing.body) : ''}</textarea>
       </form>
 
-      ${existing ? `<p class="note-timestamp">Last updated: ${formatDate(existing.updatedAt)}</p>` : ''}
+      ${existing ? `<p class="note-timestamp">Created: ${formatNoteTimestamp(existing.createdAt)}<br>Last updated: ${formatNoteTimestamp(existing.updatedAt)}</p>` : ''}
 
     </div>
   `;
@@ -113,17 +114,11 @@ function noteCard(n) {
       <div class="note-card-body" data-edit="${n.id}" style="cursor:pointer">
         <span class="note-card-title">${escHtml(n.title)}</span>
         <span class="note-card-preview">${escHtml(preview)}${n.body.length > 80 ? '…' : ''}</span>
-        <span class="note-card-date">${formatDate(n.updatedAt)}</span>
+        <span class="note-card-date">Created: ${formatNoteTimestamp(n.createdAt)}<br>Updated: ${formatNoteTimestamp(n.updatedAt)}</span>
       </div>
       <button class="note-delete" data-delete="${n.id}" aria-label="Delete ${escHtml(n.title)}">Delete</button>
     </li>
   `;
-}
-function formatDate(ts) {
-    return new Date(ts).toLocaleString('en-ZA', {
-        day: '2-digit', month: 'short', year: 'numeric',
-        hour: '2-digit', minute: '2-digit',
-    });
 }
 function escHtml(s) {
     return s

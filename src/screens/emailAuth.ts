@@ -56,22 +56,38 @@ function showEmailCodeForm(form: HTMLFormElement, email: string, purpose: 'signu
 }
 
 export function renderWelcome(root: HTMLElement) {
+  const hasPinStored = Boolean(store.getState().pinHash);
   root.innerHTML = `
-    <div class="screen auth-screen auth-screen--scenic">
-      <header class="auth-hero"><h1>Welcome</h1></header>
-      <section class="auth-sheet auth-sheet--welcome" aria-label="Get started">
-        <button class="btn-secondary-outline auth-entry-btn" id="welcome-login" type="button">Sign in</button>
-        <button class="btn-primary auth-entry-btn" id="welcome-signup" type="button">Sign up</button>
-        <div class="auth-divider"><span>or continue with</span></div>
-        <p class="auth-error" id="welcome-error" aria-live="polite"></p>
-        ${googleButtonHtml('welcome-google')}
-        <button class="auth-guest-btn" id="welcome-guest" type="button">Continue without an account</button>
-      </section>
+    <div class="screen splash-screen">
+      <div class="splash-container">
+        <div class="splash-cover-image">
+          <img src="/cover-phone.png" alt="Panic Ring on a mobile phone" />
+          <span class="splash-cover-brand">PANIC RING</span>
+        </div>
+        <div class="splash-content">
+          <h1 class="splash-tagline">Your Safety Matters</h1>
+          <span class="splash-accent-line" aria-hidden="true"></span>
+          <div class="splash-actions">
+          <button class="btn-primary splash-btn" id="splash-login" type="button">Login</button>
+          <p class="splash-signup-text">No account? <button class="auth-link-btn" id="splash-signup" type="button">Sign up</button></p>
+          <button class="auth-link-btn splash-forgot-link" id="splash-forgot" type="button">Forgot your PIN?</button>
+          <button class="splash-install-btn" id="splash-install" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 3v12m-5-5 5 5 5-5" />
+              <path d="M5 16v4h14v-4" />
+            </svg>
+            <span>Click here to install</span>
+          </button>
+          <p class="splash-install-message" id="splash-install-message" role="status" hidden></p>
+          </div>
+        </div>
+      </div>
     </div>`;
-  root.querySelector('#welcome-login')?.addEventListener('click', () => store.navigateTo('login'));
-  root.querySelector('#welcome-signup')?.addEventListener('click', () => store.navigateTo('signup'));
-  root.querySelector('#welcome-guest')?.addEventListener('click', () => store.navigateTo('setup-pin'));
-  wireGoogleSignIn(root, '#welcome-error', 'welcome-google');
+  root.querySelector('#splash-login')?.addEventListener('click', () => {
+    store.navigateTo(hasPinStored ? 'calculator' : 'setup-pin');
+  });
+  root.querySelector('#splash-signup')?.addEventListener('click', () => store.navigateTo('setup-pin'));
+  root.querySelector('#splash-forgot')?.addEventListener('click', () => store.navigateTo('pin-recovery'));
 }
 
 export function renderSignup(root: HTMLElement) {
