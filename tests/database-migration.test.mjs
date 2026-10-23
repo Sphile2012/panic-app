@@ -6,6 +6,10 @@ const migration = await readFile(
   new URL('../supabase/migrations/20261018103000_harden_panic_ring.sql', import.meta.url),
   'utf8',
 );
+const liveTracksBase = await readFile(
+  new URL('../supabase/migrations/20261017100000_create_live_tracks_base.sql', import.meta.url),
+  'utf8',
+);
 const runner = await readFile(new URL('../scripts/db.mjs', import.meta.url), 'utf8');
 const bootstrap = await readFile(new URL('../supabase/schema.sql', import.meta.url), 'utf8');
 const compose = await readFile(new URL('../docker-compose.yml', import.meta.url), 'utf8');
@@ -18,6 +22,17 @@ test('database migration preflights inconsistent rows and aborts rather than del
   assert.match(migration, /validate constraint alert_counts_consistent/i);
   assert.doesNotMatch(migration, /delete\s+from\s+public\.(devices|alert_logs)\b/i);
   assert.match(migration, /delete from public\.live_tracks where updated_at < now\(\) - interval '24 hours'/i);
+});
+
+test('live tracking base migration creates a missing table before hardening and denies direct access', () => {
+  assert.ok(
+    '20261017100000' < '20261018103000',
+    'the base table migration must run before the hardening migration',
+  );
+  assert.match(liveTracksBase, /create table if not exists public\.live_tracks/i);
+  assert.match(liveTracksBase, /user_id uuid references auth\.users\(id\) on delete cascade/i);
+  assert.match(liveTracksBase, /enable row level security/i);
+  assert.match(liveTracksBase, /revoke all on public\.live_tracks from public, anon, authenticated/i);
 });
 
 test('tracking migration restricts writes to authenticated owners and validates location inputs', () => {
