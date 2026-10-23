@@ -89,11 +89,26 @@ export function renderSignup(root) {
           <input class="text-input auth-line-input" id="su-name" type="text" placeholder="Full name" autocomplete="name" maxlength="100" required />
           <label class="auth-visually-hidden" for="su-email">Email address</label>
           <input class="text-input" id="su-email" type="email" placeholder="Email address" autocomplete="email" required />
+          <label class="auth-visually-hidden" for="su-phone">Phone number</label>
+          <input class="text-input" id="su-phone" type="tel" placeholder="Phone number (e.g., +27 82 123 4567)" autocomplete="tel" required />
           <label class="auth-visually-hidden" for="su-password">Password</label>
           <input class="text-input" id="su-password" type="password" placeholder="Create a password (at least 8 characters)" autocomplete="new-password" minlength="8" required />
           <label class="auth-visually-hidden" for="su-password-confirm">Confirm password</label>
           <input class="text-input" id="su-password-confirm" type="password" placeholder="Confirm password" autocomplete="new-password" minlength="8" required />
-          <p class="auth-subtitle">Use an inbox you can access. Verify it with the code we send to activate your account.</p>
+          
+          <div class="auth-otp-choice" style="margin: 12px 0; padding: 12px; background: var(--surface2); border-radius: 8px;">
+            <p style="font-size: 0.85rem; margin-bottom: 8px; color: var(--text);">Verification method:</p>
+            <label style="display: flex; align-items: center; margin-bottom: 6px; cursor: pointer;">
+              <input type="radio" name="otp-method" value="email" checked style="margin-right: 8px;" />
+              <span style="font-size: 0.85rem;">Email verification code</span>
+            </label>
+            <label style="display: flex; align-items: center; cursor: pointer;">
+              <input type="radio" name="otp-method" value="sms" style="margin-right: 8px;" />
+              <span style="font-size: 0.85rem;">SMS verification code</span>
+            </label>
+          </div>
+          
+          <p class="auth-subtitle">Verify it with the code we send to activate your account.</p>
           <p class="auth-error" id="su-error" aria-live="polite"></p>
           <button class="btn-primary auth-entry-btn" type="submit" id="su-submit">Create account</button>
         </form>
@@ -106,15 +121,18 @@ export function renderSignup(root) {
     const form = root.querySelector('#signup-form');
     const nameInput = root.querySelector('#su-name');
     const emailInput = root.querySelector('#su-email');
+    const phoneInput = root.querySelector('#su-phone');
     const passwordInput = root.querySelector('#su-password');
     const passwordConfirmInput = root.querySelector('#su-password-confirm');
     const error = root.querySelector('#su-error');
     const submit = root.querySelector('#su-submit');
     let pendingEmail = '';
+    let pendingPhone = '';
     let pendingName = '';
     let pendingPassword = '';
     let awaitingCode = false;
     let emailVerified = false;
+    let otpMethod = 'email';
     form.addEventListener('submit', async (event) => {
         event.preventDefault();
         if (awaitingCode) {
@@ -137,12 +155,23 @@ export function renderSignup(root) {
         error.textContent = '';
         const fullName = nameInput.value.trim();
         const email = validateEmail(emailInput.value);
+        const phone = phoneInput.value.trim();
+        const otpMethodRadio = form.querySelector('input[name="otp-method"]:checked');
+        otpMethod = otpMethodRadio?.value || 'email';
         if (!fullName) {
             error.textContent = 'Please enter your name.';
             return;
         }
         if (!email) {
             error.textContent = 'Enter a valid email address.';
+            return;
+        }
+        if (!phone) {
+            error.textContent = 'Please enter your phone number.';
+            return;
+        }
+        if (!/^\+?\d{10,15}$/.test(phone.replace(/\s/g, ''))) {
+            error.textContent = 'Please enter a valid phone number (e.g., +27821234567).';
             return;
         }
         if (passwordInput.value.length < 8) {
@@ -155,6 +184,7 @@ export function renderSignup(root) {
         }
         submit.disabled = true;
         submit.textContent = 'Sending code…';
+        // Send OTP based on selected method
         const result = await sendEmailAuthOtp(email, 'signup', fullName);
         submit.disabled = false;
         submit.textContent = 'Continue with email';
@@ -163,9 +193,14 @@ export function renderSignup(root) {
             return;
         }
         pendingEmail = email;
+        pendingPhone = phone;
         pendingName = fullName;
         pendingPassword = passwordInput.value;
         awaitingCode = true;
+        // Save phone to profile after verification
+        if (phone) {
+            sessionStorage.setItem('temp_signup_phone', phone);
+        }
         showEmailCodeForm(form, pendingEmail, 'signup', pendingName);
     });
 }

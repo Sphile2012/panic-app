@@ -343,7 +343,7 @@ export async function fetchRecentAlerts(limit = 10) {
     }
 }
 // PIN Authentication Functions
-const EDGE_FUNCTION_URL = import.meta.env['VITE_SUPABASE_URL'] || '';
+const EDGE_FUNCTION_URL = '';
 export async function setupPinsInCloud(pin1, pin2, question1_id, answer1, question2_id, answer2) {
     if (!DB_CONFIGURED)
         return { error: 'Cloud backup not available in offline mode', success: false };
