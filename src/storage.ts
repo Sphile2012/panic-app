@@ -8,6 +8,8 @@ export type Contact = {
     phone: string;
     initials: string;
     status: 'pending' | 'sending' | 'delivered' | 'failed';
+    relationship?: string;
+    photo?: string;
 };
 
 export type Note = {

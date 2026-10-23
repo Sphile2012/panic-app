@@ -80,8 +80,73 @@ function showPhoneCodeForm(form, phone, purpose) {
     form.querySelector('#phone-otp-code')?.focus();
 }
 export function renderWelcome(root) {
-    // Skip welcome screen and go straight to PIN setup
-    store.navigateTo('setup-pin');
+    const hasPinStored = store.getState().pinHash !== '';
+    // Show splash screen with animations
+    root.innerHTML = `
+    <div class="screen splash-screen">
+      <div class="splash-decorative-line splash-decorative-line--top"></div>
+      <div class="splash-container">
+        <div class="splash-logo" id="splash-logo">
+          <svg width="140" height="140" viewBox="0 0 140 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="ringGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#ec4899;stop-opacity:1" />
+                <stop offset="50%" style="stop-color:#8B5CF6;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#6366F1;stop-opacity:1" />
+              </linearGradient>
+            </defs>
+            <circle cx="70" cy="70" r="60" stroke="url(#ringGradient)" stroke-width="8" fill="none" opacity="0.3"/>
+            <circle cx="70" cy="70" r="45" stroke="url(#ringGradient)" stroke-width="10" fill="none"/>
+            <circle cx="70" cy="70" r="25" fill="url(#ringGradient)"/>
+          </svg>
+        </div>
+        <h2 class="splash-tagline" id="splash-tagline">Your Safety Matters</h2>
+        <div class="splash-actions" id="splash-actions">
+          <button class="btn-primary splash-btn" id="splash-login" type="button">Login</button>
+          <p class="splash-signup-text">No account? <button class="auth-link-btn" id="splash-signup" type="button">Sign up</button></p>
+          <p class="splash-forgot-text">
+            <button class="auth-link-btn splash-forgot-link" id="splash-forgot" type="button">Forgot your PIN?</button>
+          </p>
+        </div>
+      </div>
+      <div class="splash-decorative-line splash-decorative-line--bottom"></div>
+    </div>`;
+    // Animation sequence
+    const logo = root.querySelector('#splash-logo');
+    const tagline = root.querySelector('#splash-tagline');
+    const actions = root.querySelector('#splash-actions');
+    // Step 1: Fade in logo
+    setTimeout(() => {
+        logo.style.opacity = '1';
+    }, 100);
+    // Step 2: Fade in tagline after logo
+    setTimeout(() => {
+        tagline.style.opacity = '1';
+    }, 800);
+    // Step 3: Fade in buttons after tagline
+    setTimeout(() => {
+        actions.style.opacity = '1';
+    }, 1500);
+    // Wire up button events
+    root.querySelector('#splash-login')?.addEventListener('click', () => {
+        if (hasPinStored) {
+            store.navigateTo('calculator');
+        }
+        else {
+            // No PIN stored, go to signup
+            store.navigateTo('setup-pin');
+        }
+    });
+    root.querySelector('#splash-signup')?.addEventListener('click', () => store.navigateTo('setup-pin'));
+    root.querySelector('#splash-forgot')?.addEventListener('click', () => {
+        const hasRecovery = store.getState().recoveryConfigured;
+        if (hasRecovery) {
+            store.navigateTo('pin-recovery');
+        }
+        else {
+            alert('Recovery questions not set up. You need to create a new account.');
+        }
+    });
 }
 export function renderSignup(root) {
     root.innerHTML = `

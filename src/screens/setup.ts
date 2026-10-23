@@ -458,18 +458,21 @@ export function renderPinRecovery(root: HTMLElement) {
 export function renderSetupContacts(root) {
     const { contacts } = store.getState();
     root.innerHTML = `
-    <div class="screen setup-screen">
+    <div class="screen setup-screen setup-contacts-modern">
       <h2 class="setup-title">Add trusted contacts</h2>
       <p class="setup-body">
         Add people who will receive SMS alerts when you activate the panic button. You can add more contacts later from settings.
       </p>
 
-      <ul class="contact-list" id="setup-contact-list">
+      <ul class="contact-list contact-list-modern" id="setup-contact-list">
         ${contacts.map(c => `
-          <li class="contact-item">
-            <div class="contact-avatar">${c.initials}</div>
+          <li class="contact-item contact-item-modern">
+            <div class="contact-avatar-wrapper">
+              ${c.photo ? `<img src="${c.photo}" alt="${c.name}" class="contact-avatar-img" />` : `<div class="contact-avatar">${c.initials}</div>`}
+            </div>
             <div class="contact-info">
               <span class="contact-name">${c.name}</span>
+              ${c.relationship ? `<span class="contact-relationship">${c.relationship}</span>` : ''}
               <span class="contact-phone">${c.phone}</span>
             </div>
             <button class="contact-delete" data-id="${c.id}" aria-label="Remove ${c.name}">✕</button>
@@ -477,27 +480,51 @@ export function renderSetupContacts(root) {
         `).join('')}
       </ul>
 
-      <form class="setup-form" id="add-contact-form" autocomplete="off">
-        <label class="field-label" for="contact-name">Contact name</label>
+      <form class="setup-form setup-form-modern" id="add-contact-form" autocomplete="off">
+        <div class="contact-photo-upload">
+          <input type="file" id="contact-photo" accept="image/*" class="photo-input" />
+          <label for="contact-photo" class="photo-upload-label">
+            <div class="photo-preview" id="photo-preview">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 8v8M8 12h8"/>
+              </svg>
+              <span>Add Photo</span>
+            </div>
+          </label>
+        </div>
+
+        <label class="field-label" for="contact-name">CONTACT NAME</label>
         <input
-          class="text-input"
+          class="text-input modern-input"
           id="contact-name"
           type="text"
           placeholder="Full name"
           autocomplete="off"
           required />
 
-        <label class="field-label" for="contact-phone">Phone number</label>
+        <label class="field-label" for="contact-phone">PHONE NUMBER</label>
         <input
-          class="text-input"
+          class="text-input modern-input"
           id="contact-phone"
           type="tel"
           placeholder="+27 82 123 4567"
           autocomplete="off"
           required />
 
+        <label class="field-label" for="contact-relationship">RELATIONSHIP (OPTIONAL)</label>
+        <select class="text-input modern-input" id="contact-relationship">
+          <option value="">Select relationship</option>
+          <option value="Family">Family</option>
+          <option value="Friend">Friend</option>
+          <option value="Partner">Partner</option>
+          <option value="Colleague">Colleague</option>
+          <option value="Neighbor">Neighbor</option>
+          <option value="Other">Other</option>
+        </select>
+
         <p class="setup-hint" id="contact-error" aria-live="polite"></p>
-        <button class="btn-secondary-outline" type="submit">Add contact</button>
+        <button class="btn-add-contact" type="submit">Add contact</button>
       </form>
 
       <button
@@ -521,14 +548,33 @@ export function renderSetupContacts(root) {
         store.navigateTo('setup-contacts');
     });
     const addForm = root.querySelector('#add-contact-form') as HTMLFormElement | null;
+    const photoInput = root.querySelector('#contact-photo') as HTMLInputElement;
+    const photoPreview = root.querySelector('#photo-preview') as HTMLElement;
+    let photoDataUrl: string | undefined;
+
+    // Handle photo upload preview
+    photoInput?.addEventListener('change', (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          photoDataUrl = event.target?.result as string;
+          photoPreview.innerHTML = `<img src="${photoDataUrl}" alt="Preview" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;" />`;
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
     if (addForm) {
       const nameInput = root.querySelector('#contact-name') as HTMLInputElement;
       const phoneInput = root.querySelector('#contact-phone') as HTMLInputElement;
+      const relationshipInput = root.querySelector('#contact-relationship') as HTMLSelectElement;
       const errEl = root.querySelector('#contact-error') as HTMLElement;
       addForm.addEventListener('submit', (e: SubmitEvent) => {
         e.preventDefault();
         const name = nameInput.value.trim();
         const phone = phoneInput.value.trim();
+        const relationship = relationshipInput.value.trim();
         if (!name) {
           errEl.textContent = 'Please enter a contact name.';
           return;
@@ -538,7 +584,7 @@ export function renderSetupContacts(root) {
           return;
         }
         errEl.textContent = '';
-        store.addContact(name, phone);
+        store.addContact(name, phone, relationship || undefined, photoDataUrl);
         store.navigateTo('setup-contacts');
       });
     }

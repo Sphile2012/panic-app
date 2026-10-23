@@ -72,6 +72,30 @@ export function renderApp(root) {
         </div>
       </section>
 
+      ${contacts.length > 0 ? `
+      <section class="dashboard-section">
+        <div class="dashboard-section-heading">
+          <h2>Your trusted circle</h2>
+          <button class="dashboard-section-link" id="btn-manage-contacts">Manage →</button>
+        </div>
+        <ul class="dashboard-contacts-list">
+          ${contacts.slice(0, 4).map(c => `
+            <li class="dashboard-contact-item">
+              <div class="dashboard-contact-avatar-wrapper">
+                ${c.photo ? `<img src="${c.photo}" alt="${c.name}" class="dashboard-contact-avatar-img" />` : `<div class="dashboard-contact-avatar">${c.initials}</div>`}
+              </div>
+              <div class="dashboard-contact-info">
+                <span class="dashboard-contact-name">${escapeHtml(c.name)}</span>
+                ${c.relationship ? `<span class="dashboard-contact-relationship">${escapeHtml(c.relationship)}</span>` : ''}
+                <span class="dashboard-contact-phone">${escapeHtml(c.phone)}</span>
+              </div>
+            </li>
+          `).join('')}
+        </ul>
+        ${contacts.length > 4 ? `<p class="dashboard-contacts-more">+${contacts.length - 4} more contact${contacts.length - 4 > 1 ? 's' : ''}</p>` : ''}
+      </section>
+      ` : ''}
+
       <div class="app-quick-bar" aria-label="Display options">
         <button class="app-quick-btn" id="btn-disguise" title="Change disguise screen"
           aria-label="Change disguise screen">
@@ -163,6 +187,9 @@ export function renderApp(root) {
         store.navigateTo('profile');
     });
     root.querySelector('#btn-menu').addEventListener('click', openMenu);
+    root.querySelector('#btn-manage-contacts')?.addEventListener('click', () => {
+        store.navigateTo('contacts');
+    });
     root.querySelectorAll('[data-dashboard]').forEach(button => {
         button.addEventListener('click', () => {
             const screen = button.dataset['dashboard'];

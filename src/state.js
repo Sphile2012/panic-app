@@ -2,8 +2,8 @@ import { EMPTY_PROFILE, loadPublicSync, loadVault, saveVault, savePinHashes, sav
 import { onAuthStateChange, DB_CONFIGURED, signOut } from './db.js';
 function buildInitialState() {
     const pub = loadPublicSync();
-    // Always go to PIN setup first (no signup/login)
-    const initialScreen = pub.pin === '' ? 'setup-pin' : 'calculator';
+    // Show welcome screen with signup/login options
+    const initialScreen = 'welcome';
     return {
         screen: initialScreen,
         profile: { ...EMPTY_PROFILE },
@@ -147,10 +147,12 @@ class Store {
             await saveVault(vault, this.state.pinHash);
         })().catch(console.error);
     }
-    addContact(name, phone) {
+    addContact(name, phone, relationship, photo) {
         const contact = {
             id: uid(), name: name.trim(), phone: phone.trim(),
             initials: initials(name), status: 'pending',
+            relationship: relationship?.trim(),
+            photo: photo,
         };
         const updated = [...this.state.contacts, contact];
         this.state = { ...this.state, contacts: updated };
@@ -159,8 +161,15 @@ class Store {
         this._saveContacts(updated).catch(console.error);
         return true;
     }
-    updateContact(id, name, phone) {
-        const updated = this.state.contacts.map(c => c.id === id ? { ...c, name: name.trim(), phone: phone.trim(), initials: initials(name) } : c);
+    updateContact(id, name, phone, relationship, photo) {
+        const updated = this.state.contacts.map(c => c.id === id ? {
+            ...c,
+            name: name.trim(),
+            phone: phone.trim(),
+            initials: initials(name),
+            relationship: relationship?.trim(),
+            photo: photo
+        } : c);
         this.state = { ...this.state, contacts: updated };
         this.touch();
         this.notify();
@@ -273,6 +282,53 @@ class Store {
                 pinFailures: 0,
             };
             this.touch();
+            this.notify();
+            return true;
+        }
+        catch {
+            return false;
+        }
+    }
+    async changePinsWithRecovery(answer1, answer2, newPin1, newPin2) {
+        if (!/^\d{4}$/.test(newPin1) || !/^\d{4}$/.test(newPin2) || newPin1 === newPin2)
+            return false;
+        try {
+            const pinHash = await hashPin(newPin1);
+            const decoyHash = await hashPin(newPin2);
+            const answers = [answer1, answer2];
+            const vault = await recoverVaultWithAnswers(answers, pinHash, decoyHash, this.state.autoLockMinutes);
+            if (!vault)
+                return false;
+            await savePinHashes(pinHash, decoyHash, this.state.autoLockMinutes, this.state.pinHash);
+            this.state = {
+                ...this.state,
+                pinHash,
+            };
+            this.notify();
+            return true;
+        }
+        catch {
+            return false;
+        }
+    }
+    async recoverPinWithAnswers(answer1, answer2, newPin1, newPin2) {
+        if (!/^\d{4}$/.test(newPin1) || !/^\d{4}$/.test(newPin2) || newPin1 === newPin2)
+            return false;
+        try {
+            const pinHash = await hashPin(newPin1);
+            const decoyHash = await hashPin(newPin2);
+            const answers = [answer1, answer2];
+            const vault = await recoverVaultWithAnswers(answers, pinHash, decoyHash, this.state.autoLockMinutes);
+            if (!vault)
+                return false;
+            await savePinHashes(pinHash, decoyHash, this.state.autoLockMinutes);
+            this.state = {
+                ...this.state,
+                pinHash,
+                isFirstRun: false,
+                recoveryConfigured: true,
+                pinFailures: 0,
+            };
             this.notify();
             return true;
         }
