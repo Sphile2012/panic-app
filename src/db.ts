@@ -382,7 +382,7 @@ export async function fetchRecentAlerts(limit = 10) {
 }
 
 // PIN Authentication Functions
-const EDGE_FUNCTION_URL = import.meta.env['VITE_SUPABASE_URL'] || 'https://azirifnakrxmuiqpqwbc.supabase.co';
+const EDGE_FUNCTION_URL = import.meta.env['VITE_SUPABASE_URL'] || '';
 
 export async function setupPinsInCloud(
     pin1: string,
