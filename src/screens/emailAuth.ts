@@ -177,12 +177,14 @@ export function renderLogin(root: HTMLElement) {
         <div class="auth-divider"><span>or sign in with</span></div>
         ${googleButtonHtml('login-google')}
         <p class="auth-error auth-google-error" id="li-google-error" aria-live="polite"></p>
+        ${store.getState().pinHash ? '<button class="auth-guest-btn" id="btn-local-pin" type="button">Unlock this device with its PIN (offline only)</button>' : ''}
         <button class="auth-guest-btn" id="btn-quick-access" type="button">Continue without an account</button>
       </section>
     </div>`;
   wireGoogleSignIn(root, '#li-google-error', 'login-google');
   root.querySelector('#btn-to-signup')?.addEventListener('click', () => store.navigateTo('signup'));
   root.querySelector('#btn-to-welcome')?.addEventListener('click', () => store.navigateTo('welcome'));
+  root.querySelector('#btn-local-pin')?.addEventListener('click', () => store.navigateTo('calculator'));
   root.querySelector('#btn-quick-access')?.addEventListener('click', () => store.navigateTo('setup-pin'));
 
   const form = root.querySelector<HTMLFormElement>('#login-form')!;

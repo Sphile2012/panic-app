@@ -20,6 +20,9 @@ test('signup verifies email before setting a password and sign-in supports passw
   assert.match(emailAuth, /signInWithPassword\(email, passwordInput\.value\)/);
   assert.match(emailAuth, /formatAuthError\(result\.error, 'password'\)/);
   assert.match(emailAuth, /formatAuthError\(result\.error, 'otp'\)/);
+  assert.match(emailAuth, /store\.getState\(\)\.pinHash\s*\?/);
+  assert.match(emailAuth, /Unlock this device with its PIN \(offline only\)/);
+  assert.match(emailAuth, /btn-local-pin.*store\.navigateTo\('calculator'\)/s);
   assert.match(emailAuth, /autocomplete="one-time-code"/);
   assert.match(dashboard, /id="d-li-password" type="password"/);
   assert.match(dashboard, /id="d-su-password" type="password"/);
