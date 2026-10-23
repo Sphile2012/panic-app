@@ -80,21 +80,8 @@ function showPhoneCodeForm(form, phone, purpose) {
     form.querySelector('#phone-otp-code')?.focus();
 }
 export function renderWelcome(root) {
-    const hasPinStored = store.getState().pinHash !== '';
-    root.innerHTML = `
-    <div class="screen auth-screen auth-screen--scenic">
-      <header class="auth-hero"><h1>Welcome</h1></header>
-      <section class="auth-sheet auth-sheet--welcome" aria-label="Get started">
-        <button class="btn-secondary-outline auth-entry-btn" id="welcome-login" type="button">Sign in</button>
-        <button class="btn-primary auth-entry-btn" id="welcome-signup" type="button">Sign up</button>
-        ${hasPinStored ? '<button class="auth-guest-btn" id="welcome-local-pin" type="button">Use device PIN (offline)</button>' : ''}
-        <button class="auth-guest-btn" id="welcome-guest" type="button">Continue without an account</button>
-      </section>
-    </div>`;
-    root.querySelector('#welcome-login')?.addEventListener('click', () => store.navigateTo('login'));
-    root.querySelector('#welcome-signup')?.addEventListener('click', () => store.navigateTo('signup'));
-    root.querySelector('#welcome-guest')?.addEventListener('click', () => store.navigateTo('setup-pin'));
-    root.querySelector('#welcome-local-pin')?.addEventListener('click', () => store.navigateTo('calculator'));
+    // Skip welcome screen and go straight to PIN setup
+    store.navigateTo('setup-pin');
 }
 export function renderSignup(root) {
     root.innerHTML = `

@@ -2,8 +2,8 @@ import { EMPTY_PROFILE, loadPublicSync, loadVault, saveVault, savePinHashes, sav
 import { onAuthStateChange, DB_CONFIGURED, signOut } from './db.js';
 function buildInitialState() {
     const pub = loadPublicSync();
-    // Always show welcome screen if DB is configured (unless user is already authenticated)
-    const initialScreen = DB_CONFIGURED ? 'welcome' : (pub.pin === '' ? 'setup-pin' : 'calculator');
+    // Always go to PIN setup first (no signup/login)
+    const initialScreen = pub.pin === '' ? 'setup-pin' : 'calculator';
     return {
         screen: initialScreen,
         profile: { ...EMPTY_PROFILE },
