@@ -3,15 +3,15 @@ import { getRecoveryQuestionIds } from '../storage.js';
 import { changeAccountPins, sendReauthenticationCode, verifyEmailOtp } from '../db.js';
 import { formatAuthError } from '../authMessages.js';
 const PIN_QUESTIONS = {
-  'first-school': 'What was the name of your first school?',
-  'childhood-street': 'What street did you live on as a child?',
-  'first-pet': 'What was the name of your first pet?',
-  'childhood-friend': 'What was the first name of a childhood friend?',
-  'special-place': 'What is the name of a special place?',
-  'family-nickname': 'What nickname did your family use for you?',
+    'first-school': 'What was the name of your first school?',
+    'childhood-street': 'What street did you live on as a child?',
+    'first-pet': 'What was the name of your first pet?',
+    'childhood-friend': 'What was the first name of a childhood friend?',
+    'special-place': 'What is the name of a special place?',
+    'family-nickname': 'What nickname did your family use for you?',
 };
 export function renderSettings(root) {
-  const { autoLockMinutes, authEmail, accountPinQuestionIds } = store.getState();
+    const { autoLockMinutes, authEmail, accountPinQuestionIds } = store.getState();
     const hasRecovery = getRecoveryQuestionIds() !== null;
     root.innerHTML = `
     <div class="screen settings-screen">
@@ -31,6 +31,9 @@ export function renderSettings(root) {
               <span class="settings-account-sub">Signed in</span>
             </div>
           </div>
+          <button class="btn-secondary-outline" id="btn-change-password" style="margin-top:10px">
+            Change password
+          </button>
           <button class="btn-secondary-outline" id="btn-signout" style="margin-top:10px">
             Sign out
           </button>
@@ -141,6 +144,7 @@ export function renderSettings(root) {
     root.querySelector('#btn-back').addEventListener('click', () => store.navigateTo('app'));
     root.querySelector('#btn-about').addEventListener('click', () => store.navigateTo('about'));
     root.querySelector('#btn-terms').addEventListener('click', () => store.navigateTo('terms'));
+    root.querySelector('#btn-change-password')?.addEventListener('click', () => store.navigateTo('change-password'));
     root.querySelector('#btn-signout')?.addEventListener('click', async () => {
         if (confirm('Sign out?'))
             await store.signOut();
@@ -155,82 +159,83 @@ export function renderSettings(root) {
     });
     const pinForm = root.querySelector('#change-pin-form');
     if (pinForm) {
-      const newPin = root.querySelector('#new-pin');
-      const newDecoy = root.querySelector('#new-decoy');
-      const pinErr = root.querySelector('#pin-change-error');
-      pinForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const p = newPin.value.trim();
-        const d = newDecoy.value.trim();
-        if (!/^\d{4}$/.test(p) || !/^\d{4}$/.test(d)) {
-          pinErr.textContent = 'Both PINs must be exactly 4 digits.';
-          return;
-        }
-        if (p === d) {
-          pinErr.textContent = 'PINs must be different.';
-          return;
-        }
-        pinErr.textContent = '';
-        await store.changePins(p, d);
-        pinErr.style.color = 'var(--safe)';
-        pinErr.textContent = '✓ PINs updated';
-        pinForm.reset();
-        setTimeout(() => { pinErr.textContent = ''; pinErr.style.color = ''; }, 3000);
-      });
+        const newPin = root.querySelector('#new-pin');
+        const newDecoy = root.querySelector('#new-decoy');
+        const pinErr = root.querySelector('#pin-change-error');
+        pinForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const p = newPin.value.trim();
+            const d = newDecoy.value.trim();
+            if (!/^\d{4}$/.test(p) || !/^\d{4}$/.test(d)) {
+                pinErr.textContent = 'Both PINs must be exactly 4 digits.';
+                return;
+            }
+            if (p === d) {
+                pinErr.textContent = 'PINs must be different.';
+                return;
+            }
+            pinErr.textContent = '';
+            await store.changePins(p, d);
+            pinErr.style.color = 'var(--safe)';
+            pinErr.textContent = '✓ PINs updated';
+            pinForm.reset();
+            setTimeout(() => { pinErr.textContent = ''; pinErr.style.color = ''; }, 3000);
+        });
     }
     const accountPinForm = root.querySelector('#account-change-pin-form');
     const reauthButton = root.querySelector('#account-pin-reauth');
     reauthButton?.addEventListener('click', async () => {
-      const error = root.querySelector('#account-pin-change-error');
-      error.textContent = '';
-      reauthButton.disabled = true;
-      const authError = await sendReauthenticationCode();
-      reauthButton.disabled = false;
-      error.style.color = authError ? '' : 'var(--safe)';
-      error.textContent = authError ?? 'Verification code sent. Enter it here to continue.';
-      if (!authError) root.querySelector('#account-pin-reauth-code-wrap').hidden = false;
+        const error = root.querySelector('#account-pin-change-error');
+        error.textContent = '';
+        reauthButton.disabled = true;
+        const authError = await sendReauthenticationCode();
+        reauthButton.disabled = false;
+        error.style.color = authError ? '' : 'var(--safe)';
+        error.textContent = authError ?? 'Verification code sent. Enter it here to continue.';
+        if (!authError)
+            root.querySelector('#account-pin-reauth-code-wrap').hidden = false;
     });
     root.querySelector('#account-pin-verify-reauth')?.addEventListener('click', async () => {
-      const email = store.getState().authEmail;
-      const code = root.querySelector('#account-pin-reauth-code').value;
-      const error = root.querySelector('#account-pin-change-error');
-      const result = email ? await verifyEmailOtp(email, code) : { error: 'Your account session expired. Sign in again.' };
-      error.style.color = result.error ? '' : 'var(--safe)';
-      error.textContent = result.error ? formatAuthError(result.error, 'otp') : 'Email verified. You can now change your account PINs.';
+        const email = store.getState().authEmail;
+        const code = root.querySelector('#account-pin-reauth-code').value;
+        const error = root.querySelector('#account-pin-change-error');
+        const result = email ? await verifyEmailOtp(email, code) : { error: 'Your account session expired. Sign in again.' };
+        error.style.color = result.error ? '' : 'var(--safe)';
+        error.textContent = result.error ? formatAuthError(result.error, 'otp') : 'Email verified. You can now change your account PINs.';
     });
-    accountPinForm?.addEventListener('submit', async event => {
-      event.preventDefault();
-      const error = root.querySelector('#account-pin-change-error');
-      const first = root.querySelector('#account-change-pin-one').value.trim();
-      const firstConfirm = root.querySelector('#account-change-pin-one-confirm').value.trim();
-      const second = root.querySelector('#account-change-pin-two').value.trim();
-      const secondConfirm = root.querySelector('#account-change-pin-two-confirm').value.trim();
-      const answer1 = root.querySelector('#account-change-answer-one').value;
-      const answer2 = root.querySelector('#account-change-answer-two').value;
-      if (!/^\d{4,6}$/.test(first) || !/^\d{4,6}$/.test(second)) {
-        error.textContent = 'Each PIN must contain 4 to 6 digits.';
-        return;
-      }
-      if (first !== firstConfirm || second !== secondConfirm) {
-        error.textContent = 'PIN confirmations do not match.';
-        return;
-      }
-      if (first === second) {
-        error.textContent = 'The two PINs must be different.';
-        return;
-      }
-      const result = await changeAccountPins({ answer1, answer2, newPin1: first, confirmPin1: firstConfirm, newPin2: second, confirmPin2: secondConfirm });
-      if (!result.success) {
-        const message = result.error ?? 'PINs could not be changed.';
-        error.textContent = /reauth|recent authentication/i.test(message)
-          ? 'Request and verify a fresh email code, then try again.'
-          : message;
-        return;
-      }
-      await store.changePins(first, second);
-      accountPinForm.reset();
-      error.style.color = 'var(--safe)';
-      error.textContent = 'PINs updated.';
+    accountPinForm?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const error = root.querySelector('#account-pin-change-error');
+        const first = (root.querySelector('#account-change-pin-one')).value.trim();
+        const firstConfirm = (root.querySelector('#account-change-pin-one-confirm')).value.trim();
+        const second = (root.querySelector('#account-change-pin-two')).value.trim();
+        const secondConfirm = (root.querySelector('#account-change-pin-two-confirm')).value.trim();
+        const answer1 = (root.querySelector('#account-change-answer-one')).value;
+        const answer2 = (root.querySelector('#account-change-answer-two')).value;
+        if (!/^\d{4,6}$/.test(first) || !/^\d{4,6}$/.test(second)) {
+            error.textContent = 'Each PIN must contain 4 to 6 digits.';
+            return;
+        }
+        if (first !== firstConfirm || second !== secondConfirm) {
+            error.textContent = 'PIN confirmations do not match.';
+            return;
+        }
+        if (first === second) {
+            error.textContent = 'The two PINs must be different.';
+            return;
+        }
+        const result = await changeAccountPins({ answer1, answer2, newPin1: first, confirmPin1: firstConfirm, newPin2: second, confirmPin2: secondConfirm });
+        if (!result.success) {
+            const message = result.error ?? 'PINs could not be changed.';
+            error.textContent = /reauth|recent authentication/i.test(message)
+                ? 'Request and verify a fresh email code, then try again.'
+                : message;
+            return;
+        }
+        await store.changePins(first, second);
+        accountPinForm.reset();
+        error.style.color = 'var(--safe)';
+        error.textContent = 'PINs updated.';
     });
     root.querySelector('#btn-reset').addEventListener('click', async () => {
         if (confirm('Delete ALL data? This cannot be undone.'))

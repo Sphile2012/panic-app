@@ -1,6 +1,7 @@
 import { store } from '../state.js';
 import { getRecoveryQuestionIds, setRecoveryQuestions, setCloudBackup, hasCloudBackup } from '../storage.js';
 import { setupPinsInCloud, DB_CONFIGURED, getUser, changePinsInCloud } from '../db.js';
+import { DISGUISE_OPTIONS, loadAppearance, saveAppearance, applyAppearance } from '../theme.js';
 
 const RECOVERY_QUESTIONS = [
   { id: 'first-school', label: 'What was the name of your first school?' },
@@ -119,6 +120,57 @@ export function renderSetupPin(root: HTMLElement) {
         sessionStorage.setItem('temp_pin2', decoy);
         
         await store.savePin(pin, decoy);
+        store.navigateTo('setup-disguise');
+    });
+}
+
+export function renderSetupDisguise(root: HTMLElement) {
+    const currentAppearance = loadAppearance();
+    root.innerHTML = `
+    <div class="screen setup-screen">
+      <div class="setup-logo">○</div>
+      <h1 class="setup-title">Choose your disguise</h1>
+      <p class="setup-body">
+        Select how the app should appear when locked. This disguise helps protect your privacy.
+      </p>
+
+      <form class="setup-form" id="setup-disguise-form">
+        <div class="disguise-options">
+          ${DISGUISE_OPTIONS.map(option => `
+            <label class="disguise-option ${currentAppearance.disguise === option.id ? 'disguise-option--selected' : ''}">
+              <input type="radio" name="disguise" value="${option.id}" ${currentAppearance.disguise === option.id ? 'checked' : ''} />
+              <div class="disguise-option-preview">${option.preview}</div>
+              <div class="disguise-option-label">${option.label}</div>
+              <div class="disguise-option-desc">${option.description}</div>
+            </label>
+          `).join('')}
+        </div>
+
+        <button class="btn-primary" type="submit">Continue →</button>
+      </form>
+    </div>
+  `;
+    
+    const form = root.querySelector('#setup-disguise-form') as HTMLFormElement;
+    const options = root.querySelectorAll('.disguise-option');
+    
+    // Handle option selection visual feedback
+    options.forEach(option => {
+        option.addEventListener('click', () => {
+            options.forEach(opt => opt.classList.remove('disguise-option--selected'));
+            option.classList.add('disguise-option--selected');
+        });
+    });
+    
+    form.addEventListener('submit', (e: SubmitEvent) => {
+        e.preventDefault();
+        const selected = form.querySelector<HTMLInputElement>('input[name="disguise"]:checked');
+        if (selected) {
+            const appearance = loadAppearance();
+            appearance.disguise = selected.value;
+            saveAppearance(appearance);
+            applyAppearance(appearance);
+        }
         store.navigateTo('setup-profile');
     });
 }

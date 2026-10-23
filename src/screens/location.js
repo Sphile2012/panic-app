@@ -103,7 +103,7 @@ export function renderLocation(root) {
         accuracyWrap.style.display = 'block';
         accuracyText.textContent = 'Getting a fresh, accurate GPS fix…';
         const result = await getLocation(12000);
-        if (result.ok) {
+        if (result.ok === true) {
             addressLine.textContent = `Nearby mapped address: ${result.address}`;
             accuracyBadge.textContent = `±${Math.round(result.accuracy)} m`;
             mapsLink.href = result.mapsUrl;

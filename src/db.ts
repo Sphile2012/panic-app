@@ -98,6 +98,35 @@ export async function signInWithPassword(email: string, password: string) {
         return { error: 'Unable to sign in. Check your connection and try again.' };
     }
 }
+export async function sendPasswordResetEmail(email: string) {
+    const verifiedEmail = resolveIdentifier(email);
+    if (!verifiedEmail)
+        return { error: 'Enter a valid email address.' };
+    if (!DB_CONFIGURED)
+        return { error: 'Secure account service unavailable. Continue in offline mode.' };
+    try {
+        const { error } = await getClient().auth.resetPasswordForEmail(verifiedEmail, {
+            redirectTo: getFrontendRedirectUrl(FRONTEND_URL, window.location.origin, 'recovery'),
+        });
+        return { error: error?.message ?? null };
+    }
+    catch {
+        return { error: 'Unable to send password reset email. Check your connection and try again.' };
+    }
+}
+export async function updatePassword(newPassword: string) {
+    if (!newPassword || newPassword.length < 8)
+        return { error: 'Password must be at least 8 characters.' };
+    if (!DB_CONFIGURED)
+        return { error: 'Secure account service unavailable. Continue in offline mode.' };
+    try {
+        const { error } = await getClient().auth.updateUser({ password: newPassword });
+        return { error: error?.message ?? null };
+    }
+    catch {
+        return { error: 'Unable to update password. Please try again.' };
+    }
+}
 export async function signInWithGoogle() {
     if (!DB_CONFIGURED)
         return { error: 'Secure account service unavailable. Continue in offline mode.' };
@@ -106,14 +135,36 @@ export async function signInWithGoogle() {
             provider: 'google',
             options: { redirectTo: getFrontendRedirectUrl(FRONTEND_URL, window.location.origin) },
         });
-        if (error && /unsupported provider/i.test(error.message)) {
-            return { error: 'Google sign-in is not enabled yet. Enable the Google provider in Supabase Auth settings.' };
+        if (error) {
+            if (/unsupported provider|not enabled/i.test(error.message)) {
+                return { error: 'Google Sign-In is currently disabled. Please use email/password authentication instead.' };
+            }
+            return { error: error.message };
         }
-        return { error: error?.message ?? null };
+        return { error: null };
+    }
+    catch (err) {
+        console.warn('[auth] Google sign-in error:', err);
+        return { error: 'Google Sign-In is currently unavailable. Please use email/password authentication.' };
+    }
+}
+
+export async function isGoogleAuthEnabled(): Promise<boolean> {
+    if (!DB_CONFIGURED) return false;
+    try {
+        // Try to check if Google provider is available
+        // This is a simple check - if it fails, we know it's not enabled
+        const testResult = await getClient().auth.signInWithOAuth({
+            provider: 'google',
+            options: { 
+                redirectTo: getFrontendRedirectUrl(FRONTEND_URL, window.location.origin),
+                skipBrowserRedirect: true // Don't actually redirect
+            },
+        });
+        return !testResult.error || !/unsupported provider|not enabled/i.test(testResult.error.message || '');
     }
     catch {
-        console.warn('[auth] Google sign-in could not reach the account service.');
-        return { error: 'Unable to start Google sign-in. Check your connection and try again.' };
+        return false;
     }
 }
 export type PinOperationResult = {

@@ -54,8 +54,8 @@ export function renderContacts(root) {
         <p class="contacts-caption">People you can reach when you need support</p>
         <ul class="contact-list" id="contact-list">
           ${contacts.length === 0
-            ? '<li class="empty-hint">No contacts yet. Add someone you trust.</li>'
-            : contacts.map(renderContact).join('')}
+        ? '<li class="empty-hint">No contacts yet. Add someone you trust.</li>'
+        : contacts.map(renderContact).join('')}
           <li class="empty-hint" id="contact-no-results" hidden>No matching contacts.</li>
         </ul>
 

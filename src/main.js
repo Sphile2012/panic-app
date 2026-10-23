@@ -1,7 +1,7 @@
 import './style.css';
 import { store } from './state.js';
 import { renderCalculator } from './screens/calculator.js';
-import { renderSetupPin, renderSetupContacts, renderRecoverySetup, renderPinRecovery } from './screens/setup.js';
+import { renderSetupPin, renderSetupDisguise, renderSetupProfile, renderSetupContacts, renderRecoverySetup, renderPinRecovery } from './screens/setup.js';
 import { renderApp } from './screens/app.js';
 import { renderContacts } from './screens/contacts.js';
 import { renderLocation } from './screens/location.js';
@@ -16,7 +16,6 @@ import { renderSafetyPlan } from './screens/safetyPlan.js';
 import { renderSupport } from './screens/support.js';
 import { renderSettings } from './screens/settings.js';
 import { renderAppearance } from './screens/appearance.js';
-import { renderWelcome, renderSignup, renderLogin, renderVerifyEmail } from './screens/auth.js';
 import { renderBudget } from './screens/disguise/budget.js';
 import { renderWeather } from './screens/disguise/weather.js';
 import { renderNotesPlain } from './screens/disguise/notesPlain.js';
@@ -25,6 +24,8 @@ import { renderCompanion } from './screens/companion.js';
 import { renderAbout } from './screens/about.js';
 import { renderTerms } from './screens/terms.js';
 import { renderDecoy } from './screens/decoy.js';
+import { renderWelcome, renderSignup, renderLogin, renderVerifyEmail, renderForgotPassword, renderResetPassword, renderChangePassword } from './screens/auth.js';
+import { renderAccountPinGate } from './screens/accountPin.js';
 import { runAlertSequence } from './alertService.js';
 import { pruneStaleQueue, watchForReconnect } from './alertQueue.js';
 import { loadAppearance, applyAppearance } from './theme.js';
@@ -36,7 +37,14 @@ if (!appRoot) {
 const authCallbackParams = new URLSearchParams(window.location.search);
 const authCallbackHash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
 if (authCallbackParams.has('flow') && authCallbackHash.has('access_token')) {
-    store.navigateTo('account-pin-check');
+    // Check if this is a password recovery flow
+    const type = authCallbackHash.get('type');
+    if (type === 'recovery') {
+        store.navigateTo('reset-password');
+    }
+    else {
+        store.navigateTo('account-pin-check');
+    }
 }
 initPwa();
 let currentScreen = null;
@@ -88,6 +96,19 @@ function render(screen) {
         case 'verify-email':
             renderVerifyEmail(appRoot);
             break;
+        case 'forgot-password':
+            renderForgotPassword(appRoot);
+            break;
+        case 'reset-password':
+            renderResetPassword(appRoot);
+            break;
+        case 'change-password':
+            renderChangePassword(appRoot);
+            break;
+        case 'account-pin-check':
+        case 'account-pin-login':
+            void renderAccountPinGate(appRoot);
+            break;
         case 'calculator':
             renderDisguise();
             break;
@@ -96,6 +117,12 @@ function render(screen) {
             break;
         case 'setup-pin':
             renderSetupPin(appRoot);
+            break;
+        case 'setup-disguise':
+            renderSetupDisguise(appRoot);
+            break;
+        case 'setup-profile':
+            renderSetupProfile(appRoot);
             break;
         case 'setup-contacts':
             renderSetupContacts(appRoot);
@@ -196,7 +223,11 @@ store.subscribe((state) => {
 });
 document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') {
-        const safe = ['calculator', 'decoy', 'setup-pin', 'setup-profile', 'setup-contacts', 'welcome', 'signup', 'login', 'verify-email', 'account-pin-check', 'account-pin-login'];
+        const safe = [
+            'calculator', 'decoy', 'setup-pin', 'setup-disguise', 'setup-profile', 'setup-contacts',
+            'welcome', 'signup', 'login', 'verify-email', 'forgot-password', 'reset-password', 'change-password',
+            'account-pin-check', 'account-pin-login',
+        ];
         if (!safe.includes(store.getState().screen)) {
             window.location.href = 'https://www.google.com';
         }

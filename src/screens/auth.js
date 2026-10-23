@@ -1,1 +1,1 @@
-export { renderWelcome, renderSignup, renderLogin, renderVerifyEmail } from './emailAuth.ts';
+export { renderWelcome, renderSignup, renderLogin, renderVerifyEmail, renderForgotPassword, renderResetPassword, renderChangePassword } from './emailAuth.js';

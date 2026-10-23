@@ -31,6 +31,9 @@ export function renderSettings(root: HTMLElement) {
               <span class="settings-account-sub">Signed in</span>
             </div>
           </div>
+          <button class="btn-secondary-outline" id="btn-change-password" style="margin-top:10px">
+            Change password
+          </button>
           <button class="btn-secondary-outline" id="btn-signout" style="margin-top:10px">
             Sign out
           </button>
@@ -141,6 +144,7 @@ export function renderSettings(root: HTMLElement) {
     root.querySelector('#btn-back').addEventListener('click', () => store.navigateTo('app'));
     root.querySelector('#btn-about').addEventListener('click', () => store.navigateTo('about'));
     root.querySelector('#btn-terms').addEventListener('click', () => store.navigateTo('terms'));
+    root.querySelector('#btn-change-password')?.addEventListener('click', () => store.navigateTo('change-password'));
     root.querySelector('#btn-signout')?.addEventListener('click', async () => {
         if (confirm('Sign out?'))
             await store.signOut();

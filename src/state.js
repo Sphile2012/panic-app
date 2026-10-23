@@ -2,8 +2,10 @@ import { EMPTY_PROFILE, loadPublicSync, loadVault, saveVault, savePinHashes, sav
 import { onAuthStateChange, DB_CONFIGURED, signOut } from './db.js';
 function buildInitialState() {
     const pub = loadPublicSync();
+    // Always show welcome screen if DB is configured (unless user is already authenticated)
+    const initialScreen = DB_CONFIGURED ? 'welcome' : (pub.pin === '' ? 'setup-pin' : 'calculator');
     return {
-        screen: pub.pin === '' ? (DB_CONFIGURED ? 'welcome' : 'setup-pin') : 'calculator',
+        screen: initialScreen,
         profile: { ...EMPTY_PROFILE },
         pinBuffer: '',
         pinHash: pub.pin,
@@ -292,15 +294,14 @@ class Store {
         this.state = {
             ...this.state,
             authEmail: email,
-            ...(identityChanged ? { accountPinUnlocked: false, accountPinQuestionIds: [] } : {}),
+            ...(identityChanged ? { accountPinUnlocked: true, accountPinQuestionIds: [] } : {}),
         };
-        if (this.state.screen === 'reset-password') {
-            this.notify();
-            return;
-        }
-        if (email && !this.state.accountPinUnlocked &&
+        if (email && this.state.isFirstRun &&
             (previousEmail !== email || ['welcome', 'login', 'signup', 'verify-email'].includes(this.state.screen))) {
-            this.state = { ...this.state, screen: 'account-pin-check' };
+            this.state = { ...this.state, screen: 'setup-pin' };
+        }
+        else if (email && !this.state.isFirstRun) {
+            this.state = { ...this.state, screen: 'calculator' };
         }
         else if (!email && previousEmail && ['account-pin-check', 'account-pin-setup', 'account-pin-login'].includes(this.state.screen)) {
             this.state = { ...this.state, screen: buildInitialState().screen };

@@ -1847,6 +1847,14 @@ html[data-photo-background="true"] .phone-screen > .screen { background: transpa
   margin: 3px 0;
   text-align: center;
 }
+.auth-screen--scenic .auth-success {
+  min-height: 0;
+  margin: 3px 0;
+  text-align: center;
+  color: #059669;
+  font-size: 0.82rem;
+  font-weight: 500;
+}
 .auth-google-error { margin-top: 5px !important; }
 .verify-icon { font-size: 2.8rem; text-align: center; margin-bottom: 4px; }
 
@@ -2505,4 +2513,63 @@ details[open] .loc-info-summary::before { transform: rotate(90deg); }
 @keyframes slideDown {
   from { transform: translateY(-100%); }
   to   { transform: translateY(0); }
+}
+
+/* Disguise Selection */
+.disguise-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 20px 0;
+}
+
+.disguise-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.disguise-option input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.disguise-option:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.disguise-option--selected {
+  border-color: var(--accent);
+  background: var(--surface2);
+}
+
+.disguise-option-preview {
+  font-size: 32px;
+  font-weight: bold;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+
+.disguise-option-label {
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 4px;
+  color: var(--text);
+}
+
+.disguise-option-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.3;
 }

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clear App Data - Panic Ring</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            color: #333;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 500px;
+            text-align: center;
+        }
+        h1 {
+            font-size: 28px;
+            margin-bottom: 20px;
+            color: #667eea;
+        }
+        p {
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            color: #555;
+        }
+        .btn {
+            display: inline-block;
+            padding: 14px 32px;
+            margin: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+        .btn-clear {
+            background: #e74c3c;
+            color: white;
+        }
+        .btn-clear:hover {
+            background: #c0392b;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.4);
+        }
+        .btn-home {
+            background: #667eea;
+            color: white;
+        }
+        .btn-home:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: 600;
+            display: none;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+        }
+        ul {
+            text-align: left;
+            margin: 20px 0;
+            padding-left: 20px;
+        }
+        li {
+            margin: 8px 0;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">🧹</div>
+        <h1>Clear App Data</h1>
+        <p>This will clear all locally stored data for the Panic Ring app, including:</p>
+        <ul>
+            <li>Saved PINs</li>
+            <li>User profile</li>
+            <li>Emergency contacts</li>
+            <li>Security questions</li>
+            <li>Appearance settings</li>
+            <li>All local data</li>
+        </ul>
+        <p><strong>Note:</strong> This only clears local browser storage. Your account data in the cloud will remain safe.</p>
+        
+        <button class="btn btn-clear" onclick="clearAllData()">🗑️ Clear All Local Data</button>
+        <a href="/" class="btn btn-home">🏠 Go to App</a>
+        
+        <div class="status" id="status"></div>
+    </div>
+
+    <script>
+        function clearAllData() {
+            const statusEl = document.getElementById('status');
+            
+            try {
+                // Clear localStorage
+                localStorage.clear();
+                
+                // Clear sessionStorage
+                sessionStorage.clear();
+                
+                // Clear IndexedDB if it exists
+                if (window.indexedDB) {
+                    indexedDB.databases().then(databases => {
+                        databases.forEach(db => {
+                            if (db.name) {
+                                indexedDB.deleteDatabase(db.name);
+                            }
+                        });
+                    }).catch(() => {
+                        // Some browsers don't support indexedDB.databases()
+                        // Try to delete common database names
+                        indexedDB.deleteDatabase('panic-ring');
+                        indexedDB.deleteDatabase('pr_vault');
+                    });
+                }
+                
+                statusEl.className = 'status success';
+                statusEl.style.display = 'block';
+                statusEl.innerHTML = '✅ All local data cleared successfully!<br><br>Click "Go to App" to start fresh.';
+                
+                // Change button text
+                const clearBtn = document.querySelector('.btn-clear');
+                clearBtn.innerHTML = '✓ Data Cleared';
+                clearBtn.disabled = true;
+                clearBtn.style.opacity = '0.6';
+                clearBtn.style.cursor = 'not-allowed';
+                
+            } catch (error) {
+                statusEl.className = 'status info';
+                statusEl.style.display = 'block';
+                statusEl.innerHTML = '⚠️ Some data may not have been cleared. Try manually clearing your browser cache.<br><br>Error: ' + error.message;
+            }
+        }
+        
+        // Show current storage usage info
+        window.addEventListener('load', () => {
+            const items = Object.keys(localStorage).length;
+            if (items > 0) {
+                const statusEl = document.getElementById('status');
+                statusEl.className = 'status info';
+                statusEl.style.display = 'block';
+                statusEl.innerHTML = `📊 Found ${items} item(s) in local storage.`;
+            }
+        });
+    </script>
+</body>
+</html>
