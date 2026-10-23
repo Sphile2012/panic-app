@@ -26,7 +26,7 @@ async function paint() {
       <div class="live-card">
         <div class="live-row"><span>${esc(t('trk.battery'))}</span><strong>${data.battery ?? '-'}%${data.charging ? ' (' + esc(t('track.charging')) + ')' : ''}</strong></div>
         <div class="live-row"><span>${esc(t('track.updated'))}</span><strong>${esc(when)}</strong></div>
-        <div class="live-row"><span>GPS</span><strong>${data.lat.toFixed(5)}, ${data.lng.toFixed(5)}</strong></div>
+        <div class="live-row"><span>GPS estimate (±${Math.round(data.accuracy)} m)</span><strong>${data.lat.toFixed(5)}, ${data.lng.toFixed(5)}</strong></div>
       </div>
       <a class="btn-primary live-link" href="${maps}" target="_blank" rel="noopener">${esc(t('track.open'))}</a>`;
     }

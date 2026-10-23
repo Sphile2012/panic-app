@@ -1,5 +1,5 @@
 import { store } from '../state.js';
-import { loadAppearance, saveAppearance, applyAppearance, DISGUISE_OPTIONS } from '../theme.js';
+import { loadAppearance, saveAppearance, DISGUISE_OPTIONS } from '../theme.js';
 import { isCheckinActive, checkinSecondsLeft, startCheckin, cancelCheckin, resumeCheckinIfActive } from '../checkin.js';
 import { openMenu } from '../menu.js';
 function escapeHtml(value) {
@@ -77,14 +77,6 @@ export function renderApp(root) {
           aria-label="Change disguise screen">
           <span class="app-quick-icon">${currentDisguise?.preview ?? 'Calculator'}</span>
           <span class="app-quick-label">${currentDisguise?.label ?? 'Calculator'}</span>
-        </button>
-
-        <button class="app-quick-btn" id="btn-theme" title="Toggle dark/light mode"
-          aria-label="Toggle theme">
-          <span class="app-quick-icon" id="theme-icon">
-            ${appearance.mode === 'light' ? 'Light' : 'Dark'}
-          </span>
-          <span class="app-quick-label">Theme</span>
         </button>
 
         <button class="app-quick-btn" id="btn-quick-checkin" title="Check-in timer"
@@ -186,14 +178,6 @@ export function renderApp(root) {
     root.querySelectorAll('[data-bottom-nav]').forEach(button => {
         button.addEventListener('click', () => store.navigateTo(button.dataset['bottomNav'] ?? 'app'));
     });
-    root.querySelector('#btn-theme').addEventListener('click', () => {
-        const ap = loadAppearance();
-        ap.mode = ap.mode === 'dark' ? 'light' : 'dark';
-        saveAppearance(ap);
-        applyAppearance(ap);
-        const icon = root.querySelector('#theme-icon');
-        icon.textContent = ap.mode === 'light' ? 'Light' : 'Dark';
-    });
     const sheet = root.querySelector('#disguise-sheet');
     root.querySelector('#btn-disguise').addEventListener('click', () => {
         const open = sheet.getAttribute('aria-hidden') === 'false';
@@ -247,7 +231,6 @@ export function renderApp(root) {
         resumeCheckinIfActive(onTick, onExpire);
     }
     root.querySelector('#btn-disguise').addEventListener('click', () => { });
-    root.querySelector('#btn-theme').parentElement;
     root.querySelectorAll('.checkin-preset').forEach(btn => {
         btn.addEventListener('click', () => {
             selectedMins = Number(btn.dataset['mins']);

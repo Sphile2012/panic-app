@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#fff9fc" />
+    <meta name="theme-color" content="#f7f8fa" />
     <title>Panic Ring — Dashboard</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="manifest" href="/manifest.json" />
@@ -55,9 +55,12 @@
               <label class="field-label" for="d-li-email" data-i18n="c.dashboard.email">Email</label>
               <input class="text-input" id="d-li-email" type="email"
                 placeholder="you@example.com" data-i18n-placeholder="c.dashboard.emailPlaceholder" autocomplete="email" required />
+              <label class="field-label" for="d-li-password">Password</label>
+              <input class="text-input" id="d-li-password" type="password" placeholder="Password" autocomplete="current-password" required />
               <p class="auth-error" id="d-li-error" aria-live="polite"></p>
-              <button class="btn-primary" type="submit" id="d-li-submit">Email me a sign-in code</button>
+              <button class="btn-primary" type="submit" id="d-li-submit">Sign in</button>
             </form>
+            <button class="auth-link-btn" id="d-li-email-code" type="button">Sign in with an email code instead</button>
           </div>
 
           <div class="dash-auth-form-wrap" id="signup-wrap" style="display:none">
@@ -65,8 +68,13 @@
               <label class="field-label" for="d-su-email" data-i18n="c.dashboard.email">Email</label>
               <input class="text-input" id="d-su-email" type="email"
                 placeholder="you@example.com" data-i18n-placeholder="c.dashboard.emailPlaceholder" autocomplete="email" required />
+              <label class="field-label" for="d-su-password">Password</label>
+              <input class="text-input" id="d-su-password" type="password" placeholder="Create a password (at least 8 characters)" autocomplete="new-password" minlength="8" required />
+              <label class="field-label" for="d-su-password-confirm">Confirm password</label>
+              <input class="text-input" id="d-su-password-confirm" type="password" placeholder="Confirm password" autocomplete="new-password" minlength="8" required />
+              <p class="auth-subtitle">Use an inbox you can access. You must verify it with the code we send before your account is available.</p>
               <p class="auth-error" id="d-su-error" aria-live="polite"></p>
-              <button class="btn-primary" type="submit" id="d-su-submit">Create account with email</button>
+              <button class="btn-primary" type="submit" id="d-su-submit">Create account</button>
             </form>
           </div>
 

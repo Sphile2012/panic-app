@@ -11,20 +11,6 @@ export function renderAppearance(root) {
       </header>
 
       <section class="ap-section">
-        <h3 class="ap-section-title">Colour mode</h3>
-        <div class="ap-mode-group">
-          ${[['dark', 'Dark'], ['light', 'Light'], ['auto', 'System']]
-        .map(([id, label]) => `
-              <label class="ap-mode-btn ${current.mode === id ? 'ap-mode-btn--active' : ''}">
-                <input type="radio" name="mode" value="${id}"
-                  ${current.mode === id ? 'checked' : ''} />
-                ${label}
-              </label>
-            `).join('')}
-        </div>
-      </section>
-
-      <section class="ap-section">
         <h3 class="ap-section-title">Accent colour</h3>
         <div class="ap-colour-grid">
           ${ACCENT_COLOURS.map(c => `
@@ -123,17 +109,6 @@ export function renderAppearance(root) {
         removePhotoButton.disabled = true;
         photoStatus.textContent = 'No photo selected.';
     });
-    root.querySelectorAll('input[name="mode"]').forEach(radio => {
-        radio.addEventListener('change', () => {
-            ap.mode = radio.value;
-            saveAppearance(ap);
-            applyAppearance(ap);
-            root.querySelectorAll('.ap-mode-btn').forEach(btn => {
-                btn.classList.toggle('ap-mode-btn--active', btn.querySelector('input').value === ap.mode);
-            });
-            updateAccentLabel();
-        });
-    });
     const colourNameEl = root.querySelector('#ap-colour-name');
     root.querySelectorAll('[data-accent]').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -154,8 +129,7 @@ export function renderAppearance(root) {
     });
     function updateAccentLabel() {
         const accent = ACCENT_COLOURS.find(c => c.id === ap.accentId);
-        const mode = document.documentElement.dataset['theme'] === 'dark' ? 'Night' : 'Day';
-        colourNameEl.textContent = accent ? `${accent.label} · ${mode} mode` : '';
+        colourNameEl.textContent = accent?.label ?? '';
     }
     updateAccentLabel();
     root.querySelectorAll('[data-disguise]').forEach(btn => {

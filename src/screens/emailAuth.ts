@@ -1,5 +1,5 @@
 import { store } from '../state.js';
-import { sendEmailAuthOtp, signInWithGoogle, verifyEmailOtp } from '../db.js';
+import { sendEmailAuthOtp, setAuthenticatedPassword, signInWithGoogle, signInWithPassword, verifyEmailOtp } from '../db.js';
 import { resolveIdentifier } from '../authConfig.mjs';
 import { formatAuthError, SIGNUP_CONFIRMATION_MESSAGE } from '../authMessages.js';
 
@@ -84,8 +84,13 @@ export function renderSignup(root: HTMLElement) {
           <input class="text-input auth-line-input" id="su-name" type="text" placeholder="Full name" autocomplete="name" maxlength="100" required />
           <label class="auth-visually-hidden" for="su-email">Email address</label>
           <input class="text-input" id="su-email" type="email" placeholder="Email address" autocomplete="email" required />
+          <label class="auth-visually-hidden" for="su-password">Password</label>
+          <input class="text-input" id="su-password" type="password" placeholder="Create a password (at least 8 characters)" autocomplete="new-password" minlength="8" required />
+          <label class="auth-visually-hidden" for="su-password-confirm">Confirm password</label>
+          <input class="text-input" id="su-password-confirm" type="password" placeholder="Confirm password" autocomplete="new-password" minlength="8" required />
+          <p class="auth-subtitle">Use an inbox you can access. Verify it with the code we send to activate your account.</p>
           <p class="auth-error" id="su-error" aria-live="polite"></p>
-          <button class="btn-primary auth-entry-btn" type="submit" id="su-submit">Continue with email</button>
+          <button class="btn-primary auth-entry-btn" type="submit" id="su-submit">Create account</button>
         </form>
         <p class="auth-switch">Already have an account? <button class="auth-link-btn" id="btn-to-login" type="button">Sign in</button></p>
         <button class="auth-back-btn" id="btn-to-welcome" type="button">Back</button>
@@ -101,11 +106,15 @@ export function renderSignup(root: HTMLElement) {
   const form = root.querySelector<HTMLFormElement>('#signup-form')!;
   const nameInput = root.querySelector<HTMLInputElement>('#su-name')!;
   const emailInput = root.querySelector<HTMLInputElement>('#su-email')!;
+  const passwordInput = root.querySelector<HTMLInputElement>('#su-password')!;
+  const passwordConfirmInput = root.querySelector<HTMLInputElement>('#su-password-confirm')!;
   const error = root.querySelector<HTMLElement>('#su-error')!;
   const submit = root.querySelector<HTMLButtonElement>('#su-submit')!;
   let pendingEmail = '';
   let pendingName = '';
+  let pendingPassword = '';
   let awaitingCode = false;
+  let emailVerified = false;
   form.addEventListener('submit', async event => {
     event.preventDefault();
     if (awaitingCode) {
@@ -113,9 +122,16 @@ export function renderSignup(root: HTMLElement) {
       const codeError = form.querySelector<HTMLElement>('#email-otp-error')!;
       const verifyButton = form.querySelector<HTMLButtonElement>('#email-otp-submit')!;
       verifyButton.disabled = true;
-      const result = await verifyEmailOtp(pendingEmail, code.value);
+      const verificationResult = emailVerified ? { error: null } : await verifyEmailOtp(pendingEmail, code.value);
+      if (!verificationResult.error)
+        emailVerified = true;
+      const result = verificationResult.error ? verificationResult : await setAuthenticatedPassword(pendingPassword);
       verifyButton.disabled = false;
-      if (result.error) codeError.textContent = formatAuthError(result.error);
+      if (result.error) {
+        codeError.textContent = formatAuthError(result.error);
+        return;
+      }
+      pendingPassword = '';
       return;
     }
     error.textContent = '';
@@ -123,6 +139,8 @@ export function renderSignup(root: HTMLElement) {
     const email = validateEmail(emailInput.value);
     if (!fullName) { error.textContent = 'Please enter your name.'; return; }
     if (!email) { error.textContent = 'Enter a valid email address.'; return; }
+    if (passwordInput.value.length < 8) { error.textContent = 'Use a password with at least 8 characters.'; return; }
+    if (passwordInput.value !== passwordConfirmInput.value) { error.textContent = 'Passwords do not match.'; return; }
     submit.disabled = true;
     submit.textContent = 'Sending code…';
     const result = await sendEmailAuthOtp(email, 'signup', fullName);
@@ -134,6 +152,7 @@ export function renderSignup(root: HTMLElement) {
     }
     pendingEmail = email;
     pendingName = fullName;
+    pendingPassword = passwordInput.value;
     awaitingCode = true;
     showEmailCodeForm(form, pendingEmail, 'signup', pendingName);
   });
@@ -147,9 +166,12 @@ export function renderLogin(root: HTMLElement) {
         <form class="auth-form" id="login-form" autocomplete="on" novalidate>
           <label class="auth-visually-hidden" for="li-email">Email address</label>
           <input class="text-input" id="li-email" type="email" placeholder="Email address" autocomplete="email" required />
+          <label class="auth-visually-hidden" for="li-password">Password</label>
+          <input class="text-input" id="li-password" type="password" placeholder="Password" autocomplete="current-password" required />
           <p class="auth-error" id="li-error" aria-live="polite"></p>
-          <button class="btn-primary auth-entry-btn" type="submit" id="li-submit">Email me a sign-in code</button>
+          <button class="btn-primary auth-entry-btn" type="submit" id="li-submit">Sign in</button>
         </form>
+        <button class="auth-link-btn" id="btn-email-code" type="button">Sign in with an email code instead</button>
         <p class="auth-switch">Don't have an account? <button class="auth-link-btn" id="btn-to-signup" type="button">Sign up</button></p>
         <button class="auth-back-btn" id="btn-to-welcome" type="button">Back</button>
         <div class="auth-divider"><span>or sign in with</span></div>
@@ -165,10 +187,27 @@ export function renderLogin(root: HTMLElement) {
 
   const form = root.querySelector<HTMLFormElement>('#login-form')!;
   const emailInput = root.querySelector<HTMLInputElement>('#li-email')!;
+  const passwordInput = root.querySelector<HTMLInputElement>('#li-password')!;
   const error = root.querySelector<HTMLElement>('#li-error')!;
   const submit = root.querySelector<HTMLButtonElement>('#li-submit')!;
+  const emailCodeButton = root.querySelector<HTMLButtonElement>('#btn-email-code')!;
   let pendingEmail = '';
   let awaitingCode = false;
+  emailCodeButton.addEventListener('click', async () => {
+    error.textContent = '';
+    const email = validateEmail(emailInput.value);
+    if (!email) { error.textContent = 'Enter a valid email address.'; return; }
+    emailCodeButton.disabled = true;
+    const result = await sendEmailAuthOtp(email, 'login');
+    emailCodeButton.disabled = false;
+    if (result.error) {
+      error.textContent = formatAuthError(result.error);
+      return;
+    }
+    pendingEmail = email;
+    awaitingCode = true;
+    showEmailCodeForm(form, pendingEmail, 'login');
+  });
   form.addEventListener('submit', async event => {
     event.preventDefault();
     if (awaitingCode) {
@@ -184,18 +223,13 @@ export function renderLogin(root: HTMLElement) {
     error.textContent = '';
     const email = validateEmail(emailInput.value);
     if (!email) { error.textContent = 'Enter a valid email address.'; return; }
+    if (!passwordInput.value) { error.textContent = 'Enter your password.'; return; }
     submit.disabled = true;
-    submit.textContent = 'Sending code…';
-    const result = await sendEmailAuthOtp(email, 'login');
+    const result = await signInWithPassword(email, passwordInput.value);
     submit.disabled = false;
-    submit.textContent = 'Email me a sign-in code';
     if (result.error) {
       error.textContent = formatAuthError(result.error);
-      return;
     }
-    pendingEmail = email;
-    awaitingCode = true;
-    showEmailCodeForm(form, pendingEmail, 'login');
   });
 }
 

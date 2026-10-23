@@ -3,6 +3,7 @@ import './strings/groupC.js';
 import { loadAppearance, applyAppearance } from './theme.js';
 import { t, getLang, languageBarHtml, bindLanguageBar } from './i18n.js';
 import { formatAuthError, SIGNUP_CONFIRMATION_MESSAGE } from './authMessages.js';
+import { resolveIdentifier } from './authConfig.mjs';
 import './style.css';
 applyAppearance(loadAppearance());
 let currentEmail = null;
@@ -193,9 +194,9 @@ function wireAuthForms() {
             return;
         }
         liErrEl.textContent = '';
-        const email = liEmailEl.value.trim();
+        const email = resolveIdentifier(liEmailEl.value);
         if (!email) {
-            liErrEl.textContent = t('c.dashboard.fillFields');
+            liErrEl.textContent = 'Enter a valid email address.';
             return;
         }
         liSubmitBtn.disabled = true;
@@ -259,9 +260,9 @@ function wireAuthForms() {
         }
         suErrEl.textContent = '';
         suErrEl.style.color = '';
-        const email = suEmailEl.value.trim();
+        const email = resolveIdentifier(suEmailEl.value);
         if (!email) {
-            suErrEl.textContent = t('c.dashboard.fillFields');
+            suErrEl.textContent = 'Enter a valid email address.';
             return;
         }
         suSubmitBtn.disabled = true;

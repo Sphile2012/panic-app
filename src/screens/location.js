@@ -8,7 +8,7 @@ export function renderLocation(root) {
       <h2 class="location-title">Share your location?</h2>
       <p class="location-body">
         Your contacts receive the alert either way.
-        Sharing your location helps them find you faster.
+        Sharing your location helps them find you faster. We only share a fresh GPS fix with accuracy within 50 m.
       </p>
 
       <div class="loc-accuracy-wrap" id="loc-accuracy-wrap" style="display:none">
@@ -44,12 +44,12 @@ export function renderLocation(root) {
         <div class="loc-info-body">
           <p>When you tap <strong>Share</strong>, your contacts receive:</p>
           <ul>
-            <li>The street address (from GPS + OpenStreetMap)</li>
+            <li>A nearby mapped address when available; this may not identify the exact building</li>
             <li>GPS accuracy in metres</li>
-            <li>A Google Maps link that opens at your exact coordinates</li>
+            <li>A Google Maps link to the GPS coordinates, with the device-reported accuracy</li>
           </ul>
           <p>
-            Location is only captured at the moment you tap Share.
+            Location is captured when you tap Share. The app rejects stale and low-accuracy fixes.
             It is not tracked continuously and is not stored on any server.
           </p>
           <p>
@@ -101,10 +101,10 @@ export function renderLocation(root) {
         skipBtn.disabled = true;
         errorEl.textContent = '';
         accuracyWrap.style.display = 'block';
-        accuracyText.textContent = 'Getting your exact position…';
+        accuracyText.textContent = 'Getting a fresh, accurate GPS fix…';
         const result = await getLocation(12000);
         if (result.ok) {
-            addressLine.textContent = result.address;
+            addressLine.textContent = `Nearby mapped address: ${result.address}`;
             accuracyBadge.textContent = `±${Math.round(result.accuracy)} m`;
             mapsLink.href = result.mapsUrl;
             accuracyWrap.style.display = 'none';

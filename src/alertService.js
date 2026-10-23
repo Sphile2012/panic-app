@@ -2,6 +2,7 @@ import { store } from './state.js';
 import { buildSmsBody, smsUri, isOnline } from './storage.js';
 import { insertAlertLog, getDeviceId, getUser } from './db.js';
 import { enqueueAlert } from './alertQueue.js';
+import { hasValidCoordinates, isShareableAccuracy } from './locationConfig.mjs';
 async function nominatimFetch(lat, lng, zoom) {
     try {
         const url = [
@@ -82,6 +83,17 @@ export async function getLocation(timeoutMs = 12000) {
     return new Promise(resolve => {
         navigator.geolocation.getCurrentPosition(async (pos) => {
             const { latitude: lat, longitude: lng, accuracy } = pos.coords;
+            if (!hasValidCoordinates(lat, lng) || !Number.isFinite(accuracy) || accuracy <= 0) {
+                resolve({ ok: false, reason: 'Your device returned an invalid location. Try again, or send without location.' });
+                return;
+            }
+            if (!isShareableAccuracy(accuracy)) {
+                resolve({
+                    ok: false,
+                    reason: `Your location is only accurate to within ±${Math.ceil(accuracy)} m. It has not been shared. Move to an open area and try again, or send without location.`,
+                });
+                return;
+            }
             const [address, w3w] = await Promise.all([
                 reverseGeocode(lat, lng),
                 getWhat3Words(lat, lng),
@@ -89,7 +101,7 @@ export async function getLocation(timeoutMs = 12000) {
             const mapsUrl = `https://maps.google.com/?q=${lat.toFixed(7)},${lng.toFixed(7)}`;
             const accuracyStr = `±${Math.round(accuracy)} m`;
             const lines = [
-                `Location: ${address}`,
+                `Nearby mapped address (approximate): ${address}`,
                 `Accuracy: ${accuracyStr}`,
                 w3w ? `what3words: ${w3w}` : null,
                 `Google Maps: ${mapsUrl}`,
@@ -114,7 +126,7 @@ export async function getLocation(timeoutMs = 12000) {
             resolve({ ok: false, reason });
         }, {
             timeout: timeoutMs,
-            maximumAge: 30000,
+            maximumAge: 0,
             enableHighAccuracy: true,
         });
     });

@@ -27,7 +27,7 @@ import { renderTerms } from './screens/terms.js';
 import { renderDecoy } from './screens/decoy.js';
 import { runAlertSequence } from './alertService.js';
 import { pruneStaleQueue, watchForReconnect } from './alertQueue.js';
-import { loadAppearance, applyAppearance, watchSystemTheme } from './theme.js';
+import { loadAppearance, applyAppearance } from './theme.js';
 import { initPwa, canInstall, isInstalled, isIosSafari, promptInstall, onInstallReady, onInstalled } from './pwa.js';
 const appRoot = document.getElementById('app-root');
 if (!appRoot) {
@@ -267,5 +267,4 @@ store.initAuth().then(() => {
     updateInstallBanner();
     const appearance = loadAppearance();
     applyAppearance(appearance);
-    watchSystemTheme(() => loadAppearance().mode);
 });

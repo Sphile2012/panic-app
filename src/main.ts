@@ -28,7 +28,7 @@ import { renderWelcome, renderSignup, renderLogin, renderVerifyEmail } from './s
 import { renderAccountPinGate } from './screens/accountPin.js';
 import { runAlertSequence } from './alertService.js';
 import { pruneStaleQueue, watchForReconnect } from './alertQueue.js';
-import { loadAppearance, applyAppearance, watchSystemTheme } from './theme.js';
+import { loadAppearance, applyAppearance } from './theme.js';
 import { initPwa, canInstall, isInstalled, isIosSafari, promptInstall, onInstallReady, onInstalled } from './pwa.js';
 
 const appRoot = document.getElementById('app-root') as HTMLElement | null;
@@ -298,5 +298,4 @@ store.initAuth().then(() => {
     updateInstallBanner();
     const appearance = loadAppearance();
     applyAppearance(appearance);
-    watchSystemTheme(() => loadAppearance().mode);
 });

@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { getFrontendRedirectUrl } from './authConfig.mjs';
+import { getFrontendRedirectUrl, resolveIdentifier } from './authConfig.mjs';
 const SUPABASE_URL = `${window.location.origin}/api`;
 const PROXY_API_KEY = 'panic-ring-public-proxy-key';
 const FRONTEND_URL = import.meta.env['VITE_FRONTEND_URL'];
@@ -32,11 +32,14 @@ export function getClient() {
     return _client;
 }
 export async function sendEmailAuthOtp(email, purpose, fullName = '') {
+    const verifiedEmail = resolveIdentifier(email);
+    if (!verifiedEmail)
+        return { error: 'Enter a valid email address.' };
     if (!DB_CONFIGURED)
         return { error: 'Secure account service unavailable. Continue in offline mode.' };
     try {
         const { error } = await getClient().auth.signInWithOtp({
-            email,
+            email: verifiedEmail,
             options: {
                 shouldCreateUser: purpose === 'signup',
                 ...(fullName ? { data: { full_name: fullName } } : {}),
@@ -49,14 +52,48 @@ export async function sendEmailAuthOtp(email, purpose, fullName = '') {
     }
 }
 export async function verifyEmailOtp(email, token) {
+    const verifiedEmail = resolveIdentifier(email);
+    if (!verifiedEmail)
+        return { error: 'Enter a valid email address.' };
+    if (!token.trim())
+        return { error: 'Enter the verification code sent to your email.' };
     if (!DB_CONFIGURED)
         return { error: 'Secure account service unavailable. Continue in offline mode.' };
     try {
-        const { error } = await getClient().auth.verifyOtp({ email, token: token.trim(), type: 'email' });
+        const { error } = await getClient().auth.verifyOtp({ email: verifiedEmail, token: token.trim(), type: 'email' });
         return { error: error?.message ?? null };
     }
     catch {
         return { error: 'Unable to verify the email code. Request a new code and try again.' };
+    }
+}
+export async function setAuthenticatedPassword(password) {
+    if (!password)
+        return { error: 'Enter a password.' };
+    if (!DB_CONFIGURED)
+        return { error: 'Secure account service unavailable. Continue in offline mode.' };
+    try {
+        const { error } = await getClient().auth.updateUser({ password });
+        return { error: error?.message ?? null };
+    }
+    catch {
+        return { error: 'Unable to set the password. Sign in again and retry.' };
+    }
+}
+export async function signInWithPassword(email, password) {
+    const verifiedEmail = resolveIdentifier(email);
+    if (!verifiedEmail)
+        return { error: 'Enter a valid email address.' };
+    if (!password)
+        return { error: 'Enter your password.' };
+    if (!DB_CONFIGURED)
+        return { error: 'Secure account service unavailable. Continue in offline mode.' };
+    try {
+        const { error } = await getClient().auth.signInWithPassword({ email: verifiedEmail, password });
+        return { error: error?.message ?? null };
+    }
+    catch {
+        return { error: 'Unable to sign in. Check your connection and try again.' };
     }
 }
 export async function signInWithGoogle() {
