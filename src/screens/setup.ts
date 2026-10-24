@@ -83,36 +83,47 @@ export function renderSetupDisguise(root: HTMLElement): void {
         <h1 class="setup-title">Choose your disguise</h1>
         <p class="setup-body">Choose what the app displays while locked.</p>
         <form class="setup-form" id="setup-disguise-form">
-          <div class="disguise-options">
+          <label class="field-label" for="disguise-select">Disguise screen</label>
+          <select class="disguise-select" id="disguise-select" name="disguise">
             ${DISGUISE_OPTIONS.map(option => `
-              <label class="disguise-option ${appearance.disguise === option.id ? 'disguise-option--selected' : ''}">
-                <input type="radio" name="disguise" value="${option.id}" ${appearance.disguise === option.id ? 'checked' : ''} />
-                <div class="disguise-option-preview">${disguiseScreenPreview(option.id)}</div>
-                <div class="disguise-option-label">${option.label}</div>
-                <div class="disguise-option-desc">${option.description}</div>
-              </label>
+              <option value="${option.id}" ${appearance.disguise === option.id ? 'selected' : ''}>
+                ${option.preview} ${option.label}
+              </option>
             `).join('')}
+          </select>
+          <p class="setup-hint disguise-description" id="disguise-description"></p>
+          
+          <div class="disguise-preview-wrapper" id="disguise-preview-wrapper">
+            ${disguiseScreenPreview(appearance.disguise)}
           </div>
+          
           <button class="btn-primary" type="submit">Continue</button>
         </form>
       </div>`;
+    
     const form = root.querySelector<HTMLFormElement>('#setup-disguise-form')!;
-    form.addEventListener('change', event => {
-        const target = event.target;
-        if (!(target instanceof HTMLInputElement) || target.name !== 'disguise')
-            return;
-        form.querySelectorAll('.disguise-option').forEach(option => option.classList.remove('disguise-option--selected'));
-        target.closest('.disguise-option')?.classList.add('disguise-option--selected');
-    });
+    const select = root.querySelector<HTMLSelectElement>('#disguise-select')!;
+    const previewWrapper = root.querySelector<HTMLElement>('#disguise-preview-wrapper')!;
+    const description = root.querySelector<HTMLElement>('#disguise-description')!;
+    
+    function updatePreview() {
+        const selectedOption = DISGUISE_OPTIONS.find(opt => opt.id === select.value);
+        if (selectedOption) {
+            previewWrapper.innerHTML = disguiseScreenPreview(selectedOption.id);
+            description.textContent = selectedOption.description;
+        }
+    }
+    
+    updatePreview();
+    
+    select.addEventListener('change', updatePreview);
+    
     form.addEventListener('submit', event => {
         event.preventDefault();
-        const selected = form.querySelector<HTMLInputElement>('input[name="disguise"]:checked');
-        if (selected) {
-            const nextAppearance = loadAppearance();
-            nextAppearance.disguise = selected.value;
-            saveAppearance(nextAppearance);
-            applyAppearance(nextAppearance);
-        }
+        const nextAppearance = loadAppearance();
+        nextAppearance.disguise = select.value;
+        saveAppearance(nextAppearance);
+        applyAppearance(nextAppearance);
         store.navigateTo('recovery-setup');
     });
 }

@@ -140,6 +140,7 @@ export function renderProfile(root: HTMLElement) {
         ${row('pf-messages', IC.mail, t('b.prof.messages'))}
         ${row('pf-favourites', IC.heart, t('b.prof.fav'))}
         ${row('pf-location', IC.location, t('b.prof.location'))}
+        ${row('pf-change-pins', IC.gear, 'Change PINs')}
         ${row('pf-settings', IC.gear, t('b.prof.settings'))}
       </div>
       <div class="pf-logout">${row('pf-logout', IC.out, t('b.prof.logout'), 'pf-danger')}</div>
@@ -160,6 +161,7 @@ export function renderProfile(root: HTMLElement) {
         go('#pf-messages', 'chat');
         go('#pf-favourites', 'records');
         go('#pf-location', 'live');
+        go('#pf-change-pins', 'change-pins');
         go('#pf-settings', 'settings');
         root.querySelectorAll('.pf-contact').forEach(button => {
             button.addEventListener('click', () => store.navigateTo('contacts'));
