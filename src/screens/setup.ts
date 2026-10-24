@@ -33,14 +33,26 @@ export function renderSetupPin(root: HTMLElement) {
     if (store.getState().pinHash) {
         root.innerHTML = `
       <div class="screen setup-screen">
+        <button class="btn-back-small" id="btn-back-to-welcome" aria-label="Back">←</button>
         <h1 class="setup-title">Account already set up</h1>
-        <p class="setup-body">This device already has an account. Log in, or use Forgot PIN to reset your PINs with your security questions.</p>
-        <button class="btn-primary" id="btn-existing-login" type="button">Back to login</button>
-        <button class="auth-link-btn" id="btn-existing-recovery" type="button">Forgot PIN?</button>
+        <p class="setup-body">This device already has an account. You can log in with your existing PIN, recover it if forgotten, or clear all data to start fresh.</p>
+        <div class="setup-form">
+          <button class="btn-primary" id="btn-existing-login" type="button">Back to login</button>
+          <button class="btn-secondary-outline" id="btn-existing-recovery" type="button">Forgot PIN?</button>
+          <button class="btn-danger" id="btn-clear-data" type="button" style="margin-top: 20px;">Clear data & start fresh</button>
+        </div>
       </div>
     `;
+        root.querySelector('#btn-back-to-welcome')?.addEventListener('click', () => store.navigateTo('welcome'));
         root.querySelector('#btn-existing-login')?.addEventListener('click', () => store.navigateTo('calculator'));
         root.querySelector('#btn-existing-recovery')?.addEventListener('click', () => store.navigateTo('pin-recovery'));
+        root.querySelector('#btn-clear-data')?.addEventListener('click', async () => {
+            if (confirm('⚠️ This will delete ALL your data including contacts, notes, and settings. This cannot be undone. Continue?')) {
+                await store.factoryReset();
+                alert('All data cleared. You can now create a new account.');
+                store.navigateTo('welcome');
+            }
+        });
         return;
     }
     root.innerHTML = `
