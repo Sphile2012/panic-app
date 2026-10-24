@@ -312,45 +312,61 @@ export function renderLocation(root) {
 
     function startLiveLocation() {
         if (!window.isSecureContext && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
-            showLocationError('Location requires HTTPS. Open Panic Ring using its secure HTTPS address, then try again.', 'live');
+            showLocationError('Location requires HTTPS. Open Panic Ring using its secure HTTPS address (https://panic-ring-app.netlify.app), then try again.', 'live');
             return;
         }
         if (!('geolocation' in navigator)) {
-            showLocationError('Location is not available in this browser. Try a browser that supports location access.', 'live');
+            showLocationError('Location is not available in this browser. Try using Chrome, Edge, or Firefox.', 'live');
             return;
         }
+        
         errorEl.textContent = '';
         retryBtn.hidden = true;
         permissionHelp.hidden = true;
         retryAction = null;
         locationChoice = 'allowed';
-        mapStatus.textContent = 'Requesting permission and waiting for a GPS fix…';
+        mapStatus.textContent = 'Requesting location permission from your browser…';
         liveToggle.textContent = 'Stop live location';
         liveToggle.setAttribute('aria-pressed', 'true');
+        
         try {
             watchId = navigator.geolocation.watchPosition(position => {
                 const { latitude, longitude, accuracy } = position.coords;
+                
+                // Validate coordinates
                 if (!Number.isFinite(latitude) || !Number.isFinite(longitude) ||
                     latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180 ||
                     !Number.isFinite(accuracy) || accuracy <= 0) {
-                    showLocationError('The device returned an invalid location. Check Location settings and try again.', 'live');
+                    showLocationError('The device returned an invalid location. Check that Location is enabled in your device settings and try again.', 'live');
                     return;
                 }
+                
+                // Successfully got location
                 retryBtn.hidden = true;
                 retryAction = null;
+                permissionHelp.hidden = true;
                 updateMap(latitude, longitude, accuracy, 'Live location active');
             }, geoError => {
-                const reason = geoError.code === geoError.PERMISSION_DENIED
-                    ? 'Location permission is off for this site. Allow location access in your browser settings, then try again.'
-                    : geoError.code === geoError.POSITION_UNAVAILABLE
-                        ? 'Your location is unavailable. Check that device Location is turned on and that this site can use it, then try again.'
-                        : 'Getting your location timed out. Move to an open area and try again.';
+                let reason = 'Could not get your location.';
+                
+                if (geoError.code === geoError.PERMISSION_DENIED) {
+                    reason = 'Location permission denied. Click the lock icon 🔒 in your address bar, select "Site settings", and allow Location. Then click "Try again" below.';
+                } else if (geoError.code === geoError.POSITION_UNAVAILABLE) {
+                    reason = 'Location unavailable. Make sure Location is turned ON in your device settings (Settings → Location). Then try again.';
+                } else if (geoError.code === geoError.TIMEOUT) {
+                    reason = 'Location request timed out. Move to an area with better GPS signal and try again.';
+                }
+                
                 stopLiveLocation();
                 showLocationError(reason, 'live');
-            }, { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 });
+            }, { 
+                enableHighAccuracy: true, 
+                maximumAge: 0, 
+                timeout: 15000 
+            });
         } catch (error) {
             stopLiveLocation();
-            const reason = error instanceof Error ? error.message : 'The browser could not start location tracking.';
+            const reason = error instanceof Error ? `Error: ${error.message}` : 'The browser could not start location tracking.';
             showLocationError(reason, 'live');
         }
     }
@@ -400,8 +416,8 @@ export function renderLocation(root) {
     shareBtn.addEventListener('click', async () => {
         if (locationChoice !== 'allowed') {
             const reason = locationChoice === 'denied'
-                ? 'You denied location for this screen. Tap Allow location before sharing coordinates.'
-                : 'Tap Allow location before sharing your current coordinates.';
+                ? 'You denied location for this screen. Click "Allow location" above to enable location sharing.'
+                : 'Click "Allow location" above first, then try sharing your location.';
             mapStatus.textContent = reason;
             errorEl.textContent = reason;
             retryBtn.hidden = true;
@@ -409,14 +425,17 @@ export function renderLocation(root) {
             permissionHelp.hidden = false;
             return;
         }
+        
         shareBtn.disabled = true;
         skipBtn.disabled = true;
         errorEl.textContent = '';
         retryBtn.hidden = true;
         permissionHelp.hidden = true;
         retryAction = null;
-        mapStatus.textContent = 'Requesting location permission and getting your current location…';
+        mapStatus.textContent = 'Getting your current location…';
+        
         const result = await getLocation(12000);
+        
         if (result.ok === true) {
             updateMap(result.coords.latitude, result.coords.longitude, result.accuracy, 'Current location');
             store.setLocationShared(true, result.text);
@@ -425,7 +444,16 @@ export function renderLocation(root) {
         else {
             shareBtn.disabled = false;
             skipBtn.disabled = false;
-            showLocationError(`${result.reason} If device Location is off, turn it on in your device settings before trying again.`, 'share');
+            let enhancedReason = result.reason;
+            
+            // Add helpful instructions based on the error
+            if (result.reason.includes('denied')) {
+                enhancedReason += '\n\nTo fix: Click the lock icon 🔒 in your browser address bar → Site settings → Location → Allow';
+            } else if (result.reason.includes('unavailable') || result.reason.includes('No GPS')) {
+                enhancedReason += '\n\nMake sure Location is turned ON in your device settings.';
+            }
+            
+            showLocationError(enhancedReason, 'share');
         }
     });
     skipBtn.addEventListener('click', () => {
