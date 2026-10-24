@@ -61,14 +61,14 @@ export function renderWelcome(root: HTMLElement) {
     <div class="screen splash-screen">
       <div class="splash-container">
         <div class="splash-cover-image">
-          <img src="/cover-phone.png" alt="Panic Ring on a mobile phone" />
-          <span class="splash-cover-brand">PANIC RING</span>
+          <img src="/cover-panic-ring.png" alt="Red Panic Ring emergency button" />
         </div>
         <div class="splash-content">
           <h1 class="splash-tagline">Your Safety Matters</h1>
           <span class="splash-accent-line" aria-hidden="true"></span>
+          <p class="splash-pin-hint">Sign in with your 4-digit PIN. No password needed.</p>
           <div class="splash-actions">
-          <button class="btn-primary splash-btn" id="splash-login" type="button">Login</button>
+          <button class="btn-primary splash-btn" id="splash-login" type="button">Login with PIN</button>
           <p class="splash-signup-text">No account? <button class="auth-link-btn" id="splash-signup" type="button">Sign up</button></p>
           <button class="auth-link-btn splash-forgot-link" id="splash-forgot" type="button">Forgot your PIN?</button>
           <button class="splash-install-btn" id="splash-install" type="button">

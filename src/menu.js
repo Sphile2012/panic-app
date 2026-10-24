@@ -3,6 +3,8 @@ import { t } from './i18n.js';
 import './strings/core.js';
 const ICONS = {
     app: '<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/>',
+    emergency: '<path d="M12 3v18M3 12h18"/>',
+    troubleshoot: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 4 2c-1 .7-1.5 1.1-1.5 2.5M12 17h.01"/>',
     live: '<path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/>',
     contacts: '<circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.5"/><path d="M17 14c2.5 0 4 1.8 4 4"/>',
     records: '<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>',
@@ -31,6 +33,7 @@ function sections() {
                 { screen: 'app', label: t('menu.home') },
                 { screen: 'profile', label: t('menu.profile') },
                 { screen: 'contacts', label: t('menu.contacts') },
+                { screen: 'emergency', label: 'Emergency dialer' },
                 { screen: 'live', label: t('menu.map') },
                 { screen: 'chat', label: 'Messages' },
             ] },
@@ -39,6 +42,7 @@ function sections() {
                 { screen: 'history', label: t('menu.history') },
                 { screen: 'records', label: 'Records' },
                 { screen: 'notes', label: 'Notes' },
+                { screen: 'troubleshoot', label: 'Troubleshooting' },
             ] },
         { title: t('menu.account'), items: [
                 { screen: 'companion', label: 'Safety companion' },

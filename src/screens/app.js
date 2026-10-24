@@ -10,12 +10,14 @@ function escapeHtml(value) {
     }[character] ?? character));
 }
 const DASHBOARD_CARDS = [
+    { screen: 'emergency', icon: '<path d="M12 3v18M3 12h18"/>', label: 'Emergency dialer', detail: 'Call help directly' },
     { screen: 'contacts', icon: '<circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.5"/><path d="M17 14c2.5 0 4 1.8 4 4"/>', label: 'Trusted contacts', detail: 'Manage your circle' },
     { screen: 'live', icon: '<path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1116 0z"/><circle cx="12" cy="10" r="2.5"/>', label: 'Live location', detail: 'Share your location' },
     { screen: 'safety-plan', icon: '<path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11z"/><path d="M9 12l2 2 4-4"/>', label: 'Safety plan', detail: 'Your plan, ready' },
     { screen: 'history', icon: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 8v5l3 2"/>', label: 'Alert history', detail: 'Review past alerts' },
     { screen: 'notes', icon: '<path d="M5 3h14v18H5z"/><path d="M8 8h8M8 12h8M8 16h5"/>', label: 'Private notes', detail: 'Keep key details' },
     { screen: 'checkin', icon: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', label: 'Check-in timer', detail: 'Set a safe arrival time' },
+    { screen: 'troubleshoot', icon: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 4 2c-1 .7-1.5 1.1-1.5 2.5M12 17h.01"/>', label: 'Troubleshooting', detail: 'Fix common issues' },
 ];
 export function renderApp(root) {
     const { contacts, authEmail, profile } = store.getState();

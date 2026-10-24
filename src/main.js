@@ -1,7 +1,7 @@
 import './style.css';
 import { store } from './state.js';
 import { renderCalculator } from './screens/calculator.js';
-import { renderSetupPin, renderSetupContacts, renderRecoverySetup, renderPinRecovery } from './screens/setup.js';
+import { renderSetupPin, renderSetupProfile, renderSetupContacts, renderRecoverySetup, renderPinRecovery } from './screens/setup.js';
 import { renderApp } from './screens/app.js';
 import { renderContacts } from './screens/contacts.js';
 import { renderLocation } from './screens/location.js';
@@ -16,7 +16,6 @@ import { renderSafetyPlan } from './screens/safetyPlan.js';
 import { renderSupport } from './screens/support.js';
 import { renderSettings } from './screens/settings.js';
 import { renderAppearance } from './screens/appearance.js';
-import { renderWelcome, renderSignup, renderLogin, renderVerifyEmail } from './screens/auth.js';
 import { renderBudget } from './screens/disguise/budget.js';
 import { renderWeather } from './screens/disguise/weather.js';
 import { renderNotesPlain } from './screens/disguise/notesPlain.js';
@@ -24,7 +23,9 @@ import { renderClock } from './screens/disguise/clock.js';
 import { renderCompanion } from './screens/companion.js';
 import { renderAbout } from './screens/about.js';
 import { renderTerms } from './screens/terms.js';
+import { renderEmergencyDialer, renderTroubleshooting } from './screens/emergency.js';
 import { renderDecoy } from './screens/decoy.js';
+import { renderWelcome } from './screens/emailAuth.js';
 import { runAlertSequence } from './alertService.js';
 import { pruneStaleQueue, watchForReconnect } from './alertQueue.js';
 import { loadAppearance, applyAppearance } from './theme.js';
@@ -32,11 +33,6 @@ import { initPwa, canInstall, isInstalled, isIosSafari, promptInstall, onInstall
 const appRoot = document.getElementById('app-root');
 if (!appRoot) {
     throw new Error('App root element not found.');
-}
-const authCallbackParams = new URLSearchParams(window.location.search);
-const authCallbackHash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
-if (authCallbackParams.has('flow') && authCallbackHash.has('access_token')) {
-    store.navigateTo('account-pin-check');
 }
 initPwa();
 let currentScreen = null;
@@ -79,15 +75,6 @@ function render(screen) {
         case 'welcome':
             renderWelcome(appRoot);
             break;
-        case 'signup':
-            renderSignup(appRoot);
-            break;
-        case 'login':
-            renderLogin(appRoot);
-            break;
-        case 'verify-email':
-            renderVerifyEmail(appRoot);
-            break;
         case 'calculator':
             renderDisguise();
             break;
@@ -97,11 +84,14 @@ function render(screen) {
         case 'setup-pin':
             renderSetupPin(appRoot);
             break;
+        case 'setup-profile':
+            renderSetupProfile(appRoot);
+            break;
         case 'setup-contacts':
             renderSetupContacts(appRoot);
             break;
         case 'recovery-setup':
-            renderRecoverySetup(appRoot, 'setup-contacts');
+            renderRecoverySetup(appRoot, 'setup-profile');
             break;
         case 'recovery-settings':
             renderRecoverySetup(appRoot, 'settings');
@@ -160,6 +150,12 @@ function render(screen) {
         case 'support':
             renderSupport(appRoot);
             break;
+        case 'emergency':
+            renderEmergencyDialer(appRoot);
+            break;
+        case 'troubleshoot':
+            renderTroubleshooting(appRoot);
+            break;
         case 'companion':
             renderCompanion(appRoot);
             break;
@@ -189,14 +185,50 @@ function render(screen) {
             renderCalculator(appRoot);
             break;
     }
+    attachBackButton(screen);
+}
+function attachBackButton(screen) {
+    if (['welcome', 'calculator', 'decoy', 'sending'].includes(screen))
+        return;
+    const button = document.createElement('button');
+    button.className = 'global-back-button';
+    button.type = 'button';
+    button.setAttribute('aria-label', 'Back');
+    button.textContent = '←';
+    if (screen === 'app') {
+        button.classList.add('global-back-button--inline');
+        appRoot.querySelector('.app-header')?.prepend(button);
+        return;
+    }
+    const screenRoot = appRoot.querySelector('.screen');
+    if (!screenRoot || screenRoot.querySelector('.btn-back-small'))
+        return;
+    screenRoot.prepend(button);
 }
 store.subscribe((state) => {
     if (state.screen !== currentScreen)
         render(state.screen);
 });
+document.addEventListener('click', event => {
+    const target = event.target;
+    if (!(target instanceof Element))
+        return;
+    const button = target.closest('.btn-back-small, .global-back-button');
+    if (!button)
+        return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    if (store.getState().screen === 'sent')
+        store.navigateTo('app');
+    else
+        store.navigateBack();
+}, true);
 document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') {
-        const safe = ['calculator', 'decoy', 'setup-pin', 'setup-profile', 'setup-contacts', 'welcome', 'signup', 'login', 'verify-email', 'account-pin-check', 'account-pin-login'];
+        const safe = [
+            'calculator', 'decoy', 'setup-pin', 'setup-profile', 'setup-contacts',
+            'welcome',
+        ];
         if (!safe.includes(store.getState().screen)) {
             window.location.href = 'https://www.google.com';
         }
@@ -239,14 +271,35 @@ document.addEventListener('keydown', (event) => {
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(() => { });
 }
-document.getElementById('install-btn')?.addEventListener('click', async () => {
+async function handleInstallClick() {
+    const coverMessage = document.getElementById('splash-install-message');
+    if (isInstalled()) {
+        if (coverMessage) {
+            coverMessage.textContent = 'Panic Ring is already installed.';
+            coverMessage.hidden = false;
+        }
+        return;
+    }
     if (isIosSafari()) {
         const msg = document.getElementById('ios-install-msg');
         if (msg)
             msg.style.display = 'block';
+        if (coverMessage) {
+            coverMessage.textContent = 'Tap Share, then Add to Home Screen.';
+            coverMessage.hidden = false;
+        }
         return;
     }
-    await promptInstall();
+    const outcome = await promptInstall();
+    if (outcome === 'unavailable' && coverMessage) {
+        coverMessage.textContent = 'Install is not available in this browser yet.';
+        coverMessage.hidden = false;
+    }
+}
+document.getElementById('install-btn')?.addEventListener('click', () => void handleInstallClick());
+appRoot.addEventListener('click', event => {
+    if (event.target.closest('#splash-install'))
+        void handleInstallClick();
 });
 onInstallReady(() => updateInstallBanner());
 onInstalled(() => {
@@ -254,17 +307,15 @@ onInstalled(() => {
     if (banner)
         banner.style.display = 'none';
 });
-store.initAuth().then(() => {
-    pruneStaleQueue();
-    watchForReconnect(({ locationText, locationShared }) => {
-        store.startSending();
-        runAlertSequence(locationText, locationShared, () => {
-            if (store.getState().screen === 'sending')
-                updateSendingList(appRoot);
-        });
+pruneStaleQueue();
+watchForReconnect(({ locationText, locationShared }) => {
+    store.startSending();
+    runAlertSequence(locationText, locationShared, () => {
+        if (store.getState().screen === 'sending')
+            updateSendingList(appRoot);
     });
-    render(store.getState().screen);
-    updateInstallBanner();
-    const appearance = loadAppearance();
-    applyAppearance(appearance);
 });
+render(store.getState().screen);
+updateInstallBanner();
+const appearance = loadAppearance();
+applyAppearance(appearance);

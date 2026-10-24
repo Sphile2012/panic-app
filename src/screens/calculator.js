@@ -73,7 +73,7 @@ export function renderCalculator(root) {
             store.appendPin(v);
             expression.textContent = '•'.repeat(store.getState().pinBuffer.length);
             calcBuffer += v;
-            display.textContent = calcBuffer;
+            display.textContent = '•'.repeat(store.getState().pinBuffer.length);
             return;
         }
         clearLoginFeedback();

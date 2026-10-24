@@ -23,6 +23,7 @@ import { renderClock } from './screens/disguise/clock.js';
 import { renderCompanion } from './screens/companion.js';
 import { renderAbout } from './screens/about.js';
 import { renderTerms } from './screens/terms.js';
+import { renderEmergencyDialer, renderTroubleshooting } from './screens/emergency.js';
 import { renderDecoy } from './screens/decoy.js';
 import { renderWelcome } from './screens/emailAuth.js';
 import { runAlertSequence } from './alertService.js';
@@ -153,6 +154,12 @@ function render(screen: string) {
             break;
         case 'support':
             renderSupport(appRoot);
+            break;
+        case 'emergency':
+            renderEmergencyDialer(appRoot);
+            break;
+        case 'troubleshoot':
+            renderTroubleshooting(appRoot);
             break;
         case 'companion':
             renderCompanion(appRoot);

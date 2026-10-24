@@ -11,6 +11,22 @@ export function renderLocation(root) {
       Sharing your location helps your contacts find you faster. Saved notes are included in the alert message.
       </p>
 
+      <section class="location-map-card" aria-label="Map preview of your current location">
+        <div class="location-map-heading">
+          <strong>Current location</strong>
+          <span id="location-map-status" role="status">Waiting for location permission…</span>
+        </div>
+        <div class="location-map-frame">
+          <iframe id="location-map" title="Map showing your current location" loading="lazy" hidden
+            referrerpolicy="no-referrer" allowfullscreen></iframe>
+          <div class="location-map-placeholder" id="location-map-placeholder">
+            <span aria-hidden="true">◎</span>
+            <strong>Your map will appear here</strong>
+            <small>Allow location access to find your position.</small>
+          </div>
+        </div>
+      </section>
+
       <div class="loc-accuracy-wrap" id="loc-accuracy-wrap" style="display:none">
         <div class="loc-accuracy-bar">
           <div class="loc-accuracy-fill" id="loc-accuracy-fill"></div>
@@ -50,7 +66,7 @@ export function renderLocation(root) {
           </ul>
           <p>
             Location is captured once when you tap Share. This browser-only SMS flow cannot send automatic location updates every 10 seconds.
-            Location is not stored on a server.
+            Location is not stored on a Panic Ring server. The map and address lookup send coordinates to OpenStreetMap to display your position.
           </p>
           <p>SMS and WhatsApp links cannot attach photo files in this browser flow.</p>
           <p>
@@ -71,10 +87,30 @@ export function renderLocation(root) {
     const addressLine = root.querySelector('#loc-address-line');
     const accuracyBadge = root.querySelector('#loc-accuracy-badge');
     const mapsLink = root.querySelector('#loc-maps-link');
+    const mapFrame = root.querySelector('#location-map');
+    const mapPlaceholder = root.querySelector('#location-map-placeholder');
+    const mapStatus = root.querySelector('#location-map-status');
     const errorEl = root.querySelector('#loc-error');
     const shareBtn = root.querySelector('#btn-share');
     const skipBtn = root.querySelector('#btn-skip');
     let watchId = null;
+    let lastMappedPosition = null;
+    function updateMap(lat, lng, accuracy, force = false) {
+        const movedEnough = !lastMappedPosition ||
+            Math.abs(lastMappedPosition.lat - lat) > 0.0008 ||
+            Math.abs(lastMappedPosition.lng - lng) > 0.0008;
+        if (!force && !movedEnough)
+            return;
+        lastMappedPosition = { lat, lng };
+        const delta = 0.006;
+        const bounds = `${(lng - delta).toFixed(6)}%2C${(lat - delta).toFixed(6)}%2C${(lng + delta).toFixed(6)}%2C${(lat + delta).toFixed(6)}`;
+        mapFrame.src = `https://www.openstreetmap.org/export/embed.html?bbox=${bounds}&layer=mapnik&marker=${lat.toFixed(6)}%2C${lng.toFixed(6)}`;
+        mapFrame.title = `Map showing your current location with reported accuracy of approximately ${Math.round(accuracy)} metres`;
+        mapFrame.hidden = false;
+        mapPlaceholder.hidden = true;
+        mapStatus.textContent = `GPS accuracy ±${Math.round(accuracy)} m`;
+        mapsLink.href = `https://maps.google.com/?q=${lat.toFixed(7)},${lng.toFixed(7)}`;
+    }
     function startWatch() {
         if (!('geolocation' in navigator))
             return;
@@ -87,7 +123,12 @@ export function renderLocation(root) {
             accuracyFill.style.width = `${pct}%`;
             accuracyFill.style.background = colour;
             accuracyText.textContent = `GPS signal: ${label} (±${acc} m)`;
-        }, () => { }, { enableHighAccuracy: true, maximumAge: 0 });
+            updateMap(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
+        }, error => {
+            mapStatus.textContent = error.code === 1
+                ? 'Location permission is off'
+                : 'Waiting for a GPS position';
+        }, { enableHighAccuracy: true, maximumAge: 0 });
     }
     function stopWatch() {
         if (watchId !== null) {
@@ -96,6 +137,13 @@ export function renderLocation(root) {
         }
     }
     startWatch();
+    let unsubscribeFromLocation = () => { };
+    unsubscribeFromLocation = store.subscribe(state => {
+        if (state.screen !== 'location') {
+            stopWatch();
+            unsubscribeFromLocation();
+        }
+    });
     shareBtn.addEventListener('click', async () => {
         stopWatch();
         shareBtn.disabled = true;
@@ -105,6 +153,7 @@ export function renderLocation(root) {
         accuracyText.textContent = 'Getting a fresh, accurate GPS fix…';
         const result = await getLocation(12000);
         if (result.ok === true) {
+            updateMap(result.coords.latitude, result.coords.longitude, result.accuracy, true);
             addressLine.textContent = `Nearby mapped address: ${result.address}`;
             accuracyBadge.textContent = `±${Math.round(result.accuracy)} m`;
             mapsLink.href = result.mapsUrl;

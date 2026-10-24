@@ -47,23 +47,34 @@ export function renderContacts(root: HTMLElement): void {
       <header class="screen-header">
         <button class="btn-back-small" id="btn-back" aria-label="Back">←</button>
         <h2 class="screen-title">Trusted circle</h2>
-        <button class="contacts-add-shortcut" id="btn-add-contact" type="button" aria-label="Add trusted contact">＋</button>
+        <button class="contacts-add-shortcut" id="btn-add-contact" type="button"
+          aria-label="${contacts.length >= 5 ? 'Trusted circle is full' : 'Add trusted contact'}"
+          title="${contacts.length >= 5 ? 'Circle full (5/5)' : 'Add contact'}"
+          ${contacts.length >= 5 ? 'disabled' : ''}>＋</button>
       </header>
 
       <label class="contacts-search">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.3"/><path d="m16 16 4.2 4.2"/></svg>
         <input id="contact-search" type="search" placeholder="Search trusted contacts" aria-label="Search trusted contacts" />
       </label>
-      <p class="contacts-caption">People you can reach when you need support · ${contacts.length}/5</p>
-      <p class="setup-hint" id="contact-action-error" role="alert" aria-live="polite"></p>
-      <ul class="contact-list" id="contact-list">
-        ${contacts.length === 0
-          ? '<li class="empty-hint">No contacts yet. Add someone you trust.</li>'
-          : contacts.map(renderContact).join('')}
-        <li class="empty-hint" id="contact-no-results" hidden>No matching contacts.</li>
-      </ul>
+      <section class="contacts-list-panel" aria-label="Emergency contact list">
+        <div class="contacts-list-heading">
+          <div>
+            <h3>Emergency contact list</h3>
+            <p>People you choose to contact</p>
+          </div>
+          <span class="contacts-count">${contacts.length}/5</span>
+        </div>
+        <p class="setup-hint" id="contact-action-error" role="alert" aria-live="polite"></p>
+        <ul class="contact-list" id="contact-list">
+          ${contacts.length === 0
+            ? '<li class="empty-hint">No contacts yet. Tap + to add someone you trust.</li>'
+            : contacts.map(renderContact).join('')}
+          <li class="empty-hint" id="contact-no-results" hidden>No matching contacts.</li>
+        </ul>
+      </section>
 
-      <form class="setup-form contacts-form" id="contact-form" autocomplete="off">
+      <form class="setup-form contacts-form" id="contact-form" autocomplete="off" hidden>
         <h3 class="form-section-title" id="form-title">Add contact</h3>
         <input type="hidden" id="edit-id" value="" />
         <label class="field-label" for="c-name">Name</label>
@@ -73,7 +84,7 @@ export function renderContacts(root: HTMLElement): void {
         <p class="setup-hint" id="c-error" aria-live="polite"></p>
         <div class="form-row">
           <button class="btn-primary" type="submit" id="btn-save">Add</button>
-          <button class="btn-secondary-outline" type="button" id="btn-cancel-edit" style="display:none">Cancel</button>
+          <button class="btn-secondary-outline" type="button" id="btn-cancel-edit">Cancel</button>
         </div>
       </form>
     </div>
@@ -95,11 +106,13 @@ export function renderContacts(root: HTMLElement): void {
   const actionError = root.querySelector<HTMLElement>('#contact-action-error');
 
   root.querySelector('#btn-add-contact')?.addEventListener('click', () => {
+    if (store.getState().contacts.length >= 5) return;
     editIdEl.value = '';
     form.reset();
     formTitle.textContent = 'Add contact';
     saveBtn.textContent = 'Add';
-    cancelBtn.style.display = 'none';
+    cancelBtn.style.display = 'inline-flex';
+    form.hidden = false;
     errorEl.textContent = '';
     actionError.textContent = '';
     form.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -127,6 +140,7 @@ export function renderContacts(root: HTMLElement): void {
       if (!contact) return;
       actionError.textContent = '';
       errorEl.textContent = '';
+      form.hidden = false;
       editIdEl.value = contact.id;
       nameEl.value = contact.name;
       phoneEl.value = contact.phone;
@@ -157,7 +171,7 @@ export function renderContacts(root: HTMLElement): void {
     form.reset();
     formTitle.textContent = 'Add contact';
     saveBtn.textContent = 'Add';
-    cancelBtn.style.display = 'none';
+    form.hidden = true;
     errorEl.textContent = '';
     actionError.textContent = '';
   });
