@@ -4,6 +4,7 @@ import { isCheckinActive, checkinSecondsLeft, startCheckin, cancelCheckin, resum
 import { openMenu } from '../menu.js';
 import { smsUri } from '../storage.js';
 import { dismissLowBattery, getLowBattery, onTrackChange, startBatteryMonitoring } from '../tracking.js';
+import { startEmergencySession } from '../emergencySession.js';
 
 function escapeHtml(value: string): string {
     return value.replace(/[&<>"']/g, character => ({
@@ -222,7 +223,11 @@ export function renderApp(root) {
             return;
         }
         holdBtn.classList.add('btn-hold--holding');
-        holdTimer = setTimeout(() => store.navigateTo('location'), 1500);
+        holdTimer = setTimeout(async () => {
+            // Start emergency session and navigate to emergency status screen
+            await startEmergencySession();
+            store.navigateTo('emergency-status');
+        }, 1500);
     };
     holdBtn.addEventListener('pointerdown', event => {
         event.preventDefault();

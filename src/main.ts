@@ -6,6 +6,7 @@ import { renderApp } from './screens/app.js';
 import { renderContacts } from './screens/contacts.js';
 import { renderLocation } from './screens/location.js';
 import { renderLive } from './screens/live.js';
+import { renderEmergencyStatus } from './screens/emergency-status.js';
 import { renderProfile } from './screens/profile.js';
 import { renderHistory, renderJourney, renderFakeCall, renderWatch, renderGuide, renderFaq } from './screens/pages.js';
 import { renderRecords } from './screens/records.js';
@@ -118,6 +119,9 @@ function render(screen: string) {
             break;
         case 'live':
             renderLive(appRoot);
+            break;
+        case 'emergency-status':
+            renderEmergencyStatus(appRoot);
             break;
         case 'history':
             renderHistory(appRoot);
