@@ -393,7 +393,7 @@ class Store {
             authEmail: email,
             ...(identityChanged ? { accountPinUnlocked: true, accountPinQuestionIds: [] } : {}),
         };
-        if (email && !this.state.accountPinUnlocked &&
+        if (email && this.state.isFirstRun &&
             (previousEmail !== email || ['welcome', 'login', 'signup', 'verify-email'].includes(this.state.screen))) {
             this.state = { ...this.state, screen: 'setup-pin' };
         }

@@ -1,6 +1,8 @@
 import { hasDistinctPinDigits, PIN_FAILURE_LIMIT, store } from '../state.js';
-import { getRecoveryQuestionIds, setRecoveryQuestions } from '../storage.js';
+import { getRecoveryQuestionIds, setRecoveryQuestions, setCloudBackup, hasCloudBackup } from '../storage.js';
 import { wirePasswordToggles } from '../formControls.js';
+import { setupPinsInCloud, DB_CONFIGURED, getUser, changePinsInCloud } from '../db.js';
+import { DISGUISE_OPTIONS, loadAppearance, saveAppearance, applyAppearance } from '../theme.js';
 
 function escapeHtml(value: string): string {
     return value.replace(/[&<>"']/g, character => ({
@@ -28,12 +30,53 @@ export const RECOVERY_QUESTIONS = [
   { id: 'family-nickname', label: 'What nickname did your family use for you?' },
 ];
 
+export function renderSetupDisguise(root: HTMLElement): void {
+    const appearance = loadAppearance();
+    root.innerHTML = `
+      <div class="screen setup-screen">
+        <h1 class="setup-title">Choose your disguise</h1>
+        <p class="setup-body">Choose what the app displays while locked.</p>
+        <form class="setup-form" id="setup-disguise-form">
+          <div class="disguise-options">
+            ${DISGUISE_OPTIONS.map(option => `
+              <label class="disguise-option ${appearance.disguise === option.id ? 'disguise-option--selected' : ''}">
+                <input type="radio" name="disguise" value="${option.id}" ${appearance.disguise === option.id ? 'checked' : ''} />
+                <div class="disguise-option-preview">${option.preview}</div>
+                <div class="disguise-option-label">${option.label}</div>
+                <div class="disguise-option-desc">${option.description}</div>
+              </label>
+            `).join('')}
+          </div>
+          <button class="btn-primary" type="submit">Continue</button>
+        </form>
+      </div>`;
+    const form = root.querySelector<HTMLFormElement>('#setup-disguise-form')!;
+    form.addEventListener('change', event => {
+        const target = event.target;
+        if (!(target instanceof HTMLInputElement) || target.name !== 'disguise')
+            return;
+        form.querySelectorAll('.disguise-option').forEach(option => option.classList.remove('disguise-option--selected'));
+        target.closest('.disguise-option')?.classList.add('disguise-option--selected');
+    });
+    form.addEventListener('submit', event => {
+        event.preventDefault();
+        const selected = form.querySelector<HTMLInputElement>('input[name="disguise"]:checked');
+        if (selected) {
+            const nextAppearance = loadAppearance();
+            nextAppearance.disguise = selected.value;
+            saveAppearance(nextAppearance);
+            applyAppearance(nextAppearance);
+        }
+        store.navigateTo('recovery-setup');
+    });
+}
+
 export function renderSetupPin(root: HTMLElement) {
     if (store.getState().pinHash) {
         root.innerHTML = `
       <div class="screen setup-screen">
-        <h1 class="setup-title">Account already set up</h1>
-        <p class="setup-body">This device already has an account. Log in, or use Forgot PIN to reset your PINs with your security questions.</p>
+        <h1 class="setup-title">PINs already set up</h1>
+        <p class="setup-body">This device is already protected. Open the app or use Forgot PIN to reset your security questions.</p>
         <button class="btn-primary" id="btn-existing-login" type="button">Back to login</button>
         <button class="auth-link-btn" id="btn-existing-recovery" type="button">Forgot PIN?</button>
       </div>
@@ -170,7 +213,7 @@ export function renderSetupPin(root: HTMLElement) {
         sessionStorage.setItem('temp_pin2', decoy);
         
         await store.savePin(pin, decoy);
-        store.navigateTo('recovery-setup');
+        store.navigateTo('setup-disguise');
     });
 }
 

@@ -1,7 +1,7 @@
 export function formatAuthError(message, context = 'general') {
     const normalized = message.toLowerCase();
     if (/(user_already_exists|email_exists|already registered|already exists)/.test(normalized))
-        return 'An account may already exist with this email. Try signing in with a verification code.';
+        return 'We could not complete that request. Check your details or try again.';
     if (/(email not confirmed|email_not_confirmed)/.test(normalized))
         return 'Please confirm your email using the code we sent.';
     if (context === 'password' && /(invalid login credentials|invalid_credentials)/.test(normalized))
@@ -10,4 +10,4 @@ export function formatAuthError(message, context = 'general') {
         return 'This code is invalid or expired. Request a new code and try again.';
     return message;
 }
-export const SIGNUP_CONFIRMATION_MESSAGE = 'Enter the verification code sent to your email.';
+export const SIGNUP_CONFIRMATION_MESSAGE = 'Enter the code we sent to your email to continue.';

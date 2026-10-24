@@ -20,7 +20,7 @@ const originalEnv = {
 
 test('Netlify keeps Supabase credentials in private site environment settings, not source config', () => {
   assert.doesNotMatch(netlifyConfig, /^\s*(?:VITE_)?SUPABASE_(?:URL|ANON_KEY)\s*=/m);
-  assert.match(netlifyConfig, /^\s*VITE_AUTH_ENABLED\s*=\s*"true"/m);
+  assert.doesNotMatch(netlifyConfig, /^\s*VITE_AUTH_ENABLED\s*=\s*"true"/m);
 });
 
 beforeEach(() => {

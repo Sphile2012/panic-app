@@ -85,26 +85,40 @@ export function renderWelcome(root: HTMLElement) {
   const hasPinStored = Boolean(store.getState().pinHash);
   root.innerHTML = `
     <div class="screen splash-screen">
-      <div class="splash-container">
-        <div class="splash-cover-image">
-          <img src="/cover-panic-ring.png" alt="Red Panic Ring emergency button" />
+      <div class="splash-scene">
+        <div class="splash-mini-device" aria-hidden="true">
+          <div class="splash-mini-device__screen"></div>
         </div>
-        <div class="splash-content">
-          <h1 class="splash-tagline">Your Safety Matters</h1>
-          <span class="splash-accent-line" aria-hidden="true"></span>
-          <p class="splash-pin-hint">Sign in with your 4-digit PIN. No password needed.</p>
-          <div class="splash-actions">
-          <button class="btn-primary splash-btn" id="splash-login" type="button">Login with PIN</button>
-          <p class="splash-signup-text">No account? <button class="auth-link-btn" id="splash-signup" type="button">Sign up</button></p>
-          <button class="auth-link-btn splash-forgot-link" id="splash-forgot" type="button">Forgot your PIN?</button>
-          <button class="splash-install-btn" id="splash-install" type="button">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M12 3v12m-5-5 5 5 5-5" />
-              <path d="M5 16v4h14v-4" />
-            </svg>
-            <span>Click here to install</span>
-          </button>
-          <p class="splash-install-message" id="splash-install-message" role="status" hidden></p>
+
+        <div class="splash-card">
+          <div class="splash-button-shell" aria-hidden="true">
+            <div class="splash-panic-button">
+              <span>PANIC</span>
+            </div>
+          </div>
+
+          <div class="splash-content">
+            <h1 class="splash-tagline">Your Safety Matters</h1>
+            <p class="splash-pin-hint">Sign in with your 4-digit PIN. No password needed.</p>
+            <div class="splash-actions">
+              <button class="btn-primary splash-btn" id="splash-login" type="button">Login with PIN</button>
+              <p class="splash-signup-text">New here? <button class="auth-link-btn" id="splash-signup" type="button">Create PINs</button></p>
+              <button class="auth-link-btn splash-forgot-link" id="splash-forgot" type="button">Forgot your PIN?</button>
+              <button class="splash-install-btn" id="splash-install" type="button">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M12 3v12m-5-5 5 5 5-5" />
+                  <path d="M5 16v4h14v-4" />
+                </svg>
+                <span>Click here to install</span>
+              </button>
+              <p class="splash-install-message" id="splash-install-message" role="status" hidden></p>
+            </div>
+          </div>
+        </div>
+
+        <div class="splash-map-panel" aria-hidden="true">
+          <div class="splash-map-panel__inner">
+            <div class="splash-map-panel__badge">Panic Ring</div>
           </div>
         </div>
       </div>

@@ -2,8 +2,11 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { formatAuthError, SIGNUP_CONFIRMATION_MESSAGE } from '../src/authMessages.js';
 
-test('duplicate account errors are translated into sign-in guidance', () => {
-  assert.match(formatAuthError('User already registered'), /signing in with a verification code/i);
+test('duplicate account errors are translated into neutral guidance', () => {
+  assert.equal(
+    formatAuthError('User already registered'),
+    'We could not complete that request. Check your details or try again.',
+  );
 });
 
 test('email-code authentication and confirmation errors are understandable', () => {
@@ -23,5 +26,5 @@ test('email-code authentication and confirmation errors are understandable', () 
 });
 
 test('signup confirmation copy does not reveal whether an account exists', () => {
-  assert.equal(SIGNUP_CONFIRMATION_MESSAGE, 'Enter the verification code sent to your email.');
+  assert.equal(SIGNUP_CONFIRMATION_MESSAGE, 'Enter the code we sent to your email to continue.');
 });

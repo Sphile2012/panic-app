@@ -2,6 +2,7 @@ import { hasDistinctPinDigits, store } from '../state.js';
 import { getRecoveryQuestionIds } from '../storage.js';
 import { RECOVERY_QUESTIONS } from './setup.js';
 import { wirePasswordToggles } from '../formControls.js';
+const PIN_QUESTIONS = Object.fromEntries(RECOVERY_QUESTIONS.map(question => [question.id, question.label]));
 export function renderSettings(root) {
     const { autoLockMinutes } = store.getState();
     const recoveryQuestionIds = getRecoveryQuestionIds();
