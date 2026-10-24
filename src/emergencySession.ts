@@ -4,13 +4,14 @@
  */
 
 import { getLocation } from './alertService.js';
-import { startTracking, stopTracking, isTracking, getLast, trackUrl, mapsUrl } from './tracking.js';
-import { startEvidenceCapture, requestCameraAccess, evidenceEnabled } from './evidence.js';
+import { startTracking, stopTracking, isTracking, getLast, trackUrl, mapsUrl, getToken } from './tracking.js';
+import { startEvidenceCapture, requestCameraAccess, evidenceEnabled, listPhotos } from './evidence.js';
 import { store } from './state.js';
 import { DB_CONFIGURED, getClient } from './db.js';
 
 export interface EmergencySession {
     id: string;
+    dbId?: string;
     startedAt: number;
     status: 'active' | 'completed' | 'cancelled';
     gpsStatus: 'acquiring' | 'active' | 'failed' | 'denied' | 'unavailable';
@@ -24,6 +25,7 @@ export interface EmergencySession {
     locationText: string | null;
     photoCaptured: boolean;
     photoCount: number;
+    photoUrls: string[];
     errors: string[];
 }
 
@@ -53,6 +55,70 @@ function updateSession(updates: Partial<EmergencySession>) {
     if (currentSession) {
         currentSession = { ...currentSession, ...updates };
         emit();
+        
+        // Update database if configured
+        if (DB_CONFIGURED && currentSession.dbId) {
+            void updateSessionInDatabase(currentSession);
+        }
+    }
+}
+
+async function createSessionInDatabase(): Promise<string | null> {
+    if (!DB_CONFIGURED || !currentSession) return null;
+    
+    try {
+        const client = getClient();
+        const { data, error } = await client
+            .from('emergency_sessions')
+            .insert({
+                status: currentSession.status,
+                gps_status: currentSession.gpsStatus,
+                camera_status: currentSession.cameraStatus,
+                tracking_status: currentSession.trackingStatus,
+                notification_status: currentSession.notificationStatus,
+                tracking_token: getToken(),
+                photo_count: 0,
+                errors: currentSession.errors,
+            })
+            .select('id')
+            .single();
+        
+        if (error) {
+            console.warn('[Emergency] Failed to create session in database:', error);
+            return null;
+        }
+        
+        return data.id;
+    } catch (error) {
+        console.warn('[Emergency] Database error:', error);
+        return null;
+    }
+}
+
+async function updateSessionInDatabase(session: EmergencySession): Promise<void> {
+    if (!DB_CONFIGURED || !session.dbId) return;
+    
+    try {
+        const client = getClient();
+        await client
+            .from('emergency_sessions')
+            .update({
+                status: session.status,
+                gps_status: session.gpsStatus,
+                latitude: session.latitude,
+                longitude: session.longitude,
+                accuracy: session.accuracy,
+                location_text: session.locationText,
+                camera_status: session.cameraStatus,
+                photo_count: session.photoCount,
+                tracking_status: session.trackingStatus,
+                notification_status: session.notificationStatus,
+                errors: session.errors,
+                ended_at: session.status !== 'active' ? new Date().toISOString() : null,
+            })
+            .eq('id', session.dbId);
+    } catch (error) {
+        console.warn('[Emergency] Failed to update session:', error);
     }
 }
 
@@ -128,15 +194,16 @@ async function startEmergencyCamera(): Promise<void> {
         void startEvidenceCapture(3); // Capture 3 photos over time
         
         // Mark as completed after a short delay (photos capture in background)
-        setTimeout(() => {
+        setTimeout(async () => {
             if (currentSession && currentSession.cameraStatus === 'capturing') {
+                const photos = await listPhotos();
                 updateSession({ 
                     cameraStatus: 'completed',
-                    photoCaptured: true,
-                    photoCount: 3 
+                    photoCaptured: photos.length > 0,
+                    photoCount: photos.length 
                 });
             }
-        }, 5000);
+        }, 8000); // Wait longer for photos to capture
     } catch (error) {
         updateSession({ cameraStatus: 'failed' });
         currentSession?.errors.push(`Camera error: ${error instanceof Error ? error.message : 'Unknown'}`);
@@ -154,7 +221,7 @@ async function logEmergencyToDatabase(): Promise<void> {
             lng: currentSession.longitude,
             accuracy: currentSession.accuracy,
             method: 'panic-button',
-            notes: `Emergency SOS - ${currentSession.photoCount} photos captured`,
+            notes: `Emergency SOS - Session ${currentSession.id}`,
         });
         
         if (error) {
@@ -164,6 +231,77 @@ async function logEmergencyToDatabase(): Promise<void> {
         }
     } catch (error) {
         console.warn('[Emergency] Database logging error:', error);
+    }
+}
+
+export async function uploadEmergencyPhotos(): Promise<string[]> {
+    if (!currentSession || !DB_CONFIGURED) return [];
+    
+    updateSession({ uploadStatus: 'uploading' });
+    
+    try {
+        const photos = await listPhotos();
+        const uploadedUrls: string[] = [];
+        const client = getClient();
+        
+        for (const photo of photos.slice(0, 3)) { // Upload max 3 photos
+            try {
+                const fileName = `${currentSession.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.jpg`;
+                const filePath = `emergency-photos/${fileName}`;
+                
+                // Upload to Supabase Storage
+                const { data, error } = await client.storage
+                    .from('emergency-photos')
+                    .upload(filePath, photo.blob, {
+                        contentType: 'image/jpeg',
+                        cacheControl: '3600',
+                    });
+                
+                if (error) {
+                    console.warn('[Emergency] Photo upload failed:', error);
+                    continue;
+                }
+                
+                // Get public URL (will be private, only accessible with signed URL)
+                const { data: urlData } = client.storage
+                    .from('emergency-photos')
+                    .getPublicUrl(filePath);
+                
+                if (urlData.publicUrl) {
+                    uploadedUrls.push(urlData.publicUrl);
+                    
+                    // Save photo metadata to database
+                    await client.from('emergency_photos').insert({
+                        session_id: currentSession.dbId,
+                        storage_path: filePath,
+                        file_size: photo.blob.size,
+                        captured_at: new Date(photo.at).toISOString(),
+                        upload_status: 'uploaded',
+                    });
+                }
+            } catch (error) {
+                console.warn('[Emergency] Photo upload error:', error);
+            }
+        }
+        
+        if (uploadedUrls.length > 0) {
+            updateSession({ 
+                uploadStatus: 'uploaded',
+                photoUrls: uploadedUrls,
+                photoCount: uploadedUrls.length
+            });
+        } else {
+            updateSession({ uploadStatus: 'failed' });
+            currentSession?.errors.push('Photo upload failed');
+            emit();
+        }
+        
+        return uploadedUrls;
+    } catch (error) {
+        updateSession({ uploadStatus: 'failed' });
+        currentSession?.errors.push(`Upload error: ${error instanceof Error ? error.message : 'Unknown'}`);
+        emit();
+        return [];
     }
 }
 
@@ -189,10 +327,17 @@ export async function startEmergencySession(): Promise<EmergencySession> {
         locationText: null,
         photoCaptured: false,
         photoCount: 0,
+        photoUrls: [],
         errors: [],
     };
     
     emit();
+    
+    // Create session in database
+    const dbId = await createSessionInDatabase();
+    if (dbId) {
+        currentSession.dbId = dbId;
+    }
     
     // Start all emergency features in parallel (non-blocking)
     // Don't wait for them - they update the session as they progress
@@ -228,8 +373,15 @@ export function getEmergencyMessage(): string {
         message += `🔴 Live tracking active:\n${trackUrl()}\n\n`;
     }
     
-    if (currentSession.photoCaptured) {
-        message += `📸 ${currentSession.photoCount} emergency photo(s) captured\n\n`;
+    if (currentSession.photoCaptured && currentSession.photoCount > 0) {
+        message += `📸 ${currentSession.photoCount} emergency photo(s) captured\n`;
+        if (currentSession.photoUrls.length > 0) {
+            message += `View photos:\n`;
+            currentSession.photoUrls.forEach((url, i) => {
+                message += `Photo ${i + 1}: ${url}\n`;
+            });
+            message += `\n`;
+        }
     }
     
     message += `⚠️ Please contact immediately or send help!\n`;
@@ -244,6 +396,11 @@ export function getWhatsAppMessage(): string {
 
 export async function completeEmergencySession(): Promise<void> {
     if (!currentSession) return;
+    
+    // Try to upload photos before completing
+    if (currentSession.photoCaptured && currentSession.photoUrls.length === 0) {
+        await uploadEmergencyPhotos();
+    }
     
     updateSession({ 
         status: 'completed',
@@ -273,3 +430,4 @@ export function cancelEmergencySession(): void {
     currentSession = null;
     listeners.clear();
 }
+

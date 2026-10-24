@@ -4,7 +4,7 @@
  */
 
 import { store } from '../state.js';
-import { getCurrentSession, onSessionChange, getEmergencyMessage, getWhatsAppMessage, completeEmergencySession, cancelEmergencySession, type EmergencySession } from '../emergencySession.js';
+import { getCurrentSession, onSessionChange, getEmergencyMessage, getWhatsAppMessage, completeEmergencySession, cancelEmergencySession, uploadEmergencyPhotos, type EmergencySession } from '../emergencySession.js';
 import { smsUri, whatsappUri } from '../storage.js';
 import { isTracking, trackUrl } from '../tracking.js';
 
@@ -230,6 +230,36 @@ export function renderEmergencyStatus(root: HTMLElement) {
                 </section>
                 ` : ''}
                 
+                ${currentSession.photoCaptured && currentSession.photoCount > 0 ? `
+                <section class="emergency-photo-section">
+                    <h3>📸 Emergency Photos</h3>
+                    <div class="emergency-photo-card">
+                        <p><strong>${currentSession.photoCount} photo(s) captured</strong></p>
+                        ${currentSession.photoUrls.length > 0 ? `
+                            <p class="emergency-photo-status">✓ Photos uploaded and ready to share</p>
+                            <div class="emergency-photo-list">
+                                ${currentSession.photoUrls.map((url, i) => `
+                                    <a href="${url}" target="_blank" class="emergency-photo-link">
+                                        📷 Photo ${i + 1}
+                                    </a>
+                                `).join('')}
+                            </div>
+                        ` : currentSession.uploadStatus === 'uploading' ? `
+                            <div class="emergency-photo-uploading">
+                                <div class="spinner"></div>
+                                <p>Uploading photos...</p>
+                            </div>
+                        ` : currentSession.uploadStatus === 'failed' ? `
+                            <p class="emergency-photo-error">Photo upload failed</p>
+                            <button class="btn-secondary" id="btn-retry-upload">Retry Upload</button>
+                        ` : `
+                            <p class="emergency-photo-note">Photos are stored locally on your device</p>
+                            <button class="btn-secondary" id="btn-upload-photos">Upload Photos to Share</button>
+                        `}
+                    </div>
+                </section>
+                ` : ''}
+                
                 <section class="emergency-contacts-section">
                     <h3>Send Alert to Trusted Circle</h3>
                     <p class="emergency-contacts-intro">Tap a contact to open your messaging app with the emergency message ready to send.</p>
@@ -307,6 +337,16 @@ export function renderEmergencyStatus(root: HTMLElement) {
                 cancelEmergencySession();
                 store.navigateTo('app');
             }
+        });
+        
+        root.querySelector('#btn-upload-photos')?.addEventListener('click', async () => {
+            await uploadEmergencyPhotos();
+            paint(); // Repaint to show upload status
+        });
+        
+        root.querySelector('#btn-retry-upload')?.addEventListener('click', async () => {
+            await uploadEmergencyPhotos();
+            paint(); // Repaint to show upload status
         });
     };
     
