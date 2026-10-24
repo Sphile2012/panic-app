@@ -29,7 +29,8 @@ export function renderLocation(root) {
       </section>
 
       <div class="location-actions-modern">
-        <button class="btn-skip-location" id="btn-live-toggle" type="button" aria-pressed="false">Show my live location</button>
+        <button class="btn-share-location" id="btn-live-toggle" type="button" aria-pressed="false">Allow location</button>
+        <button class="btn-skip-location" id="btn-deny-location" type="button">Deny location</button>
         <button class="btn-share-location" id="btn-share">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="10"/>
@@ -42,6 +43,34 @@ export function renderLocation(root) {
         </button>
         <button class="btn-secondary location-retry" id="btn-location-retry" type="button" hidden>Try again</button>
         <p class="location-error" id="loc-error" aria-live="assertive"></p>
+        <details class="location-permission-help" id="location-permission-help" hidden>
+          <summary>How to allow location</summary>
+          <ol>
+            <li>Open this site's permissions from the browser controls beside the address bar, and set Location to Allow.</li>
+            <li>Turn on Location in your device's quick settings or system settings.</li>
+            <li>Return here and tap Try again. If you changed site permissions, reload this page first.</li>
+          </ol>
+          <p>Camera access is not needed for location or maps. It is requested only if you choose to open the camera below.</p>
+        </details>
+        <details class="location-photo">
+          <summary>Take and share a photo</summary>
+          <p>Camera starts only when you tap Open camera. Review the photo before choosing to share it.</p>
+          <button class="btn-secondary" id="btn-camera-start" type="button">Open camera</button>
+          <p class="location-error" id="camera-error" aria-live="polite"></p>
+          <div id="camera-panel" hidden>
+            <video id="camera-video" autoplay playsinline muted aria-label="Camera preview"></video>
+            <button class="btn-primary" id="btn-camera-capture" type="button">Take photo</button>
+          </div>
+          <div id="photo-preview-panel" hidden>
+            <img id="photo-preview" alt="Preview of the photo you chose to share" />
+            <div class="location-actions-modern">
+              <button class="btn-secondary" id="btn-photo-retake" type="button">Retake</button>
+              <button class="btn-share-location" id="btn-photo-share" type="button">Share photo</button>
+              <a class="btn-secondary" id="btn-photo-download" hidden>Save photo to share manually</a>
+            </div>
+          </div>
+          <p id="camera-status" role="status" aria-live="polite"></p>
+        </details>
       </div>
 
       <div class="loc-accuracy-wrap" id="loc-accuracy-wrap" style="display:none">
@@ -84,7 +113,8 @@ export function renderLocation(root) {
             Tap Show my live location to display and refresh your position while this screen is open. Tap Stop live location to stop access.
             Share my location sends one current fix in an SMS draft for you to review and send. Live coordinates are not sent to contacts automatically.
             The map sends coordinates to OpenStreetMap to display your position.
-            Your browser will ask for location permission. If device Location is turned off, enable it in device settings; this website cannot turn on that system setting for you.
+            Your browser will ask for location permission when you tap Show my live location or Share my location. Camera permission is not needed to show a map.
+            If device Location is turned off, enable it in device settings; this website cannot turn on that system setting for you.
           </p>
           <p>SMS and WhatsApp links cannot attach photo files in this browser flow.</p>
           <p>
@@ -106,10 +136,28 @@ export function renderLocation(root) {
     const shareBtn = root.querySelector('#btn-share');
     const skipBtn = root.querySelector('#btn-skip');
     const liveToggle = root.querySelector('#btn-live-toggle');
+    const denyLocation = root.querySelector('#btn-deny-location');
     const retryBtn = root.querySelector('#btn-location-retry');
+    const permissionHelp = root.querySelector('#location-permission-help');
+    const photoDetails = root.querySelector('.location-photo');
+    const cameraStart = root.querySelector('#btn-camera-start');
+    const cameraPanel = root.querySelector('#camera-panel');
+    const cameraVideo = root.querySelector('#camera-video');
+    const cameraCapture = root.querySelector('#btn-camera-capture');
+    const cameraError = root.querySelector('#camera-error');
+    const cameraStatus = root.querySelector('#camera-status');
+    const photoPreviewPanel = root.querySelector('#photo-preview-panel');
+    const photoPreview = root.querySelector('#photo-preview');
+    const photoRetake = root.querySelector('#btn-photo-retake');
+    const photoShare = root.querySelector('#btn-photo-share');
+    const photoDownload = root.querySelector('#btn-photo-download');
     let watchId = null;
     let lastMapPosition = null;
     let retryAction = null;
+    let locationChoice = 'undecided';
+    let cameraStream = null;
+    let photoBlob = null;
+    let photoObjectUrl = null;
     function updateMap(lat, lng, accuracy, label) {
         const delta = 0.006;
         const movedEnough = !lastMapPosition ||
@@ -132,15 +180,128 @@ export function renderLocation(root) {
         errorEl.textContent = reason;
         retryAction = action;
         retryBtn.hidden = false;
+        permissionHelp.hidden = false;
     }
     function stopLiveLocation() {
         if (watchId !== null) {
             navigator.geolocation.clearWatch(watchId);
             watchId = null;
         }
-        liveToggle.textContent = 'Show my live location';
+        liveToggle.textContent = 'Allow location';
         liveToggle.setAttribute('aria-pressed', 'false');
     }
+    function stopCamera() {
+        cameraStream?.getTracks().forEach(track => track.stop());
+        cameraStream = null;
+        cameraVideo.pause();
+        cameraVideo.srcObject = null;
+        cameraPanel.hidden = true;
+    }
+    function clearPhoto() {
+        if (photoObjectUrl)
+            URL.revokeObjectURL(photoObjectUrl);
+        photoObjectUrl = null;
+        photoBlob = null;
+        photoPreview.removeAttribute('src');
+        photoPreviewPanel.hidden = true;
+        photoDownload.hidden = true;
+        photoDownload.removeAttribute('href');
+        cameraStatus.textContent = '';
+    }
+    cameraStart.addEventListener('click', async () => {
+        cameraError.textContent = '';
+        cameraStatus.textContent = '';
+        clearPhoto();
+        if (!window.isSecureContext && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+            cameraError.textContent = 'Camera access requires a secure HTTPS connection.';
+            return;
+        }
+        if (!navigator.mediaDevices?.getUserMedia) {
+            cameraError.textContent = 'Camera access is not available in this browser or device.';
+            return;
+        }
+        cameraStart.disabled = true;
+        try {
+            cameraStream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: { ideal: 'environment' } },
+                audio: false,
+            });
+            cameraVideo.srcObject = cameraStream;
+            cameraPanel.hidden = false;
+            await cameraVideo.play();
+            cameraStatus.textContent = 'Camera is on. Tap Take photo when you are ready.';
+        } catch (error) {
+            stopCamera();
+            const cameraErrorName = error instanceof DOMException ? error.name : '';
+            cameraError.textContent = cameraErrorName === 'NotAllowedError' || cameraErrorName === 'PermissionDeniedError'
+                ? 'Camera permission was denied. Allow Camera for this site in your browser settings, then tap Open camera again.'
+                : 'Could not open the camera. Check that your device has a camera and that no other app is using it.';
+            cameraStatus.textContent = cameraError.textContent;
+        } finally {
+            cameraStart.disabled = false;
+        }
+    });
+    cameraCapture.addEventListener('click', () => {
+        if (!cameraStream || cameraVideo.videoWidth <= 0 || cameraVideo.videoHeight <= 0) {
+            cameraError.textContent = 'The camera preview is not ready yet. Wait a moment and try again.';
+            return;
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = cameraVideo.videoWidth;
+        canvas.height = cameraVideo.videoHeight;
+        const context = canvas.getContext('2d');
+        if (!context) {
+            cameraError.textContent = 'Could not prepare the photo. Please try again.';
+            return;
+        }
+        context.drawImage(cameraVideo, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(blob => {
+            if (!blob) {
+                cameraError.textContent = 'Could not create the photo. Please try again.';
+                return;
+            }
+            photoBlob = blob;
+            photoObjectUrl = URL.createObjectURL(blob);
+            photoPreview.src = photoObjectUrl;
+            photoPreviewPanel.hidden = false;
+            cameraError.textContent = '';
+            cameraStatus.textContent = 'Photo captured for your review. It has not been shared.';
+            photoDownload.href = photoObjectUrl;
+            photoDownload.download = `panic-ring-photo-${new Date().toISOString().replace(/[:.]/g, '-')}.jpg`;
+            stopCamera();
+        }, 'image/jpeg', 0.9);
+    });
+    photoRetake.addEventListener('click', () => {
+        clearPhoto();
+        cameraStart.click();
+    });
+    photoShare.addEventListener('click', async () => {
+        if (!photoBlob)
+            return;
+        const file = new File([photoBlob], `panic-ring-photo-${Date.now()}.jpg`, { type: 'image/jpeg' });
+        if (!navigator.share || !navigator.canShare?.({ files: [file] })) {
+            photoDownload.hidden = false;
+            cameraStatus.textContent = 'Photo sharing is not supported here. Save the reviewed photo, then attach it yourself in your messaging app.';
+            return;
+        }
+        photoShare.disabled = true;
+        try {
+            await navigator.share({ files: [file], title: 'Share a photo', text: 'Photo shared from Panic Ring.' });
+            cameraStatus.textContent = 'Share sheet opened. Choose a recipient and confirm sending there.';
+        } catch (error) {
+            if (error instanceof DOMException && error.name === 'AbortError') {
+                cameraStatus.textContent = 'Sharing cancelled. The photo was not sent.';
+            } else {
+                cameraError.textContent = error instanceof Error ? `Could not open sharing: ${error.message}` : 'Could not open the share sheet.';
+            }
+        } finally {
+            photoShare.disabled = false;
+        }
+    });
+    photoDetails.addEventListener('toggle', () => {
+        if (!photoDetails.open)
+            stopCamera();
+    });
     function startLiveLocation() {
         if (!window.isSecureContext && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
             showLocationError('Location requires HTTPS. Open Panic Ring using its secure HTTPS address, then try again.', 'live');
@@ -152,7 +313,9 @@ export function renderLocation(root) {
         }
         errorEl.textContent = '';
         retryBtn.hidden = true;
+        permissionHelp.hidden = true;
         retryAction = null;
+        locationChoice = 'allowed';
         mapStatus.textContent = 'Requesting permission and waiting for a GPS fix…';
         liveToggle.textContent = 'Stop live location';
         liveToggle.setAttribute('aria-pressed', 'true');
@@ -186,10 +349,24 @@ export function renderLocation(root) {
     liveToggle.addEventListener('click', () => {
         if (watchId !== null) {
             stopLiveLocation();
-            mapStatus.textContent = 'Live location stopped.';
+            mapStatus.textContent = 'Live location paused. Location sharing is still allowed for this screen.';
             return;
         }
         startLiveLocation();
+    });
+    denyLocation.addEventListener('click', () => {
+        locationChoice = 'denied';
+        stopLiveLocation();
+        retryBtn.hidden = true;
+        retryAction = null;
+        errorEl.textContent = '';
+        permissionHelp.hidden = false;
+        mapFrame.hidden = true;
+        mapFrame.removeAttribute('src');
+        mapPlaceholder.hidden = false;
+        mapDetails.hidden = true;
+        lastMapPosition = null;
+        mapStatus.textContent = 'Location denied for this screen. No location will be requested or shared.';
     });
     retryBtn.addEventListener('click', () => {
         if (retryAction === 'live') {
@@ -202,14 +379,28 @@ export function renderLocation(root) {
     const unsubscribeFromLocation = store.subscribe(state => {
         if (state.screen !== 'location') {
             stopLiveLocation();
+            stopCamera();
+            clearPhoto();
             unsubscribeFromLocation();
         }
     });
     shareBtn.addEventListener('click', async () => {
+        if (locationChoice !== 'allowed') {
+            const reason = locationChoice === 'denied'
+                ? 'You denied location for this screen. Tap Allow location before sharing coordinates.'
+                : 'Tap Allow location before sharing your current coordinates.';
+            mapStatus.textContent = reason;
+            errorEl.textContent = reason;
+            retryBtn.hidden = true;
+            retryAction = null;
+            permissionHelp.hidden = false;
+            return;
+        }
         shareBtn.disabled = true;
         skipBtn.disabled = true;
         errorEl.textContent = '';
         retryBtn.hidden = true;
+        permissionHelp.hidden = true;
         retryAction = null;
         mapStatus.textContent = 'Requesting location permission and getting your current location…';
         const result = await getLocation(12000);

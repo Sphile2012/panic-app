@@ -1300,7 +1300,39 @@ html[data-photo-background="true"] .phone-screen > .screen { background: transpa
 }
 
 .location-retry[hidden] { display: none; }
-
+.location-permission-help {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text);
+  background: var(--surface);
+  font-size: .78rem;
+  line-height: 1.5;
+  text-align: left;
+}
+.location-permission-help[hidden] { display: none; }
+.location-permission-help ol { padding-left: 20px; }
+.location-permission-help p { color: var(--text-muted); }
+.location-photo {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text);
+  background: var(--surface);
+  font-size: .82rem;
+  line-height: 1.5;
+  text-align: left;
+}
+.location-photo > p { color: var(--text-muted); }
+.location-photo video,
+.location-photo img { display: block; width: 100%; max-height: 320px; object-fit: contain; border-radius: 10px; background: #111; margin: 10px 0; }
+.location-photo #camera-panel[hidden],
+.location-photo #photo-preview-panel[hidden],
+.location-photo #btn-photo-download[hidden] { display: none; }
+.location-photo #camera-panel,
+.location-photo #photo-preview-panel { margin-top: 10px; }
 .location-error {
   font-size: 0.78rem;
   color: #e07070;

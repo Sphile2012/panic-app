@@ -10,13 +10,30 @@ const netlifyConfig = await readFile(new URL('../netlify.toml', import.meta.url)
 test('location screen shows and refreshes live position only after an explicit user action', () => {
   for (const source of [locationScreen, locationRuntime]) {
     assert.match(source, /id="btn-live-toggle"/);
+    assert.match(source, />Allow location<\/button>/);
     assert.match(source, /liveToggle\.addEventListener\('click'/);
+    assert.match(source, /id="btn-deny-location"/);
+    assert.match(source, />Deny location<\/button>/);
+    assert.match(source, /denyLocation\.addEventListener\('click'/);
+    assert.match(source, /locationChoice !== 'allowed'/);
+    assert.match(source, /locationChoice = 'denied'/);
+    assert.match(source, /Tap Allow location before sharing coordinates/);
     assert.match(source, /navigator\.geolocation\.watchPosition/);
     assert.match(source, /navigator\.geolocation\.clearWatch/);
     assert.match(source, /Live location active/);
     assert.match(source, /state\.screen !== 'location'/);
     assert.match(source, /device Location is turned off/);
     assert.match(source, /id="btn-location-retry"/);
+    assert.match(source, /id="location-permission-help"/);
+    assert.match(source, /set Location to Allow/);
+    assert.match(source, /Camera access is not needed/);
+    assert.match(source, /id="btn-camera-start"/);
+    assert.match(source, /navigator\.mediaDevices\.getUserMedia/);
+    assert.match(source, /id="btn-camera-capture"/);
+    assert.match(source, /Photo captured for your review/);
+    assert.match(source, /id="btn-photo-share"/);
+    assert.match(source, /navigator\.share\(\{ files: \[file\]/);
+    assert.match(source, /getTracks\(\)\.forEach\(track => track\.stop\(\)\)/);
     assert.match(source, /geoError\.POSITION_UNAVAILABLE/);
     assert.match(source, /id="btn-share"/);
     assert.match(source, /shareBtn\.addEventListener\('click'/);
