@@ -1,7 +1,6 @@
 import '../strings/groupA.js';
 import { store } from '../state.js';
 import { t } from '../i18n.js';
-import { startEvidenceCapture } from '../evidence.js';
 import { smsUri } from '../storage.js';
 import { DB_CONFIGURED } from '../db.js';
 import { startTracking, stopTracking, isTracking, getLast, getError, getLowBattery, dismissLowBattery, onTrackChange, trackUrl, mapsUrl, } from '../tracking.js';
@@ -57,7 +56,7 @@ export function renderLive(root) {
           <h3 class="live-sub">${esc(t('trk.link'))}</h3>
           ${DB_CONFIGURED ? '' : `<p class="live-intro">${esc(t('trk.nolink'))}</p>`}
           <div class="live-links">
-            ${contacts.map(c => `<a class="btn-secondary" href="${smsUri(c.phone, linkBody)}">${esc(t('trk.link.share'))}: ${esc(c.name)}</a>`).join('')}
+            ${contacts.map((c, index) => `<button class="btn-secondary" type="button" data-live-contact="${index}">${esc(t('trk.link.share'))}: ${esc(c.name)}</button>`).join('')}
           </div>` : ''}
       </div>`;
         root.querySelector('#btn-back').addEventListener('click', () => store.navigateTo('app'));
@@ -66,8 +65,14 @@ export function renderLive(root) {
                 stopTracking();
             else {
                 void startTracking();
-                void startEvidenceCapture();
             }
+        });
+        root.querySelectorAll('[data-live-contact]').forEach(button => {
+            button.addEventListener('click', () => {
+                const contact = contacts[Number(button.dataset.liveContact)];
+                if (contact)
+                    window.location.href = smsUri(contact.phone, linkBody);
+            });
         });
         root.querySelector('#btn-dismiss')?.addEventListener('click', () => dismissLowBattery());
     };
