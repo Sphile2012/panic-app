@@ -237,8 +237,9 @@ services:
       DASHBOARD_USERNAME:    ${DASHBOARD_USERNAME:-supabase}
       DASHBOARD_PASSWORD:    ${DASHBOARD_PASSWORD:-changeme}
     volumes:
-      - ./supabase/kong.yml:/home/kong/kong.yml:ro
-    command: ["kong", "docker-start"]
+      - ./supabase/kong.yml.template:/home/kong/kong.yml.template:ro
+      - ./supabase/start-kong.sh:/home/kong/start-kong.sh:ro
+    entrypoint: ["/bin/sh", "/home/kong/start-kong.sh"]
     healthcheck:
       <<: *hc
       test: ["CMD", "kong", "health"]
