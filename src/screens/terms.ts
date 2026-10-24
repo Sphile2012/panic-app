@@ -39,5 +39,5 @@ export function renderTerms(root) {
 
     </div>
   `;
-    root.querySelector('#btn-back').addEventListener('click', () => store.navigateTo('about'));
+    root.querySelector('#btn-back').addEventListener('click', () => store.navigateBack());
 }

@@ -504,16 +504,127 @@ html[data-photo-background="true"] .phone-screen > .screen { background: transpa
   accent-color: var(--accent);
 }
 .disguise-option-preview {
-  display: grid;
-  place-items: center;
-  width: min(100%, 190px);
-  aspect-ratio: 1;
+  display: block;
+  width: 100%;
+  height: 170px;
   justify-self: center;
   overflow: hidden;
-  border-radius: 24px;
-  background: linear-gradient(145deg, #fcf7ff, #f3e8f5);
+  border: 1px solid #e9e7f1;
+  border-radius: 16px;
+  background: #f8f8fc;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.9);
 }
 .disguise-preview-icon { display: block; width: 100%; height: 100%; }
+.disguise-preview {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  padding: 10px;
+  color: #25243a;
+  background: #fbfaff;
+  font-family: "Segoe UI", system-ui, sans-serif;
+}
+.disguise-preview--calculator { background: #f7f4fb; }
+.disguise-preview-calc-display {
+  height: 36px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  color: #777389;
+  font-size: 8px;
+}
+.disguise-preview-calc-display strong { color: #282336; font-size: 21px; line-height: 1; }
+.disguise-preview-calc-keys {
+  display: grid;
+  height: 106px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+}
+.disguise-preview-calc-keys i {
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  background: #fff;
+  color: #393448;
+  box-shadow: 0 1px 3px rgba(32, 24, 50, .09);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 650;
+}
+.disguise-preview-calc-keys i:nth-child(-n+3) { background: #ece8f4; }
+.disguise-preview-calc-keys i:nth-child(4n) { background: #8d5cf6; color: #fff; }
+.disguise-preview--budget { background: #f7f7fc; padding: 9px 11px; }
+.disguise-preview-budget-header,
+.disguise-preview-budget-section,
+.disguise-preview-weather-header,
+.disguise-preview-notes-header,
+.disguise-preview-clock-world {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.disguise-preview-budget-header { font-size: 9px; margin-bottom: 7px; }
+.disguise-preview-budget-header span { color: #858296; font-size: 7px; }
+.disguise-preview-balance {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 10px;
+  border-radius: 9px;
+  color: #fff;
+  background: linear-gradient(120deg, #684be8, #9b62f4);
+}
+.disguise-preview-balance small { font-size: 7px; opacity: .82; }
+.disguise-preview-balance strong { font-size: 14px; letter-spacing: -.03em; }
+.disguise-preview-balance-meta { display: flex; justify-content: space-between; font-size: 7px; opacity: .9; }
+.disguise-preview-budget-section { margin: 8px 0 4px; font-size: 7px; }
+.disguise-preview-budget-section span { color: #8a879a; font-size: 6px; }
+.disguise-preview-chart {
+  height: 25px;
+  display: flex;
+  align-items: end;
+  gap: 7px;
+  padding: 0 8px 3px;
+  border-bottom: 1px solid #e9e7f1;
+}
+.disguise-preview-chart i { flex: 1; height: 55%; border-radius: 3px 3px 0 0; background: #c5b8fa; }
+.disguise-preview-chart i:nth-child(2n) { height: 80%; background: #9375f1; }
+.disguise-preview-chart i:nth-child(3n) { height: 100%; background: #704fe8; }
+.disguise-preview-transaction { display: flex; align-items: center; gap: 5px; padding: 3px 0; border-top: 1px solid #efedf4; }
+.disguise-preview-transaction > i { display: grid; width: 18px; height: 18px; place-items: center; border-radius: 6px; background: #eee9ff; font-size: 9px; font-style: normal; }
+.disguise-preview-transaction > span { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 1px; }
+.disguise-preview-transaction b { font-size: 7px; }
+.disguise-preview-transaction small { color: #89869a; font-size: 6px; }
+.disguise-preview-transaction > strong { font-size: 6px; }
+.disguise-preview--weather { background: linear-gradient(160deg, #eef5ff, #f8faff); }
+.disguise-preview-weather-header { font-size: 9px; }
+.disguise-preview-weather-header span { color: #7584a1; font-size: 10px; }
+.disguise-preview-weather-hero { display: grid; grid-template-columns: 40px 1fr; grid-template-rows: repeat(3, auto); align-items: center; margin: 6px 0; }
+.disguise-preview-weather-hero > span { grid-row: 1 / 4; font-size: 29px; }
+.disguise-preview-weather-hero > strong { font-size: 25px; line-height: 1; }
+.disguise-preview-weather-hero > b { font-size: 8px; font-weight: 600; }
+.disguise-preview-weather-hero > small { color: #79869d; font-size: 7px; }
+.disguise-preview-weather-details { display: grid; grid-template-columns: repeat(3, 1fr); padding: 6px 0; border-block: 1px solid #dfe7f3; text-align: center; font-size: 7px; font-weight: 700; }
+.disguise-preview-weather-details small { display: block; margin-top: 2px; color: #8190a7; font-size: 6px; font-weight: 400; }
+.disguise-preview-weather-section { margin: 6px 0 3px; color: #8290a5; font-size: 6px; font-weight: 700; letter-spacing: .08em; }
+.disguise-preview-forecast { display: flex; flex-direction: column; gap: 2px; font-size: 7px; }
+.disguise-preview--notes { background: #fffefb; }
+.disguise-preview-notes-header { margin-bottom: 6px; font-size: 10px; }
+.disguise-preview-notes-header span { display: grid; width: 18px; height: 18px; place-items: center; border-radius: 50%; color: #fff; background: #5d9d7a; font-size: 12px; }
+.disguise-preview-search { margin-bottom: 5px; padding: 4px 6px; border-radius: 6px; color: #93908a; background: #f2f1ed; font-size: 7px; }
+.disguise-preview-note { display: flex; flex-direction: column; gap: 2px; padding: 5px 1px; border-bottom: 1px solid #eeece6; }
+.disguise-preview-note b { font-size: 8px; }
+.disguise-preview-note span { overflow: hidden; color: #66635e; font-size: 7px; text-overflow: ellipsis; white-space: nowrap; }
+.disguise-preview-note small { color: #99958e; font-size: 6px; }
+.disguise-preview--clock { background: #f9f8ff; }
+.disguise-preview-clock-tabs { display: flex; justify-content: space-between; padding-bottom: 6px; border-bottom: 1px solid #e8e5f2; color: #868297; font-size: 7px; }
+.disguise-preview-clock-tabs b { color: #7454e8; }
+.disguise-preview-clock-face { display: flex; flex-direction: column; align-items: center; padding: 8px 0 6px; }
+.disguise-preview-clock-face strong { color: #332c4c; font-size: 27px; font-weight: 400; letter-spacing: .04em; }
+.disguise-preview-clock-face span { font-size: 7px; }
+.disguise-preview-clock-face small { margin-top: 2px; color: #858196; font-size: 6px; }
+.disguise-preview-clock-world { padding: 5px 2px; border-top: 1px solid #ebe9f3; font-size: 7px; }
+.disguise-preview-clock-world b { font-size: 8px; font-weight: 600; }
 .disguise-option-label {
   color: var(--text);
   font-family: "Trebuchet MS", "Segoe UI", sans-serif;
@@ -2417,21 +2528,33 @@ html[data-photo-background="true"] .phone-screen > .screen { background: transpa
 .splash-tagline {
   margin: 0;
   color: #1f1f1f;
-  font-size: clamp(1rem, 4vw, 1.55rem);
-  font-weight: 800;
-  letter-spacing: -.04em;
+  font-family: 'Trebuchet MS', 'Segoe UI', system-ui, sans-serif;
+  font-size: clamp(1.5rem, 5.5vw, 2rem);
+  font-weight: 900;
+  letter-spacing: -.035em;
+  line-height: 1.08;
   text-align: center;
+  animation: splash-title-pulse 3.2s ease-in-out infinite;
+}
+
+@keyframes splash-title-pulse {
+  0%, 100% { opacity: 1; text-shadow: 0 2px 0 rgba(65, 42, 52, .08); }
+  50% { opacity: .48; text-shadow: 0 0 16px rgba(139, 33, 219, .16); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .splash-tagline { animation: none; }
 }
 
 .splash-pin-hint {
-  margin-top: 12px;
-  max-width: 24ch;
-  color: rgba(44, 44, 46, 0.76);
-  font-size: .72rem;
-  font-weight: 600;
-  line-height: 1.5;
+  margin: 12px 0 0;
+  max-width: 30ch;
+  color: rgba(35, 35, 40, 0.9);
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: clamp(.9rem, 3.4vw, 1rem);
+  font-weight: 400;
+  line-height: 1.4;
   text-align: center;
-  line-height: 1.5;
 }
 
 .splash-actions {
@@ -2448,15 +2571,19 @@ html[data-photo-background="true"] .phone-screen > .screen { background: transpa
   border-radius: 999px;
   background: linear-gradient(135deg, #8c3cff 0%, #d850a7 100%);
   box-shadow: 0 10px 20px rgba(147, 76, 211, 0.22);
-  font-size: .8rem;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: .94rem;
+  font-weight: 700;
 }
 
 .splash-btn:hover { background: linear-gradient(135deg, #7d34f2 0%, #c8419b 100%); }
 
 .splash-signup-text {
   margin: 2px 0 0;
-  color: rgba(36, 36, 44, 0.76);
-  font-size: .72rem;
+  color: rgba(36, 36, 44, 0.92);
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: .88rem;
+  font-weight: 500;
   line-height: 1.4;
   text-align: center;
 }
@@ -2465,13 +2592,15 @@ html[data-photo-background="true"] .phone-screen > .screen { background: transpa
   margin-left: 4px;
   font-size: inherit;
   color: #7656f5;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .splash-forgot-link {
   padding: 2px 8px;
-  color: rgba(70, 70, 82, 0.9);
-  font-size: .74rem;
+  color: rgba(45, 45, 54, 0.96);
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: .88rem;
+  font-weight: 500;
 }
 
 .splash-forgot-link:hover { color: var(--accent); }
@@ -2664,6 +2793,19 @@ body:has(.splash-screen) {
   font-weight: 800;
   letter-spacing: .015em;
 }
+.auth-hero--signup {
+  flex-direction: column;
+  gap: 8px;
+  padding: 20px;
+  text-align: center;
+}
+.auth-hero--signup p {
+  z-index: 1;
+  max-width: 32rem;
+  margin: 0;
+  color: #5e6b81;
+  font-size: .82rem;
+}
 .auth-sheet {
   position: relative;
   z-index: 1;
@@ -2687,6 +2829,35 @@ body:has(.splash-screen) {
 .auth-screen--scenic .auth-form {
   gap: 6px;
   margin: 0;
+}
+.signup-details-form {
+  align-self: center;
+  width: min(100%, 520px);
+}
+.signup-terms-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0;
+  color: #616b80;
+  font-size: .78rem;
+}
+.signup-terms-row input {
+  width: 16px;
+  height: 16px;
+  margin: 0 3px 0 0;
+  accent-color: #8b21db;
+}
+.signup-terms-link {
+  padding: 0;
+  border: 0;
+  color: #7b1fce;
+  background: transparent;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
 }
 .auth-screen--scenic .text-input {
   min-height: 42px;

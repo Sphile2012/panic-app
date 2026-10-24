@@ -7,6 +7,7 @@ const i18nRuntime = await readFile(new URL('../src/i18n.js', import.meta.url), '
 const database = await readFile(new URL('../src/db.ts', import.meta.url), 'utf8');
 const databaseRuntime = await readFile(new URL('../src/db.js', import.meta.url), 'utf8');
 const styles = await readFile(new URL('../src/style.css', import.meta.url), 'utf8');
+const welcome = await readFile(new URL('../src/screens/emailAuth.ts', import.meta.url), 'utf8');
 
 test('language selection uses an accessible dropdown with a visible arrow and all supported languages', () => {
   for (const source of [i18n, i18nRuntime]) {
@@ -15,7 +16,9 @@ test('language selection uses an accessible dropdown with a visible arrow and al
     assert.match(source, /addEventListener\('change'/);
     assert.match(source, /setLang\(selected\.code\)/);
     assert.doesNotMatch(source, /data-lang=/);
+    assert.match(source, /code: 'xh', label: 'isiXhosa'/);
   }
+  assert.match(welcome, /languageBarHtml\(\)/);
   assert.match(styles, /\.lang-select\s*\{[\s\S]*background-image:[\s\S]*background-repeat:\s*no-repeat/);
   assert.match(styles, /\.lang-select:focus-visible/);
 });

@@ -3,26 +3,42 @@ import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
 
 const emailAuth = await readFile(new URL('../src/screens/emailAuth.ts', import.meta.url), 'utf8');
+const emailAuthRuntime = await readFile(new URL('../src/screens/emailAuth.js', import.meta.url), 'utf8');
+const termsScreen = await readFile(new URL('../src/screens/terms.ts', import.meta.url), 'utf8');
+const termsScreenRuntime = await readFile(new URL('../src/screens/terms.js', import.meta.url), 'utf8');
 const database = await readFile(new URL('../src/db.ts', import.meta.url), 'utf8');
 const dashboardSource = await readFile(new URL('../src/dashboard.ts', import.meta.url), 'utf8');
 const settings = await readFile(new URL('../src/screens/settings.ts', import.meta.url), 'utf8');
 const settingsRuntime = await readFile(new URL('../src/screens/settings.js', import.meta.url), 'utf8');
 const pinSetup = await readFile(new URL('../src/screens/setup.ts', import.meta.url), 'utf8');
+const pinSetupRuntime = await readFile(new URL('../src/screens/setup.js', import.meta.url), 'utf8');
 const appState = await readFile(new URL('../src/state.ts', import.meta.url), 'utf8');
 const dashboard = await readFile(new URL('../dashboard.html', import.meta.url), 'utf8');
 const mainApp = await readFile(new URL('../src/main.ts', import.meta.url), 'utf8');
 
 test('the app exposes PIN-only access, with no email or password dashboard', () => {
-  assert.match(emailAuth, /Sign in with your 4-digit PIN/);
-  assert.match(emailAuth, /Login with PIN/);
-  assert.match(emailAuth, /Create PINs/);
-  assert.match(emailAuth, /store\.navigateTo\(hasPinStored \? 'calculator' : 'setup-pin'\)/);
-  assert.match(emailAuth, /store\.navigateTo\('setup-pin'\)/);
-  assert.doesNotMatch(mainApp, /renderSignup|renderLogin/);
+  assert.match(emailAuth, /welcome\.pinHint/);
+  assert.match(emailAuth, /welcome\.login/);
+  assert.match(emailAuth, /welcome\.new[\s\S]*?welcome\.signup/);
+  assert.match(emailAuth, /splash-signup[\s\S]*?store\.navigateTo\('signup'\)/);
+  assert.match(mainApp, /case 'signup':[\s\S]*?renderSignup\(appRoot\)/);
   assert.doesNotMatch(dashboard, /d-li-email|d-su-email|d-li-password|d-su-password/);
   assert.match(dashboard, /http-equiv="refresh" content="0;url=\/"/);
   assert.match(dashboard, /window\.location\.replace/);
   assert.doesNotMatch(dashboard, /dashboard\.js|dashboard\.ts/);
+});
+
+test('signup continues into PIN confirmation and recovery-question setup regardless of saved local PIN data', () => {
+  for (const source of [pinSetup, pinSetupRuntime]) {
+    const pinSetupScreen = source.match(/export function renderSetupPin[\s\S]*?(?=\nexport function renderSetupProfile)/)?.[0];
+    assert.ok(pinSetupScreen);
+    assert.doesNotMatch(pinSetupScreen, /already protected|already set up|account already exists/i);
+    assert.match(pinSetupScreen, /id="pin-confirm"/);
+    assert.match(pinSetupScreen, /id="decoy-confirm"/);
+    assert.doesNotMatch(pinSetupScreen, /navigateTo\('calculator'\)|sendEmailAuthOtp|verifyEmailOtp/);
+  }
+  assert.match(pinSetup, /id="recovery-question-one"/);
+  assert.match(pinSetup, /id="recovery-question-two"/);
 });
 
 test('backend email auth uses verification while PIN changes use local recovery questions', () => {
@@ -55,13 +71,29 @@ test('PIN setup and updates require confirmation and reject repeated digits', ()
   assert.match(appState, /new Set\(pin\)\.size === pin\.length/);
 });
 
-test('email account access requires a syntactically valid, OTP-verified inbox in every signup surface', () => {
-  assert.match(database, /const verifiedEmail = resolveIdentifier\(email\)/);
-  assert.match(database, /auth\.verifyOtp\(\{ email: verifiedEmail, token: token\.trim\(\), type: 'email' \}\)/);
-  assert.match(emailAuth, /Verify it with the code we send to activate your account/);
-  assert.match(dashboardSource, /resolveIdentifier\(suEmailEl\.value\)/);
-  assert.match(dashboardSource, /verifyEmailOtp\(signupEmail, code\.value\)/);
-  assert.match(dashboardSource, /setAuthenticatedPassword\(signupPassword\)/);
-  assert.match(dashboardSource, /signInWithPassword\(email, liPasswordEl\.value\)/);
-  assert.match(dashboardSource, /Passwords do not match/);
+test('signup collects the requested details and continues to PIN confirmation without passwords or OTP', () => {
+  for (const source of [emailAuth, emailAuthRuntime]) {
+    assert.match(source, /splash-signup[\s\S]*?store\.navigateTo\('signup'\)/);
+    for (const fieldId of ['su-name', 'su-surname', 'su-dob', 'su-phone', 'su-email', 'su-province', 'su-country', 'su-address']) {
+      assert.match(source, new RegExp(`id="${fieldId}"`));
+    }
+    assert.match(source, /id="su-detect-location"/);
+    assert.match(source, /id="su-terms" type="checkbox"[^>]*required/);
+    assert.match(source, /id="su-terms-link"/);
+    assert.match(source, /Read Terms and Conditions/);
+    assert.match(source, /store\.navigateTo\('terms'\)/);
+    assert.match(source, /Please agree to the Terms and Conditions to continue/);
+    assert.match(source, /syncSignupDraft\(\)/);
+    assert.match(source, /pendingSignupProfile = \{/);
+    assert.match(source, /store\.navigateTo\('setup-pin'\)/);
+    assert.doesNotMatch(source.match(/export function renderSignup[\s\S]*?(?=\nexport function renderLogin)/)?.[0] ?? '', /sendEmailAuthOtp|verifyEmailOtp|type="password"|otp-code/i);
+  }
+  assert.match(mainApp, /case 'signup':[\s\S]*?renderSignup\(appRoot\)/);
+  assert.match(pinSetup, /id="pin-confirm"/);
+  assert.match(pinSetup, /id="decoy-confirm"/);
+  assert.match(pinSetup, /id="recovery-question-one"/);
+  assert.match(pinSetup, /id="recovery-question-two"/);
+  assert.doesNotMatch(pinSetup, /sendEmailAuthOtp|verifyEmailOtp|setAuthenticatedPassword/);
+  assert.match(termsScreen, /store\.navigateBack\(\)/);
+  assert.match(termsScreenRuntime, /store\.navigateBack\(\)/);
 });

@@ -3,6 +3,7 @@ import { getRecoveryQuestionIds, setRecoveryQuestions, setCloudBackup, hasCloudB
 import { wirePasswordToggles } from '../formControls.js';
 import { setupPinsInCloud, DB_CONFIGURED, getUser, changePinsInCloud } from '../db.js';
 import { DISGUISE_OPTIONS, loadAppearance, saveAppearance, applyAppearance } from '../theme.js';
+import { clearSignupDraft, getSignupDraft } from './emailAuth.js';
 
 function escapeHtml(value: string): string {
     return value.replace(/[&<>"']/g, character => ({
@@ -30,6 +31,51 @@ export const RECOVERY_QUESTIONS = [
   { id: 'family-nickname', label: 'What nickname did your family use for you?' },
 ];
 
+function disguiseScreenPreview(id: string): string {
+    switch (id) {
+        case 'calculator':
+            return `<div class="disguise-preview disguise-preview--calculator" aria-hidden="true">
+              <div class="disguise-preview-calc-display"><span>Standard Calculator</span><strong>0</strong></div>
+              <div class="disguise-preview-calc-keys">${['AC', '±', '%', '÷', '7', '8', '9', '×', '4', '5', '6', '−', '1', '2', '3', '+', '⌫', '0', '.', '='].map(key => `<i>${key}</i>`).join('')}</div>
+            </div>`;
+        case 'budget':
+            return `<div class="disguise-preview disguise-preview--budget" aria-hidden="true">
+              <div class="disguise-preview-budget-header"><strong>My Budget</strong><span>Oct 2026⌄</span></div>
+              <div class="disguise-preview-balance"><small>Available balance</small><strong>R 16 970.50</strong><div class="disguise-preview-balance-meta"><span>This month</span><b>↗ 8.4%</b></div></div>
+              <div class="disguise-preview-budget-section"><strong>Spending overview</strong><span>See all</span></div>
+              <div class="disguise-preview-chart"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+              <div class="disguise-preview-budget-section"><strong>Recent activity</strong><span>Today</span></div>
+              <div class="disguise-preview-transaction"><i>🛒</i><span><b>Groceries</b><small>Today · Food</small></span><strong>−R 284.50</strong></div>
+              <div class="disguise-preview-transaction"><i>⚡</i><span><b>Utilities</b><small>Yesterday</small></span><strong>−R 1 200</strong></div>
+            </div>`;
+        case 'weather':
+            return `<div class="disguise-preview disguise-preview--weather" aria-hidden="true">
+              <div class="disguise-preview-weather-header"><strong>Johannesburg</strong><span>⌕　•••</span></div>
+              <div class="disguise-preview-weather-hero"><span>☀️</span><strong>23°</strong><b>Partly cloudy</b><small>H:27°　L:16°</small></div>
+              <div class="disguise-preview-weather-details"><span>62%<small>Humidity</small></span><span>14 km/h<small>Wind</small></span><span>06:12<small>Sunrise</small></span></div>
+              <div class="disguise-preview-weather-section">7-DAY FORECAST</div>
+              <div class="disguise-preview-forecast"><span>Today　☀️　23°</span><span>Tue　🌤️　27°</span><span>Wed　🌧️　18°</span></div>
+            </div>`;
+        case 'notes-plain':
+            return `<div class="disguise-preview disguise-preview--notes" aria-hidden="true">
+              <div class="disguise-preview-notes-header"><strong>My Notes</strong><span>＋</span></div>
+              <div class="disguise-preview-search">⌕　Search your notes</div>
+              <div class="disguise-preview-note"><b>Shopping list</b><span>Milk, bread, fruit and coffee</span><small>Today　·　9:41 AM</small></div>
+              <div class="disguise-preview-note"><b>Weekend plans</b><span>Meet everyone at the park</span><small>Yesterday</small></div>
+              <div class="disguise-preview-note"><b>Things to remember</b><span>Book an appointment this week</span><small>Monday</small></div>
+            </div>`;
+        case 'clock':
+            return `<div class="disguise-preview disguise-preview--clock" aria-hidden="true">
+              <div class="disguise-preview-clock-tabs"><b>Clock</b><span>Alarm</span><span>Timer</span><span>Stopwatch</span></div>
+              <div class="disguise-preview-clock-face"><strong>09:41</strong><span>Saturday, October 24</span><small>Johannesburg · SAST</small></div>
+              <div class="disguise-preview-clock-world"><span>🌍　Cape Town</span><b>09:41</b></div>
+              <div class="disguise-preview-clock-world"><span>🌍　London</span><b>08:41</b></div>
+            </div>`;
+        default:
+            return '';
+    }
+}
+
 export function renderSetupDisguise(root: HTMLElement): void {
     const appearance = loadAppearance();
     root.innerHTML = `
@@ -41,7 +87,7 @@ export function renderSetupDisguise(root: HTMLElement): void {
             ${DISGUISE_OPTIONS.map(option => `
               <label class="disguise-option ${appearance.disguise === option.id ? 'disguise-option--selected' : ''}">
                 <input type="radio" name="disguise" value="${option.id}" ${appearance.disguise === option.id ? 'checked' : ''} />
-                <div class="disguise-option-preview">${option.preview}</div>
+                <div class="disguise-option-preview">${disguiseScreenPreview(option.id)}</div>
                 <div class="disguise-option-label">${option.label}</div>
                 <div class="disguise-option-desc">${option.description}</div>
               </label>
@@ -72,31 +118,6 @@ export function renderSetupDisguise(root: HTMLElement): void {
 }
 
 export function renderSetupPin(root: HTMLElement) {
-    if (store.getState().pinHash) {
-        root.innerHTML = `
-      <div class="screen setup-screen">
-        <h1 class="setup-title">PINs already set up</h1>
-        <p class="setup-body">This device is already protected. Open the app or use Forgot PIN to reset your security questions.</p>
-        <button class="btn-back-small" id="btn-back-to-welcome" aria-label="Back">←</button>
-        <div class="setup-form">
-          <button class="btn-primary" id="btn-existing-login" type="button">Back to login</button>
-          <button class="btn-secondary-outline" id="btn-existing-recovery" type="button">Forgot PIN?</button>
-          <button class="btn-danger" id="btn-clear-data" type="button" style="margin-top: 20px;">Clear data & start fresh</button>
-        </div>
-      </div>
-    `;
-        root.querySelector('#btn-back-to-welcome')?.addEventListener('click', () => store.navigateTo('welcome'));
-        root.querySelector('#btn-existing-login')?.addEventListener('click', () => store.navigateTo('calculator'));
-        root.querySelector('#btn-existing-recovery')?.addEventListener('click', () => store.navigateTo('pin-recovery'));
-        root.querySelector('#btn-clear-data')?.addEventListener('click', async () => {
-            if (confirm('⚠️ This will delete ALL your data including contacts, notes, and settings. This cannot be undone. Continue?')) {
-                await store.factoryReset();
-                alert('All data cleared. You can now create a new account.');
-                store.navigateTo('welcome');
-            }
-        });
-        return;
-    }
     root.innerHTML = `
     <div class="screen setup-screen">
       <div class="setup-logo">○</div>
@@ -224,8 +245,22 @@ export function renderSetupPin(root: HTMLElement) {
         sessionStorage.setItem('temp_pin1', pin);
         sessionStorage.setItem('temp_pin2', decoy);
         
-        await store.savePin(pin, decoy);
-        store.navigateTo('setup-disguise');
+        const submitButton = form.querySelector<HTMLButtonElement>('button[type="submit"]');
+        if (submitButton) submitButton.disabled = true;
+        try {
+            await store.savePin(pin, decoy);
+            const signupProfile = getSignupDraft();
+            if (signupProfile) {
+                await store.saveProfile(signupProfile);
+                clearSignupDraft();
+            }
+            store.navigateTo('setup-disguise');
+        }
+        catch (error) {
+            console.error('[setup-pin] Could not save PIN or profile:', error);
+            errorEl.textContent = 'Your PIN or profile could not be saved. Please try again.';
+            if (submitButton) submitButton.disabled = false;
+        }
     });
 }
 
@@ -287,8 +322,12 @@ export function renderSetupProfile(root: HTMLElement) {
         }
 
         errorEl.textContent = '';
-        store.saveProfile({ name, phone, photo: currentProfile.photo });
-        store.navigateTo('setup-contacts');
+        void store.saveProfile({ ...currentProfile, name, phone }).then(() => {
+            store.navigateTo('setup-contacts');
+        }).catch(error => {
+            console.error('[setup-profile] Could not save profile:', error);
+            errorEl.textContent = 'Your profile could not be saved. Please try again.';
+        });
     });
 }
 
@@ -389,7 +428,7 @@ export function renderRecoverySetup(root: HTMLElement, nextScreen: string) {
                 }
             }
             
-            store.navigateTo(nextScreen);
+            store.navigateTo(!existing && store.getState().profile.name ? 'setup-contacts' : nextScreen);
         }
         catch (err) {
             error.textContent = 'Security questions could not be saved. Please try again.';

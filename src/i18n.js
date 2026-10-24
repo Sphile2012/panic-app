@@ -1,12 +1,19 @@
 export const LANGS = [
     { code: 'en', label: 'English' },
     { code: 'zu', label: 'isiZulu' },
+    { code: 'xh', label: 'isiXhosa' },
     { code: 'st', label: 'Sesotho' },
     { code: 'af', label: 'Afrikaans' },
 ];
 const LANG_KEY = 'pr_lang';
 const en = {
     'lang.title': 'Language',
+    'welcome.title': 'Your Safety Matters',
+    'welcome.pinHint': 'Sign in with your 4-digit PIN. No password needed.',
+    'welcome.login': 'Login with PIN',
+    'welcome.new': 'New here?',
+    'welcome.signup': 'Sign up',
+    'welcome.forgot': 'Forgot your PIN?',
     'auth.signin': 'Sign in',
     'auth.create': 'Create account',
     'auth.id.label': 'Email',
@@ -127,6 +134,12 @@ const en = {
 };
 const zu = {
     'lang.title': 'Ulimi',
+    'welcome.title': 'Ukuphepha kwakho kubalulekile',
+    'welcome.pinHint': 'Ngena nge-PIN yakho enezinombolo ezi-4. Iphasiwedi ayidingeki.',
+    'welcome.login': 'Ngena nge-PIN',
+    'welcome.new': 'Usanda kujoyina?',
+    'welcome.signup': 'Bhalisa',
+    'welcome.forgot': 'Ukhohlwe i-PIN yakho?',
     'auth.signin': 'Ngena',
     'auth.create': 'Dala i-akhawunti',
     'auth.id.label': 'Inombolo yefoni noma i-imeyili',
@@ -240,8 +253,23 @@ const zu = {
     'common.cancel': 'Khansela',
     'common.close': 'Vala',
 };
+const xh = {
+    'lang.title': 'Ulwimi',
+    'welcome.title': 'Ukhuseleko lwakho lubalulekile',
+    'welcome.pinHint': 'Ngena nge-PIN yakho enamanani ama-4. Akufuneki gama liyimfihlo.',
+    'welcome.login': 'Ngena nge-PIN',
+    'welcome.new': 'Umtsha apha?',
+    'welcome.signup': 'Bhalisa',
+    'welcome.forgot': 'Uyilibele i-PIN yakho?',
+};
 const st = {
     'lang.title': 'Puo',
+    'welcome.title': 'Tshireletseho ya hao e bohlokwa',
+    'welcome.pinHint': 'Kena ka PIN ya hao ya dinomoro tse 4. Phasewete ha e hlokahale.',
+    'welcome.login': 'Kena ka PIN',
+    'welcome.new': 'O motjha mona?',
+    'welcome.signup': 'Ingolise',
+    'welcome.forgot': 'O lebetse PIN ya hao?',
     'auth.signin': 'Kena',
     'auth.create': 'Bula akhaonto',
     'auth.id.label': 'Nomoro ya mohala kapa imeile',
@@ -357,6 +385,12 @@ const st = {
 };
 const af = {
     'lang.title': 'Taal',
+    'welcome.title': 'Jou veiligheid is belangrik',
+    'welcome.pinHint': 'Meld aan met jou 4-syfer-PIN. Geen wagwoord nodig nie.',
+    'welcome.login': 'Meld aan met PIN',
+    'welcome.new': 'Nuut hier?',
+    'welcome.signup': 'Teken in',
+    'welcome.forgot': 'Jou PIN vergeet?',
     'auth.signin': 'Teken in',
     'auth.create': 'Skep rekening',
     'auth.id.label': 'Foonnommer of e-pos',
@@ -470,7 +504,7 @@ const af = {
     'common.cancel': 'Kanselleer',
     'common.close': 'Sluit',
 };
-const DICTS = { en, zu, st, af };
+const DICTS = { en, zu, xh, st, af };
 export function registerStrings(strings) {
     for (const code of Object.keys(strings))
         Object.assign(DICTS[code], strings[code]);
@@ -479,7 +513,7 @@ let current = readLang();
 function readLang() {
     try {
         const v = localStorage.getItem(LANG_KEY);
-        if (v === 'en' || v === 'zu' || v === 'st' || v === 'af')
+        if (v === 'en' || v === 'zu' || v === 'xh' || v === 'st' || v === 'af')
             return v;
     }
     catch { }

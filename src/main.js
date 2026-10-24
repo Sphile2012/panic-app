@@ -25,7 +25,7 @@ import { renderAbout } from './screens/about.js';
 import { renderTerms } from './screens/terms.js';
 import { renderEmergencyDialer, renderTroubleshooting } from './screens/emergency.js';
 import { renderDecoy } from './screens/decoy.js';
-import { renderWelcome } from './screens/emailAuth.js';
+import { renderSignup, renderWelcome } from './screens/emailAuth.js';
 import { runAlertSequence } from './alertService.js';
 import { pruneStaleQueue, watchForReconnect } from './alertQueue.js';
 import { loadAppearance, applyAppearance } from './theme.js';
@@ -74,6 +74,9 @@ function render(screen) {
     switch (screen) {
         case 'welcome':
             renderWelcome(appRoot);
+            break;
+        case 'signup':
+            renderSignup(appRoot);
             break;
         case 'calculator':
             renderDisguise();

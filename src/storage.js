@@ -1,7 +1,10 @@
 import { upsertDevice, getDeviceId, getUser } from './db.js';
 import { createRecoverySalt, createRecoverySecret, deriveRecoveryHash, encrypt, decrypt, encryptJson, decryptJson } from './crypto.js';
 import { LANGS } from './i18n.js';
-export const EMPTY_PROFILE = { name: '', phone: '', photo: '' };
+export const EMPTY_PROFILE = {
+    name: '', phone: '', photo: '', surname: '', dateOfBirth: '', email: '',
+    province: '', country: '', address: '',
+};
 const KEY_PUBLIC = 'pr_public';
 const KEY_VAULT = 'pr_vault';
 const KEY_PIN_FAILURES = 'pr_pin_failures';

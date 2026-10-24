@@ -183,11 +183,18 @@ export function renderProfile(root) {
             }
             try {
                 photo = await resizeImage(file);
-                store.saveProfile({ ...store.getState().profile, photo });
-                draw();
             }
             catch {
                 msgEl.textContent = t('prof.badimg');
+                return;
+            }
+            try {
+                await store.saveProfile({ ...store.getState().profile, photo });
+                draw();
+            }
+            catch (error) {
+                console.error('[profile] Could not save profile photo:', error);
+                msgEl.textContent = 'Could not save your profile. Please try again.';
             }
         });
         if (!editing)
@@ -195,17 +202,29 @@ export function renderProfile(root) {
         const nameEl = root.querySelector('#p-name');
         const phoneEl = root.querySelector('#p-phone');
         root.querySelector('#btn-upload').addEventListener('click', () => fileEl.click());
-        root.querySelector('#btn-remove-photo').addEventListener('click', () => {
+        root.querySelector('#btn-remove-photo').addEventListener('click', async () => {
             photo = '';
-            store.saveProfile({ ...store.getState().profile, photo });
-            draw();
+            try {
+                await store.saveProfile({ ...store.getState().profile, photo });
+                draw();
+            }
+            catch (error) {
+                console.error('[profile] Could not remove profile photo:', error);
+                msgEl.textContent = 'Could not save your profile. Please try again.';
+            }
         });
-        root.querySelector('#profile-form').addEventListener('submit', (e) => {
+        root.querySelector('#profile-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            store.saveProfile({ name: nameEl.value.trim(), phone: phoneEl.value.trim(), photo });
-            editing = false;
-            draw();
-            root.querySelector('#p-msg').textContent = t('prof.saved');
+            try {
+                await store.saveProfile({ ...store.getState().profile, name: nameEl.value.trim(), phone: phoneEl.value.trim(), photo });
+                editing = false;
+                draw();
+                root.querySelector('#p-msg').textContent = t('prof.saved');
+            }
+            catch (error) {
+                console.error('[profile] Could not save profile:', error);
+                msgEl.textContent = 'Could not save your profile. Please try again.';
+            }
         });
     };
     draw();

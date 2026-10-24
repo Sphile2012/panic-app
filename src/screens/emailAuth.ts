@@ -2,6 +2,34 @@ import { store } from '../state.js';
 import { sendEmailAuthOtp, sendPhoneAuthOtp, verifyPhoneOtp, setAuthenticatedPassword, signInWithGoogle, signInWithPassword, verifyEmailOtp, sendPasswordResetEmail, updatePassword } from '../db.js';
 import { resolveIdentifier } from '../authConfig.mjs';
 import { formatAuthError, SIGNUP_CONFIRMATION_MESSAGE } from '../authMessages.js';
+import { bindLanguageBar, languageBarHtml, t } from '../i18n.js';
+import type { Profile } from '../storage.js';
+
+let pendingSignupProfile: Profile | null = null;
+let signupFirstName = '';
+let signupLocation: Profile['location'];
+let signupTermsAccepted = false;
+
+function escapeSignupValue(value: string): string {
+  return value.replace(/[&<>"']/g, character => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  })[character] ?? character);
+}
+
+export function getSignupDraft(): Profile | null {
+  return pendingSignupProfile;
+}
+
+export function clearSignupDraft(): void {
+  pendingSignupProfile = null;
+  signupFirstName = '';
+  signupLocation = undefined;
+  signupTermsAccepted = false;
+}
 
 function googleButtonHtml(id: string) {
   return `
@@ -98,12 +126,13 @@ export function renderWelcome(root: HTMLElement) {
           </div>
 
           <div class="splash-content">
-            <h1 class="splash-tagline">Your Safety Matters</h1>
-            <p class="splash-pin-hint">Sign in with your 4-digit PIN. No password needed.</p>
+            ${languageBarHtml()}
+            <h1 class="splash-tagline">${t('welcome.title')}</h1>
+            <p class="splash-pin-hint">${t('welcome.pinHint')}</p>
             <div class="splash-actions">
-              <button class="btn-primary splash-btn" id="splash-login" type="button">Login with PIN</button>
-              <p class="splash-signup-text">New here? <button class="auth-link-btn" id="splash-signup" type="button">Sign up</button></p>
-              <button class="auth-link-btn splash-forgot-link" id="splash-forgot" type="button">Forgot your PIN?</button>
+              <button class="btn-primary splash-btn" id="splash-login" type="button">${t('welcome.login')}</button>
+              <p class="splash-signup-text">${t('welcome.new')} <button class="auth-link-btn" id="splash-signup" type="button">${t('welcome.signup')}</button></p>
+              <button class="auth-link-btn splash-forgot-link" id="splash-forgot" type="button">${t('welcome.forgot')}</button>
               <button class="splash-install-btn" id="splash-install" type="button">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <path d="M12 3v12m-5-5 5 5 5-5" />
@@ -126,114 +155,144 @@ export function renderWelcome(root: HTMLElement) {
   root.querySelector('#splash-login')?.addEventListener('click', () => {
     store.navigateTo(hasPinStored ? 'calculator' : 'setup-pin');
   });
-  root.querySelector('#splash-signup')?.addEventListener('click', () => store.navigateTo('setup-pin'));
+  bindLanguageBar(root, () => renderWelcome(root));
+  root.querySelector('#splash-signup')?.addEventListener('click', () => store.navigateTo('signup'));
   root.querySelector('#splash-forgot')?.addEventListener('click', () => store.navigateTo('pin-recovery'));
 }
 
 export function renderSignup(root: HTMLElement) {
+  const draft = pendingSignupProfile;
+  const firstName = signupFirstName || draft?.name.replace(new RegExp(`\\s+${draft.surname ?? ''}$`), '') || '';
+  const surname = draft?.surname ?? '';
   root.innerHTML = `
     <div class="screen auth-screen auth-screen--scenic">
-      <header class="auth-hero"><h1>Create Account</h1></header>
+      <header class="auth-hero auth-hero--signup"><h1>Sign up</h1><p>Enter your details, then create and confirm your PINs.</p></header>
       <section class="auth-sheet">
-        <form class="auth-form" id="signup-form" autocomplete="on" novalidate>
-          <label class="auth-visually-hidden" for="su-name">Full name</label>
-          <input class="text-input auth-line-input" id="su-name" type="text" placeholder="Full name" autocomplete="name" maxlength="100" required />
-          <label class="auth-visually-hidden" for="su-email">Email address</label>
-          <input class="text-input" id="su-email" type="email" placeholder="Email address" autocomplete="email" required />
-          <label class="auth-visually-hidden" for="su-phone">Phone number</label>
-          <input class="text-input" id="su-phone" type="tel" placeholder="Phone number (e.g., +27 82 123 4567)" autocomplete="tel" required />
-          <label class="auth-visually-hidden" for="su-password">Password</label>
-          <input class="text-input" id="su-password" type="password" placeholder="Create a password (at least 8 characters)" autocomplete="new-password" minlength="8" required />
-          <label class="auth-visually-hidden" for="su-password-confirm">Confirm password</label>
-          <input class="text-input" id="su-password-confirm" type="password" placeholder="Confirm password" autocomplete="new-password" minlength="8" required />
-          
-
-          
-          <p class="auth-subtitle">Verify it with the code we send to activate your account.</p>
+        <form class="auth-form signup-details-form" id="signup-form" autocomplete="on" novalidate>
+          <label class="field-label" for="su-name">First name</label>
+          <input class="text-input" id="su-name" type="text" placeholder="First name" autocomplete="given-name" maxlength="60" value="${escapeSignupValue(firstName)}" required />
+          <label class="field-label" for="su-surname">Surname</label>
+          <input class="text-input" id="su-surname" type="text" placeholder="Surname" autocomplete="family-name" maxlength="60" value="${escapeSignupValue(surname)}" required />
+          <label class="field-label" for="su-dob">Date of birth (optional)</label>
+          <input class="text-input" id="su-dob" type="date" autocomplete="bday" value="${escapeSignupValue(draft?.dateOfBirth ?? '')}" />
+          <label class="field-label" for="su-phone">Cellphone number</label>
+          <input class="text-input" id="su-phone" type="tel" placeholder="+27 82 123 4567" autocomplete="tel" maxlength="24" value="${escapeSignupValue(draft?.phone ?? '')}" required />
+          <label class="field-label" for="su-email">Email address (optional)</label>
+          <input class="text-input" id="su-email" type="email" placeholder="Email address" autocomplete="email" maxlength="254" value="${escapeSignupValue(draft?.email ?? '')}" />
+          <label class="field-label" for="su-province">Province (optional)</label>
+          <input class="text-input" id="su-province" type="text" placeholder="Province" autocomplete="address-level1" maxlength="100" value="${escapeSignupValue(draft?.province ?? '')}" />
+          <label class="field-label" for="su-country">Country (optional)</label>
+          <input class="text-input" id="su-country" type="text" placeholder="Country" autocomplete="country-name" maxlength="100" value="${escapeSignupValue(draft?.country ?? '')}" />
+          <label class="field-label" for="su-address">Address (optional)</label>
+          <textarea class="text-input" id="su-address" placeholder="Street address" autocomplete="street-address" maxlength="300" rows="2">${escapeSignupValue(draft?.address ?? '')}</textarea>
+          <button class="btn-secondary-outline" id="su-detect-location" type="button">Use my location</button>
+          <p class="auth-subtitle">Location access is optional. GPS coordinates stay on this device and are saved in your encrypted profile; no address lookup service is used.</p>
+          <p class="auth-subtitle" id="su-location-status" aria-live="polite">${signupLocation ? `Location detected: ${signupLocation.latitude.toFixed(5)}, ${signupLocation.longitude.toFixed(5)}. Province and country can be entered above.` : ''}</p>
+          <div class="signup-terms-row">
+            <input id="su-terms" type="checkbox" ${signupTermsAccepted ? 'checked' : ''} required />
+            <label for="su-terms">I agree with</label>
+            <button class="signup-terms-link" id="su-terms-link" type="button">Read Terms and Conditions</button>
+          </div>
           <p class="auth-error" id="su-error" aria-live="polite"></p>
-          <button class="btn-primary auth-entry-btn" type="submit" id="su-submit">Create account</button>
+          <button class="btn-primary auth-entry-btn" type="submit" id="su-submit">Continue to PIN setup</button>
         </form>
-        <p class="auth-switch">Already have an account? <button class="auth-link-btn" id="btn-to-login" type="button">Sign in</button></p>
-        <button class="auth-back-btn" id="btn-to-welcome" type="button">Back</button>
+        <button class="auth-back-btn" id="btn-to-welcome" type="button">Back to home</button>
       </section>
     </div>`;
-  root.querySelector('#btn-to-login')?.addEventListener('click', () => store.navigateTo('login'));
   root.querySelector('#btn-to-welcome')?.addEventListener('click', () => store.navigateTo('welcome'));
 
   const form = root.querySelector<HTMLFormElement>('#signup-form')!;
   const nameInput = root.querySelector<HTMLInputElement>('#su-name')!;
+  const surnameInput = root.querySelector<HTMLInputElement>('#su-surname')!;
+  const dobInput = root.querySelector<HTMLInputElement>('#su-dob')!;
   const emailInput = root.querySelector<HTMLInputElement>('#su-email')!;
   const phoneInput = root.querySelector<HTMLInputElement>('#su-phone')!;
-  const passwordInput = root.querySelector<HTMLInputElement>('#su-password')!;
-  const passwordConfirmInput = root.querySelector<HTMLInputElement>('#su-password-confirm')!;
+  const provinceInput = root.querySelector<HTMLInputElement>('#su-province')!;
+  const countryInput = root.querySelector<HTMLInputElement>('#su-country')!;
+  const addressInput = root.querySelector<HTMLTextAreaElement>('#su-address')!;
+  const termsInput = root.querySelector<HTMLInputElement>('#su-terms')!;
+  const locationStatus = root.querySelector<HTMLElement>('#su-location-status')!;
   const error = root.querySelector<HTMLElement>('#su-error')!;
   const submit = root.querySelector<HTMLButtonElement>('#su-submit')!;
-  let pendingEmail = '';
-  let pendingPhone = '';
-  let pendingName = '';
-  let pendingPassword = '';
-  let awaitingCode = false;
-  let emailVerified = false;
-  let otpMethod: 'email' | 'sms' = 'email';
-  
+  let location = signupLocation;
+
+  const syncSignupDraft = () => {
+    signupFirstName = nameInput.value.trim();
+    signupTermsAccepted = termsInput.checked;
+    signupLocation = location;
+    pendingSignupProfile = {
+      name: `${signupFirstName} ${surnameInput.value.trim()}`.trim(),
+      surname: surnameInput.value.trim(),
+      phone: phoneInput.value.trim(),
+      dateOfBirth: dobInput.value,
+      email: emailInput.value.trim(),
+      province: provinceInput.value.trim(),
+      country: countryInput.value.trim(),
+      address: addressInput.value.trim(),
+      location,
+      photo: '',
+    };
+  };
+
+  form.addEventListener('input', syncSignupDraft);
+  form.addEventListener('change', syncSignupDraft);
+  root.querySelector<HTMLButtonElement>('#su-terms-link')?.addEventListener('click', () => {
+    syncSignupDraft();
+    store.navigateTo('terms');
+  });
+
+  root.querySelector<HTMLButtonElement>('#su-detect-location')?.addEventListener('click', () => {
+    error.textContent = '';
+    locationStatus.textContent = 'Requesting location permission…';
+    if (!navigator.geolocation) {
+      locationStatus.textContent = 'Location is not available in this browser. You can enter your address manually.';
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      position => {
+        location = { latitude: position.coords.latitude, longitude: position.coords.longitude };
+        signupLocation = location;
+        syncSignupDraft();
+        locationStatus.textContent = `Location detected: ${location.latitude.toFixed(5)}, ${location.longitude.toFixed(5)}. Province and country can be entered above.`;
+      },
+      geolocationError => {
+        locationStatus.textContent = geolocationError.code === geolocationError.PERMISSION_DENIED
+          ? 'Location permission was denied. You can enter your address manually.'
+          : 'Could not detect location. You can enter your address manually.';
+      },
+      { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 },
+    );
+  });
+
   form.addEventListener('submit', async event => {
     event.preventDefault();
-    if (awaitingCode) {
-      const code = form.querySelector<HTMLInputElement>('#email-otp-code')!;
-      const codeError = form.querySelector<HTMLElement>('#email-otp-error')!;
-      const verifyButton = form.querySelector<HTMLButtonElement>('#email-otp-submit')!;
-      verifyButton.disabled = true;
-      const verificationResult = emailVerified ? { error: null } : await verifyEmailOtp(pendingEmail, code.value);
-      if (!verificationResult.error)
-        emailVerified = true;
-      const result = verificationResult.error ? verificationResult : await setAuthenticatedPassword(pendingPassword);
-      verifyButton.disabled = false;
-      if (result.error) {
-        codeError.textContent = formatAuthError(result.error, 'otp');
-        return;
-      }
-      pendingPassword = '';
-      return;
-    }
     error.textContent = '';
-    const fullName = nameInput.value.trim();
-    const email = validateEmail(emailInput.value);
+    const name = nameInput.value.trim();
+    const surname = surnameInput.value.trim();
+    const email = emailInput.value.trim();
     const phone = phoneInput.value.trim();
-    
-    if (!fullName) { error.textContent = 'Please enter your name.'; return; }
-    if (!email) { error.textContent = 'Enter a valid email address.'; return; }
-    if (!phone) { error.textContent = 'Please enter your phone number.'; return; }
-    if (!/^\+?\d{10,15}$/.test(phone.replace(/\s/g, ''))) { 
-      error.textContent = 'Please enter a valid phone number (e.g., +27821234567).'; 
-      return; 
-    }
-    if (passwordInput.value.length < 8) { error.textContent = 'Use a password with at least 8 characters.'; return; }
-    if (passwordInput.value !== passwordConfirmInput.value) { error.textContent = 'Passwords do not match.'; return; }
-    
-    submit.disabled = true;
-    submit.textContent = 'Sending code…';
-    
-    // Send Email OTP only (free)
-    const result = await sendEmailAuthOtp(email, 'signup', fullName, phone);
-    
-    submit.disabled = false;
-    submit.textContent = 'Create account';
-    if (result.error) {
-      error.textContent = formatAuthError(result.error);
+    const phoneDigits = phone.replace(/\D/g, '');
+
+    if (!name || !surname) {
+      error.textContent = 'Please enter your first name and surname.';
       return;
     }
-    pendingEmail = email;
-    pendingPhone = phone;
-    pendingName = fullName;
-    pendingPassword = passwordInput.value;
-    awaitingCode = true;
-    
-    // Save phone to sessionStorage
-    if (phone) {
-      sessionStorage.setItem('temp_signup_phone', phone);
+    if (phoneDigits.length < 7 || phoneDigits.length > 15) {
+      error.textContent = 'Enter a valid cellphone number.';
+      return;
     }
-    
-    showEmailCodeForm(form, pendingEmail, 'signup', pendingName);
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      error.textContent = 'Enter a valid email address or leave it blank.';
+      return;
+    }
+    if (!termsInput.checked) {
+      error.textContent = 'Please agree to the Terms and Conditions to continue.';
+      termsInput.focus();
+      return;
+    }
+    syncSignupDraft();
+    submit.disabled = true;
+    store.navigateTo('setup-pin');
   });
 }
 
@@ -245,13 +304,9 @@ export function renderLogin(root: HTMLElement) {
         <form class="auth-form" id="login-form" autocomplete="on" novalidate>
           <label class="auth-visually-hidden" for="li-email">Email address</label>
           <input class="text-input" id="li-email" type="email" placeholder="Email address" autocomplete="email" required />
-          <label class="auth-visually-hidden" for="li-password">Password</label>
-          <input class="text-input" id="li-password" type="password" placeholder="Password" autocomplete="current-password" required />
           <p class="auth-error" id="li-error" aria-live="polite"></p>
-          <button class="btn-primary auth-entry-btn" type="submit" id="li-submit">Sign in</button>
-          <button class="auth-link-btn" id="btn-forgot-password" type="button">Forgot password?</button>
+          <button class="btn-primary auth-entry-btn" type="submit" id="li-submit">Send sign-in code</button>
         </form>
-        <button class="auth-link-btn" id="btn-email-code" type="button">Sign in with an email code instead</button>
         <p class="auth-switch">Don't have an account? <button class="auth-link-btn" id="btn-to-signup" type="button">Sign up</button></p>
         <button class="auth-back-btn" id="btn-to-welcome" type="button">Back</button>
         ${store.getState().pinHash ? '<button class="auth-guest-btn" id="btn-local-pin" type="button">Unlock this device with its PIN (offline only)</button>' : ''}
@@ -262,31 +317,13 @@ export function renderLogin(root: HTMLElement) {
   root.querySelector('#btn-to-welcome')?.addEventListener('click', () => store.navigateTo('welcome'));
   root.querySelector('#btn-local-pin')?.addEventListener('click', () => store.navigateTo('calculator'));
   root.querySelector('#btn-quick-access')?.addEventListener('click', () => store.navigateTo('setup-pin'));
-  root.querySelector('#btn-forgot-password')?.addEventListener('click', () => store.navigateTo('forgot-password'));
 
   const form = root.querySelector<HTMLFormElement>('#login-form')!;
   const emailInput = root.querySelector<HTMLInputElement>('#li-email')!;
-  const passwordInput = root.querySelector<HTMLInputElement>('#li-password')!;
   const error = root.querySelector<HTMLElement>('#li-error')!;
   const submit = root.querySelector<HTMLButtonElement>('#li-submit')!;
-  const emailCodeButton = root.querySelector<HTMLButtonElement>('#btn-email-code')!;
   let pendingEmail = '';
   let awaitingCode = false;
-  emailCodeButton.addEventListener('click', async () => {
-    error.textContent = '';
-    const email = validateEmail(emailInput.value);
-    if (!email) { error.textContent = 'Enter a valid email address.'; return; }
-    emailCodeButton.disabled = true;
-    const result = await sendEmailAuthOtp(email, 'login');
-    emailCodeButton.disabled = false;
-    if (result.error) {
-      error.textContent = formatAuthError(result.error);
-      return;
-    }
-    pendingEmail = email;
-    awaitingCode = true;
-    showEmailCodeForm(form, pendingEmail, 'login');
-  });
   form.addEventListener('submit', async event => {
     event.preventDefault();
     if (awaitingCode) {
@@ -302,13 +339,18 @@ export function renderLogin(root: HTMLElement) {
     error.textContent = '';
     const email = validateEmail(emailInput.value);
     if (!email) { error.textContent = 'Enter a valid email address.'; return; }
-    if (!passwordInput.value) { error.textContent = 'Enter your password.'; return; }
     submit.disabled = true;
-    const result = await signInWithPassword(email, passwordInput.value);
+    submit.textContent = 'Sending code…';
+    const result = await sendEmailAuthOtp(email, 'login');
     submit.disabled = false;
+    submit.textContent = 'Send sign-in code';
     if (result.error) {
-      error.textContent = formatAuthError(result.error, 'password');
+      error.textContent = formatAuthError(result.error);
+      return;
     }
+    pendingEmail = email;
+    awaitingCode = true;
+    showEmailCodeForm(form, pendingEmail, 'login');
   });
 }
 

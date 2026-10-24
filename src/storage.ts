@@ -33,9 +33,19 @@ export type Profile = {
     name: string;
     phone: string;
     photo: string;
+    surname?: string;
+    dateOfBirth?: string;
+    email?: string;
+    province?: string;
+    country?: string;
+    address?: string;
+    location?: { latitude: number; longitude: number };
 };
 
-export const EMPTY_PROFILE: Profile = { name: '', phone: '', photo: '' };
+export const EMPTY_PROFILE: Profile = {
+    name: '', phone: '', photo: '', surname: '', dateOfBirth: '', email: '',
+    province: '', country: '', address: '',
+};
 
 export type VaultData = {
     contacts: Contact[];

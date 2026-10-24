@@ -195,15 +195,16 @@ class Store {
         vault.contacts = contacts;
         await saveVault(vault, pinHash);
     }
-    saveProfile(profile: Profile) {
+    async saveProfile(profile: Profile): Promise<void> {
+        const pinHash = this.state.pinHash;
+        if (!pinHash)
+            throw new Error('Create or unlock your PIN before saving your profile.');
+        const vault = await loadVault(pinHash);
+        vault.profile = profile;
+        await saveVault(vault, pinHash);
         this.state = { ...this.state, profile };
         this.touch();
         this.notify();
-        (async () => {
-            const vault = await loadVault(this.state.pinHash);
-            vault.profile = profile;
-            await saveVault(vault, this.state.pinHash);
-        })().catch(console.error);
     }
     async addContact(name: string, phone: string, relationship = 'Other', photo?: string): Promise<boolean> {
         const cleanName = name.trim();
