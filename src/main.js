@@ -1,7 +1,7 @@
 import './style.css';
 import { PIN_FAILURE_LIMIT, store } from './state.js';
 import { renderCalculator } from './screens/calculator.js';
-import { renderSetupPin, renderSetupProfile, renderSetupContacts, renderRecoverySetup, renderPinRecovery } from './screens/setup.js';
+import { renderSetupPin, renderSetupProfile, renderSetupContacts, renderRecoverySetup } from './screens/setup.js';
 import { renderApp } from './screens/app.js';
 import { renderContacts } from './screens/contacts.js';
 import { renderLocation } from './screens/location.js';
@@ -83,6 +83,9 @@ function render(screen) {
             break;
         case 'setup-pin':
             renderSetupPin(appRoot);
+            break;
+        case 'setup-disguise':
+            renderDisguise();
             break;
         case 'setup-profile':
             renderSetupProfile(appRoot);

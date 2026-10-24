@@ -1,5 +1,6 @@
 import { hasDistinctPinDigits, PIN_FAILURE_LIMIT, store } from '../state.js';
-import { getRecoveryQuestionIds, setRecoveryQuestions } from '../storage.js';
+import { getRecoveryQuestionIds, setRecoveryQuestions, setCloudBackup, hasCloudBackup } from '../storage.js';
+import { setupPinsInCloud, DB_CONFIGURED, getUser, changePinsInCloud } from '../db.js';
 import { wirePasswordToggles } from '../formControls.js';
 
 function escapeHtml(value: string): string {

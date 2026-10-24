@@ -1,5 +1,5 @@
 import { store } from '../state.js';
-import { sendEmailAuthOtp, setAuthenticatedPassword, signInWithGoogle, signInWithPassword, verifyEmailOtp } from '../db.js';
+import { sendEmailAuthOtp, sendPhoneAuthOtp, setAuthenticatedPassword, signInWithGoogle, signInWithPassword, verifyEmailOtp, sendPasswordResetEmail, updatePassword } from '../db.js';
 import { resolveIdentifier } from '../authConfig.mjs';
 import { formatAuthError, SIGNUP_CONFIRMATION_MESSAGE } from '../authMessages.js';
 function googleButtonHtml(id) {
@@ -26,12 +26,20 @@ function wireGoogleSignIn(root, errorSelector, buttonId) {
         if (label)
             label.textContent = 'Connecting to Google...';
         const { error: authError } = await signInWithGoogle();
-        if (!authError)
+        if (authError) {
+            error.textContent = authError;
+            button.disabled = false;
+            if (label)
+                label.textContent = 'Continue with Google';
             return;
-        error.textContent = authError;
-        button.disabled = false;
-        if (label)
-            label.textContent = 'Continue with Google';
+        }
+        // If no error and no redirect happened, it means the provider is disabled
+        if (button.disabled) {
+            error.textContent = 'Google Sign-In is not available. Please use email/password authentication.';
+            button.disabled = false;
+            if (label)
+                label.textContent = 'Continue with Google';
+        }
     });
 }
 function validateEmail(rawEmail) {
@@ -53,6 +61,23 @@ function showEmailCodeForm(form, email, purpose, fullName = '') {
         error.textContent = result.error ? formatAuthError(result.error) : 'A new code has been sent.';
     });
     form.querySelector('#email-otp-code')?.focus();
+}
+function showPhoneCodeForm(form, phone, purpose) {
+    form.innerHTML = `
+    <label class="auth-visually-hidden" for="phone-otp-code">SMS verification code</label>
+    <input class="text-input" id="phone-otp-code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="Enter verification code" required />
+    <p class="auth-error" id="phone-otp-error" aria-live="polite">Enter the code sent to your phone.</p>
+    <button class="btn-primary auth-entry-btn" type="submit" id="phone-otp-submit">Verify code</button>
+    <button class="auth-link-btn" id="phone-otp-resend" type="button">Send another code</button>`;
+    const error = form.querySelector('#phone-otp-error');
+    form.querySelector('#phone-otp-resend')?.addEventListener('click', async (event) => {
+        const button = event.currentTarget;
+        button.disabled = true;
+        const result = await sendPhoneAuthOtp(phone, purpose);
+        button.disabled = false;
+        error.textContent = result.error ? formatAuthError(result.error) : 'A new code has been sent.';
+    });
+    form.querySelector('#phone-otp-code')?.focus();
 }
 export function renderWelcome(root) {
     const hasPinStored = Boolean(store.getState().pinHash);
@@ -98,36 +123,40 @@ export function renderSignup(root) {
           <input class="text-input auth-line-input" id="su-name" type="text" placeholder="Full name" autocomplete="name" maxlength="100" required />
           <label class="auth-visually-hidden" for="su-email">Email address</label>
           <input class="text-input" id="su-email" type="email" placeholder="Email address" autocomplete="email" required />
+          <label class="auth-visually-hidden" for="su-phone">Phone number</label>
+          <input class="text-input" id="su-phone" type="tel" placeholder="Phone number (e.g., +27 82 123 4567)" autocomplete="tel" required />
           <label class="auth-visually-hidden" for="su-password">Password</label>
           <input class="text-input" id="su-password" type="password" placeholder="Create a password (at least 8 characters)" autocomplete="new-password" minlength="8" required />
           <label class="auth-visually-hidden" for="su-password-confirm">Confirm password</label>
           <input class="text-input" id="su-password-confirm" type="password" placeholder="Confirm password" autocomplete="new-password" minlength="8" required />
-          <p class="auth-subtitle">Use an inbox you can access. Verify it with the code we send to activate your account.</p>
+          
+
+          
+          <p class="auth-subtitle">Verify it with the code we send to activate your account.</p>
           <p class="auth-error" id="su-error" aria-live="polite"></p>
           <button class="btn-primary auth-entry-btn" type="submit" id="su-submit">Create account</button>
         </form>
         <p class="auth-switch">Already have an account? <button class="auth-link-btn" id="btn-to-login" type="button">Sign in</button></p>
         <button class="auth-back-btn" id="btn-to-welcome" type="button">Back</button>
-        <div class="auth-divider"><span>or sign up with</span></div>
-        ${googleButtonHtml('signup-google')}
-        <p class="auth-error auth-google-error" id="su-google-error" aria-live="polite"></p>
       </section>
     </div>`;
-    wireGoogleSignIn(root, '#su-google-error', 'signup-google');
     root.querySelector('#btn-to-login')?.addEventListener('click', () => store.navigateTo('login'));
     root.querySelector('#btn-to-welcome')?.addEventListener('click', () => store.navigateTo('welcome'));
     const form = root.querySelector('#signup-form');
     const nameInput = root.querySelector('#su-name');
     const emailInput = root.querySelector('#su-email');
+    const phoneInput = root.querySelector('#su-phone');
     const passwordInput = root.querySelector('#su-password');
     const passwordConfirmInput = root.querySelector('#su-password-confirm');
     const error = root.querySelector('#su-error');
     const submit = root.querySelector('#su-submit');
     let pendingEmail = '';
+    let pendingPhone = '';
     let pendingName = '';
     let pendingPassword = '';
     let awaitingCode = false;
     let emailVerified = false;
+    let otpMethod = 'email';
     form.addEventListener('submit', async (event) => {
         event.preventDefault();
         if (awaitingCode) {
@@ -150,12 +179,21 @@ export function renderSignup(root) {
         error.textContent = '';
         const fullName = nameInput.value.trim();
         const email = validateEmail(emailInput.value);
+        const phone = phoneInput.value.trim();
         if (!fullName) {
             error.textContent = 'Please enter your name.';
             return;
         }
         if (!email) {
             error.textContent = 'Enter a valid email address.';
+            return;
+        }
+        if (!phone) {
+            error.textContent = 'Please enter your phone number.';
+            return;
+        }
+        if (!/^\+?\d{10,15}$/.test(phone.replace(/\s/g, ''))) {
+            error.textContent = 'Please enter a valid phone number (e.g., +27821234567).';
             return;
         }
         if (passwordInput.value.length < 8) {
@@ -168,17 +206,23 @@ export function renderSignup(root) {
         }
         submit.disabled = true;
         submit.textContent = 'Sending code…';
-        const result = await sendEmailAuthOtp(email, 'signup', fullName);
+        // Send Email OTP only (free)
+        const result = await sendEmailAuthOtp(email, 'signup', fullName, phone);
         submit.disabled = false;
-        submit.textContent = 'Continue with email';
+        submit.textContent = 'Create account';
         if (result.error) {
             error.textContent = formatAuthError(result.error);
             return;
         }
         pendingEmail = email;
+        pendingPhone = phone;
         pendingName = fullName;
         pendingPassword = passwordInput.value;
         awaitingCode = true;
+        // Save phone to sessionStorage
+        if (phone) {
+            sessionStorage.setItem('temp_signup_phone', phone);
+        }
         showEmailCodeForm(form, pendingEmail, 'signup', pendingName);
     });
 }
@@ -194,22 +238,20 @@ export function renderLogin(root) {
           <input class="text-input" id="li-password" type="password" placeholder="Password" autocomplete="current-password" required />
           <p class="auth-error" id="li-error" aria-live="polite"></p>
           <button class="btn-primary auth-entry-btn" type="submit" id="li-submit">Sign in</button>
+          <button class="auth-link-btn" id="btn-forgot-password" type="button">Forgot password?</button>
         </form>
         <button class="auth-link-btn" id="btn-email-code" type="button">Sign in with an email code instead</button>
         <p class="auth-switch">Don't have an account? <button class="auth-link-btn" id="btn-to-signup" type="button">Sign up</button></p>
         <button class="auth-back-btn" id="btn-to-welcome" type="button">Back</button>
-        <div class="auth-divider"><span>or sign in with</span></div>
-        ${googleButtonHtml('login-google')}
-        <p class="auth-error auth-google-error" id="li-google-error" aria-live="polite"></p>
         ${store.getState().pinHash ? '<button class="auth-guest-btn" id="btn-local-pin" type="button">Unlock this device with its PIN (offline only)</button>' : ''}
         <button class="auth-guest-btn" id="btn-quick-access" type="button">Continue without an account</button>
       </section>
     </div>`;
-    wireGoogleSignIn(root, '#li-google-error', 'login-google');
     root.querySelector('#btn-to-signup')?.addEventListener('click', () => store.navigateTo('signup'));
     root.querySelector('#btn-to-welcome')?.addEventListener('click', () => store.navigateTo('welcome'));
     root.querySelector('#btn-local-pin')?.addEventListener('click', () => store.navigateTo('calculator'));
     root.querySelector('#btn-quick-access')?.addEventListener('click', () => store.navigateTo('setup-pin'));
+    root.querySelector('#btn-forgot-password')?.addEventListener('click', () => store.navigateTo('forgot-password'));
     const form = root.querySelector('#login-form');
     const emailInput = root.querySelector('#li-email');
     const passwordInput = root.querySelector('#li-password');
@@ -277,4 +319,176 @@ export function renderVerifyEmail(root) {
       </div>
     </div>`;
     root.querySelector('#btn-done')?.addEventListener('click', () => store.navigateTo('login'));
+}
+export function renderForgotPassword(root) {
+    root.innerHTML = `
+    <div class="screen auth-screen auth-screen--scenic">
+      <header class="auth-hero"><h1>Reset Password</h1></header>
+      <section class="auth-sheet">
+        <form class="auth-form" id="forgot-password-form" autocomplete="on" novalidate>
+          <p class="auth-subtitle">Enter your email address and we'll send you a link to reset your password.</p>
+          <label class="auth-visually-hidden" for="fp-email">Email address</label>
+          <input class="text-input" id="fp-email" type="email" placeholder="Email address" autocomplete="email" required />
+          <p class="auth-error" id="fp-error" aria-live="polite"></p>
+          <p class="auth-success" id="fp-success" aria-live="polite"></p>
+          <button class="btn-primary auth-entry-btn" type="submit" id="fp-submit">Send reset link</button>
+        </form>
+        <p class="auth-switch">Remember your password? <button class="auth-link-btn" id="btn-to-login" type="button">Sign in</button></p>
+        <button class="auth-back-btn" id="btn-to-welcome" type="button">Back</button>
+      </section>
+    </div>`;
+    root.querySelector('#btn-to-login')?.addEventListener('click', () => store.navigateTo('login'));
+    root.querySelector('#btn-to-welcome')?.addEventListener('click', () => store.navigateTo('welcome'));
+    const form = root.querySelector('#forgot-password-form');
+    const emailInput = root.querySelector('#fp-email');
+    const error = root.querySelector('#fp-error');
+    const success = root.querySelector('#fp-success');
+    const submit = root.querySelector('#fp-submit');
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        error.textContent = '';
+        success.textContent = '';
+        const email = validateEmail(emailInput.value);
+        if (!email) {
+            error.textContent = 'Enter a valid email address.';
+            return;
+        }
+        submit.disabled = true;
+        submit.textContent = 'Sending...';
+        const result = await sendPasswordResetEmail(email);
+        submit.disabled = false;
+        submit.textContent = 'Send reset link';
+        if (result.error) {
+            error.textContent = formatAuthError(result.error);
+            return;
+        }
+        success.textContent = 'Password reset link sent! Check your email.';
+        emailInput.value = '';
+    });
+}
+export function renderResetPassword(root) {
+    root.innerHTML = `
+    <div class="screen auth-screen auth-screen--scenic">
+      <header class="auth-hero"><h1>Create New Password</h1></header>
+      <section class="auth-sheet">
+        <form class="auth-form" id="reset-password-form" autocomplete="on" novalidate>
+          <p class="auth-subtitle">Enter your new password below.</p>
+          <label class="auth-visually-hidden" for="rp-password">New password</label>
+          <input class="text-input" id="rp-password" type="password" placeholder="New password (at least 8 characters)" autocomplete="new-password" minlength="8" required />
+          <label class="auth-visually-hidden" for="rp-password-confirm">Confirm new password</label>
+          <input class="text-input" id="rp-password-confirm" type="password" placeholder="Confirm new password" autocomplete="new-password" minlength="8" required />
+          <p class="auth-error" id="rp-error" aria-live="polite"></p>
+          <button class="btn-primary auth-entry-btn" type="submit" id="rp-submit">Update password</button>
+        </form>
+      </section>
+    </div>`;
+    const form = root.querySelector('#reset-password-form');
+    const passwordInput = root.querySelector('#rp-password');
+    const passwordConfirmInput = root.querySelector('#rp-password-confirm');
+    const error = root.querySelector('#rp-error');
+    const submit = root.querySelector('#rp-submit');
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        error.textContent = '';
+        if (passwordInput.value.length < 8) {
+            error.textContent = 'Password must be at least 8 characters.';
+            return;
+        }
+        if (passwordInput.value !== passwordConfirmInput.value) {
+            error.textContent = 'Passwords do not match.';
+            return;
+        }
+        submit.disabled = true;
+        submit.textContent = 'Updating...';
+        const result = await updatePassword(passwordInput.value);
+        submit.disabled = false;
+        submit.textContent = 'Update password';
+        if (result.error) {
+            error.textContent = formatAuthError(result.error);
+            return;
+        }
+        // Password updated successfully, navigate to login
+        store.navigateTo('login');
+    });
+}
+export function renderChangePassword(root) {
+    root.innerHTML = `
+    <div class="screen auth-screen auth-screen--scenic">
+      <header class="auth-hero"><h1>Change Password</h1></header>
+      <section class="auth-sheet">
+        <form class="auth-form" id="change-password-form" autocomplete="on" novalidate>
+          <p class="auth-subtitle">Enter your current password and choose a new one.</p>
+          <label class="auth-visually-hidden" for="cp-current">Current password</label>
+          <input class="text-input" id="cp-current" type="password" placeholder="Current password" autocomplete="current-password" required />
+          <label class="auth-visually-hidden" for="cp-new">New password</label>
+          <input class="text-input" id="cp-new" type="password" placeholder="New password (at least 8 characters)" autocomplete="new-password" minlength="8" required />
+          <label class="auth-visually-hidden" for="cp-new-confirm">Confirm new password</label>
+          <input class="text-input" id="cp-new-confirm" type="password" placeholder="Confirm new password" autocomplete="new-password" minlength="8" required />
+          <p class="auth-error" id="cp-error" aria-live="polite"></p>
+          <p class="auth-success" id="cp-success" aria-live="polite"></p>
+          <button class="btn-primary auth-entry-btn" type="submit" id="cp-submit">Change password</button>
+        </form>
+        <button class="auth-back-btn" id="btn-to-settings" type="button">Back to Settings</button>
+      </section>
+    </div>`;
+    root.querySelector('#btn-to-settings')?.addEventListener('click', () => store.navigateTo('settings'));
+    const form = root.querySelector('#change-password-form');
+    const currentInput = root.querySelector('#cp-current');
+    const newPasswordInput = root.querySelector('#cp-new');
+    const newPasswordConfirmInput = root.querySelector('#cp-new-confirm');
+    const error = root.querySelector('#cp-error');
+    const success = root.querySelector('#cp-success');
+    const submit = root.querySelector('#cp-submit');
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        error.textContent = '';
+        success.textContent = '';
+        if (!currentInput.value) {
+            error.textContent = 'Please enter your current password.';
+            return;
+        }
+        if (newPasswordInput.value.length < 8) {
+            error.textContent = 'New password must be at least 8 characters.';
+            return;
+        }
+        if (newPasswordInput.value !== newPasswordConfirmInput.value) {
+            error.textContent = 'New passwords do not match.';
+            return;
+        }
+        if (currentInput.value === newPasswordInput.value) {
+            error.textContent = 'New password must be different from current password.';
+            return;
+        }
+        submit.disabled = true;
+        submit.textContent = 'Changing...';
+        // Verify current password by attempting to reauthenticate
+        const authEmail = store.getState().authEmail;
+        if (!authEmail) {
+            error.textContent = 'Session expired. Please sign in again.';
+            submit.disabled = false;
+            submit.textContent = 'Change password';
+            return;
+        }
+        // Try to sign in with current password to verify it
+        const verifyResult = await signInWithPassword(authEmail, currentInput.value);
+        if (verifyResult.error) {
+            error.textContent = 'Current password is incorrect.';
+            submit.disabled = false;
+            submit.textContent = 'Change password';
+            return;
+        }
+        // Update to new password
+        const result = await updatePassword(newPasswordInput.value);
+        submit.disabled = false;
+        submit.textContent = 'Change password';
+        if (result.error) {
+            error.textContent = formatAuthError(result.error);
+            return;
+        }
+        success.textContent = 'Password changed successfully!';
+        form.reset();
+        setTimeout(() => {
+            store.navigateTo('settings');
+        }, 2000);
+    });
 }

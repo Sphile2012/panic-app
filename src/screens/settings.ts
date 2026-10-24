@@ -196,7 +196,7 @@ export function renderChangePins(root: HTMLElement) {
     return;
   }
 
-  const questions = questionIds.map(id => PIN_QUESTIONS[id] || id);
+  const questions = questionIds.map(id => RECOVERY_QUESTIONS.find(q => q.id === id)?.label || id);
   
   root.innerHTML = `
     <div class="screen setup-screen">
@@ -290,7 +290,7 @@ export function renderPinRecovery(root: HTMLElement) {
     return;
   }
 
-  const questions = questionIds.map(id => PIN_QUESTIONS[id] || id);
+  const questions = questionIds.map(id => RECOVERY_QUESTIONS.find(q => q.id === id)?.label || id);
   
   root.innerHTML = `
     <div class="screen setup-screen">

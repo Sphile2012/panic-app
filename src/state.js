@@ -34,6 +34,30 @@ function buildInitialState() {
 }
 class Store {
     constructor() {
+        Object.defineProperty(this, "state", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "listeners", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "lockTimer", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "screenHistory", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
         this.state = buildInitialState();
         this.listeners = [];
         this.lockTimer = null;
@@ -393,7 +417,7 @@ class Store {
             authEmail: email,
             ...(identityChanged ? { accountPinUnlocked: true, accountPinQuestionIds: [] } : {}),
         };
-        if (email && !this.state.accountPinUnlocked &&
+        if (email && this.state.isFirstRun &&
             (previousEmail !== email || ['welcome', 'login', 'signup', 'verify-email'].includes(this.state.screen))) {
             this.state = { ...this.state, screen: 'setup-pin' };
         }

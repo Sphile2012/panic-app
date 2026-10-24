@@ -6,9 +6,10 @@ export type Contact = {
     id: string;
     name: string;
     phone: string;
-    relationship: string;
+    relationship?: string;
     initials: string;
     status: 'pending' | 'sending' | 'opened' | 'failed';
+    photo?: string;
 };
 
 export type Note = {

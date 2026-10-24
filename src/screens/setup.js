@@ -1,5 +1,6 @@
 import { hasDistinctPinDigits, PIN_FAILURE_LIMIT, store } from '../state.js';
-import { getRecoveryQuestionIds, setRecoveryQuestions } from '../storage.js';
+import { getRecoveryQuestionIds, setRecoveryQuestions, setCloudBackup, hasCloudBackup } from '../storage.js';
+import { setupPinsInCloud, DB_CONFIGURED, getUser, changePinsInCloud } from '../db.js';
 import { wirePasswordToggles } from '../formControls.js';
 function escapeHtml(value) {
     return value.replace(/[&<>"']/g, character => ({
@@ -162,54 +163,7 @@ export function renderSetupPin(root) {
         sessionStorage.setItem('temp_pin1', pin);
         sessionStorage.setItem('temp_pin2', decoy);
         await store.savePin(pin, decoy);
-        store.navigateTo('setup-disguise');
-    });
-}
-export function renderSetupDisguise(root) {
-    const currentAppearance = loadAppearance();
-    root.innerHTML = `
-    <div class="screen setup-screen">
-      <div class="setup-logo">○</div>
-      <h1 class="setup-title">Choose your disguise</h1>
-      <p class="setup-body">
-        Select how the app should appear when locked. This disguise helps protect your privacy.
-      </p>
-
-      <form class="setup-form" id="setup-disguise-form">
-        <div class="disguise-options">
-          ${DISGUISE_OPTIONS.map(option => `
-            <label class="disguise-option ${currentAppearance.disguise === option.id ? 'disguise-option--selected' : ''}">
-              <input type="radio" name="disguise" value="${option.id}" ${currentAppearance.disguise === option.id ? 'checked' : ''} />
-              <div class="disguise-option-preview">${option.preview}</div>
-              <div class="disguise-option-label">${option.label}</div>
-              <div class="disguise-option-desc">${option.description}</div>
-            </label>
-          `).join('')}
-        </div>
-
-        <button class="btn-primary" type="submit">Continue →</button>
-      </form>
-    </div>
-  `;
-    const form = root.querySelector('#setup-disguise-form');
-    const options = root.querySelectorAll('.disguise-option');
-    // Handle option selection visual feedback
-    options.forEach(option => {
-        option.addEventListener('click', () => {
-            options.forEach(opt => opt.classList.remove('disguise-option--selected'));
-            option.classList.add('disguise-option--selected');
-        });
-    });
-    form.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const selected = form.querySelector('input[name="disguise"]:checked');
-        if (selected) {
-            const appearance = loadAppearance();
-            appearance.disguise = selected.value;
-            saveAppearance(appearance);
-            applyAppearance(appearance);
-        }
-        store.navigateTo('setup-profile');
+        store.navigateTo('recovery-setup');
     });
 }
 export function renderSetupProfile(root) {
@@ -358,8 +312,13 @@ export function renderRecoverySetup(root, nextScreen) {
             }
             store.navigateTo(nextScreen);
         }
-        catch {
+        catch (err) {
             error.textContent = 'Security questions could not be saved. Please try again.';
+            console.error('[recovery-setup] Error:', err);
+        }
+        finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = existing ? 'Save security questions' : 'Continue to contacts →';
         }
     });
 }
@@ -453,9 +412,38 @@ export function renderPinRecovery(root) {
             error.textContent = 'Secret PIN and decoy PIN must be different.';
             return;
         }
-        const recovered = await store.recoverPins(answers.map(answer => answer.value), pin, decoy);
-        if (!recovered)
-            error.textContent = 'Your answers are incorrect. Please check your answers and try again.';
+        const submitBtn = form.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Verifying...';
+        error.textContent = '';
+        try {
+            // Attempt cloud PIN change if cloud backup is enabled
+            if (hasCloudBackup() && DB_CONFIGURED) {
+                const user = await getUser();
+                if (user) {
+                    const { error: cloudError } = await changePinsInCloud(answers[0].value, answers[1].value, pin, decoy);
+                    if (cloudError) {
+                        error.textContent = cloudError;
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = 'Verify and reset PINs';
+                        return;
+                    }
+                }
+            }
+            // Recover local PINs
+            const recovered = await store.recoverPins(answers.map(answer => answer.value), pin, decoy);
+            if (!recovered) {
+                error.textContent = 'Your answers are incorrect. Please check your answers and try again.';
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Verify and reset PINs';
+            }
+        }
+        catch (err) {
+            error.textContent = 'Failed to reset PINs. Please try again.';
+            console.error('[pin-recovery] Error:', err);
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Verify and reset PINs';
+        }
     });
 }
 export function renderSetupContacts(root, notice = '') {
@@ -467,7 +455,7 @@ export function renderSetupContacts(root, notice = '') {
         Add people who will receive SMS alerts when you activate the panic button. You can add more contacts later from settings.
       </p>
 
-      <ul class="contact-list" id="setup-contact-list">
+      <ul class="contact-list contact-list-modern" id="setup-contact-list">
         ${contacts.map(c => `
           <li class="contact-item">
             <div class="contact-avatar">${escapeHtml(c.initials)}</div>
@@ -481,8 +469,21 @@ export function renderSetupContacts(root, notice = '') {
         `).join('')}
       </ul>
 
-      <form class="setup-form" id="add-contact-form" autocomplete="off">
-        <label class="field-label" for="contact-name">Contact name</label>
+      <form class="setup-form setup-form-modern" id="add-contact-form" autocomplete="off">
+        <div class="contact-photo-upload">
+          <input type="file" id="contact-photo" accept="image/*" class="photo-input" />
+          <label for="contact-photo" class="photo-upload-label">
+            <div class="photo-preview" id="photo-preview">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 8v8M8 12h8"/>
+              </svg>
+              <span>Add Photo</span>
+            </div>
+          </label>
+        </div>
+
+        <label class="field-label" for="contact-name">CONTACT NAME</label>
         <input
           class="text-input modern-input"
           id="contact-name"
