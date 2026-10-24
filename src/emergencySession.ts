@@ -127,24 +127,37 @@ async function requestLocation(): Promise<void> {
     
     updateSession({ gpsStatus: 'acquiring' });
     
-    const result = await getLocation(15000);
-    
-    if (result.ok) {
-        updateSession({
-            gpsStatus: 'active',
-            latitude: result.coords.latitude,
-            longitude: result.coords.longitude,
-            accuracy: result.accuracy,
-            locationText: result.text,
-        });
-    } else {
-        const reason = 'reason' in result ? result.reason : 'Location unavailable';
-        updateSession({
-            gpsStatus: reason.includes('denied') ? 'denied' : 
-                      reason.includes('unavailable') ? 'unavailable' : 'failed',
-        });
-        currentSession?.errors.push(`GPS: ${reason}`);
+    try {
+        const result = await getLocation(15000);
+        
+        if (result.ok) {
+            updateSession({
+                gpsStatus: 'active',
+                latitude: result.coords.latitude,
+                longitude: result.coords.longitude,
+                accuracy: result.accuracy,
+                locationText: result.text,
+            });
+        } else {
+            const reason = 'reason' in result ? result.reason : 'Location unavailable';
+            updateSession({
+                gpsStatus: reason.includes('denied') ? 'denied' : 
+                          reason.includes('unavailable') ? 'unavailable' : 'failed',
+            });
+            currentSession?.errors.push(`GPS: ${reason}`);
+            emit();
+        }
+    } catch (error) {
+        updateSession({ gpsStatus: 'failed' });
+        currentSession?.errors.push(`GPS error: ${error instanceof Error ? error.message : 'Unknown'}`);
         emit();
+    }
+}
+
+// Export function to retry location from UI
+export async function retryLocationRequest(): Promise<void> {
+    if (currentSession) {
+        await requestLocation();
     }
 }
 
@@ -208,6 +221,13 @@ async function startEmergencyCamera(): Promise<void> {
         updateSession({ cameraStatus: 'failed' });
         currentSession?.errors.push(`Camera error: ${error instanceof Error ? error.message : 'Unknown'}`);
         emit();
+    }
+}
+
+// Export function to retry camera from UI
+export async function retryCameraRequest(): Promise<void> {
+    if (currentSession) {
+        await startEmergencyCamera();
     }
 }
 

@@ -4,7 +4,7 @@
  */
 
 import { store } from '../state.js';
-import { getCurrentSession, onSessionChange, getEmergencyMessage, getWhatsAppMessage, completeEmergencySession, cancelEmergencySession, uploadEmergencyPhotos, type EmergencySession } from '../emergencySession.js';
+import { getCurrentSession, onSessionChange, getEmergencyMessage, getWhatsAppMessage, completeEmergencySession, cancelEmergencySession, uploadEmergencyPhotos, retryLocationRequest, retryCameraRequest, type EmergencySession } from '../emergencySession.js';
 import { smsUri, whatsappUri } from '../storage.js';
 import { isTracking, trackUrl } from '../tracking.js';
 
@@ -161,6 +161,13 @@ export function renderEmergencyStatus(root: HTMLElement) {
                                 ${currentSession.latitude ? `<small>${currentSession.latitude.toFixed(5)}, ${currentSession.longitude?.toFixed(5)}</small>` : '<small>Waiting for GPS fix</small>'}
                             </div>
                         </div>
+                        ${currentSession.gpsStatus === 'denied' ? `
+                        <div class="emergency-permission-note">
+                            <p>⚠️ Location permission denied</p>
+                            <button class="btn-secondary-outline btn-open-settings" id="btn-open-location-settings">Open Location Settings</button>
+                            <button class="btn-secondary" id="btn-retry-location">Retry After Granting Permission</button>
+                        </div>
+                        ` : ''}
                         
                         <div class="emergency-status-card ${getStatusClass(currentSession.cameraStatus)}">
                             <span class="emergency-status-icon">${getStatusIcon(currentSession.cameraStatus)}</span>
@@ -169,6 +176,13 @@ export function renderEmergencyStatus(root: HTMLElement) {
                                 <small>${currentSession.photoCount > 0 ? `${currentSession.photoCount} photo(s)` : 'No photos yet'}</small>
                             </div>
                         </div>
+                        ${currentSession.cameraStatus === 'denied' ? `
+                        <div class="emergency-permission-note">
+                            <p>⚠️ Camera permission denied</p>
+                            <button class="btn-secondary-outline btn-open-settings" id="btn-open-camera-settings">Open Camera Settings</button>
+                            <button class="btn-secondary" id="btn-retry-camera">Retry After Granting Permission</button>
+                        </div>
+                        ` : ''}
                         
                         <div class="emergency-status-card ${getStatusClass(currentSession.trackingStatus)}">
                             <span class="emergency-status-icon">${getStatusIcon(currentSession.trackingStatus)}</span>
@@ -347,6 +361,40 @@ export function renderEmergencyStatus(root: HTMLElement) {
         root.querySelector('#btn-retry-upload')?.addEventListener('click', async () => {
             await uploadEmergencyPhotos();
             paint(); // Repaint to show upload status
+        });
+        
+        // Open phone location settings
+        root.querySelector('#btn-open-location-settings')?.addEventListener('click', () => {
+            // For web browsers, open browser's site settings
+            if (window.location.protocol === 'https:' || window.location.hostname === 'localhost') {
+                // Chrome/Edge command to open site settings
+                alert('To enable location access:\n\n1. Click the lock icon 🔒 in your address bar\n2. Select "Site settings" or "Permissions"\n3. Find "Location" and set to "Allow"\n4. Click "Retry After Granting Permission" below\n\nOR on Android:\n\n1. Open Settings app\n2. Go to Apps → Panic Ring (or your browser)\n3. Tap Permissions → Location\n4. Select "Allow" or "While using the app"\n5. Return here and click Retry');
+            } else {
+                alert('To enable location access:\n\n1. Open your phone Settings\n2. Go to Apps → Panic Ring (or your browser)\n3. Tap Permissions → Location\n4. Select "Allow" or "While using the app"\n5. Return here and click "Retry After Granting Permission"');
+            }
+        });
+        
+        // Retry location after user grants permission
+        root.querySelector('#btn-retry-location')?.addEventListener('click', async () => {
+            await retryLocationRequest();
+            paint(); // Repaint to show new status
+        });
+        
+        // Open phone camera settings
+        root.querySelector('#btn-open-camera-settings')?.addEventListener('click', () => {
+            // For web browsers, open browser's site settings
+            if (window.location.protocol === 'https:' || window.location.hostname === 'localhost') {
+                // Chrome/Edge command to open site settings
+                alert('To enable camera access:\n\n1. Click the lock icon 🔒 in your address bar\n2. Select "Site settings" or "Permissions"\n3. Find "Camera" and set to "Allow"\n4. Click "Retry After Granting Permission" below\n\nOR on Android:\n\n1. Open Settings app\n2. Go to Apps → Panic Ring (or your browser)\n3. Tap Permissions → Camera\n4. Select "Allow"\n5. Return here and click Retry');
+            } else {
+                alert('To enable camera access:\n\n1. Open your phone Settings\n2. Go to Apps → Panic Ring (or your browser)\n3. Tap Permissions → Camera\n4. Select "Allow"\n5. Return here and click "Retry After Granting Permission"');
+            }
+        });
+        
+        // Retry camera after user grants permission
+        root.querySelector('#btn-retry-camera')?.addEventListener('click', async () => {
+            await retryCameraRequest();
+            paint(); // Repaint to show new status
         });
     };
     
