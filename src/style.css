@@ -4124,6 +4124,7 @@ select:focus-visible {
 .location-map-heading span { color: #6e63a2; font-size: .64rem; text-align: right; }
 .location-map-frame { position: relative; height: 205px; background: #eeedf4; }
 .location-map-frame iframe { width: 100%; height: 100%; border: 0; }
+.location-map-details { margin: 0; padding: 10px 14px 12px; color: #6e63a2; font-size: .72rem; line-height: 1.45; }
 .location-map-placeholder {
   position: absolute;
   inset: 0;

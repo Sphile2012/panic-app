@@ -76,6 +76,9 @@ async function getWhat3Words(lat, lng) {
     }
 }
 export async function getLocation(timeoutMs = 12000) {
+    if (!window.isSecureContext && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+        return { ok: false, reason: 'Location access requires a secure HTTPS connection. Open Panic Ring using its HTTPS address and try again.' };
+    }
     if (!('geolocation' in navigator)) {
         return { ok: false, reason: 'Location services are not available on this device.' };
     }

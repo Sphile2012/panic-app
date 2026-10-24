@@ -25,6 +25,7 @@ export function renderLocation(root) {
             <small>Allow location access to find your position.</small>
           </div>
         </div>
+        <p class="location-map-details" id="location-map-details" hidden></p>
       </section>
 
       <div class="loc-accuracy-wrap" id="loc-accuracy-wrap" style="display:none">
@@ -93,29 +94,14 @@ export function renderLocation(root) {
       </div>
     </div>
   `;
-    const accuracyWrap = root.querySelector('#loc-accuracy-wrap') as HTMLElement;
-    const accuracyFill = root.querySelector('#loc-accuracy-fill') as HTMLElement;
-    const accuracyText = root.querySelector('#loc-accuracy-text') as HTMLElement;
-    const addressCard = root.querySelector('#loc-address-card') as HTMLElement;
-    const addressLine = root.querySelector('#loc-address-line') as HTMLElement;
-    const accuracyBadge = root.querySelector('#loc-accuracy-badge') as HTMLElement;
-    const mapsLink = root.querySelector('#loc-maps-link') as HTMLAnchorElement;
     const mapFrame = root.querySelector('#location-map') as HTMLIFrameElement;
     const mapPlaceholder = root.querySelector('#location-map-placeholder') as HTMLElement;
     const mapStatus = root.querySelector('#location-map-status') as HTMLElement;
+    const mapDetails = root.querySelector('#location-map-details') as HTMLElement;
     const errorEl = root.querySelector('#loc-error') as HTMLElement;
     const shareBtn = root.querySelector('#btn-share') as HTMLButtonElement;
     const skipBtn = root.querySelector('#btn-skip') as HTMLButtonElement;
-    const menuBtn = root.querySelector('#btn-menu-location') as HTMLButtonElement;
-    
-    let watchId = null;
-    let lastMappedPosition: { lat: number; lng: number } | null = null;
-    function updateMap(lat: number, lng: number, accuracy: number, force = false) {
-        const movedEnough = !lastMappedPosition ||
-            Math.abs(lastMappedPosition.lat - lat) > 0.0008 ||
-            Math.abs(lastMappedPosition.lng - lng) > 0.0008;
-        if (!force && !movedEnough) return;
-        lastMappedPosition = { lat, lng };
+    function updateMap(lat: number, lng: number, accuracy: number, address: string) {
         const delta = 0.006;
         const bounds = `${(lng - delta).toFixed(6)}%2C${(lat - delta).toFixed(6)}%2C${(lng + delta).toFixed(6)}%2C${(lat + delta).toFixed(6)}`;
         mapFrame.src = `https://www.openstreetmap.org/export/embed.html?bbox=${bounds}&layer=mapnik&marker=${lat.toFixed(6)}%2C${lng.toFixed(6)}`;
@@ -123,67 +109,28 @@ export function renderLocation(root) {
         mapFrame.hidden = false;
         mapPlaceholder.hidden = true;
         mapStatus.textContent = `GPS accuracy ±${Math.round(accuracy)} m`;
-        mapsLink.href = `https://maps.google.com/?q=${lat.toFixed(7)},${lng.toFixed(7)}`;
+        mapDetails.textContent = `Nearby mapped address (approximate): ${address}. Device-reported accuracy: ±${Math.round(accuracy)} m.`;
+        mapDetails.hidden = false;
     }
-    function startWatch() {
-        if (!('geolocation' in navigator))
-            return;
-        addressCard.style.display = 'flex';
-        watchId = navigator.geolocation.watchPosition(pos => {
-            const acc = Math.round(pos.coords.accuracy);
-            const label = acc <= 10 ? 'Excellent' : acc <= 30 ? 'Good' : acc <= 100 ? 'Fair' : 'Poor';
-            const colour = acc <= 10 ? '#1abf7a' : acc <= 30 ? '#59c93d' : acc <= 100 ? '#e09a19' : '#e0193a';
-            const pct = Math.max(0, Math.min(100, 100 - (acc / 2)));
-            accuracyFill.style.width = `${pct}%`;
-            accuracyFill.style.background = colour;
-            accuracyText.textContent = `GPS signal: ${label} (±${acc} m)`;
-            updateMap(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
-        }, error => {
-            mapStatus.textContent = error.code === 1
-                ? 'Location permission is off'
-                : 'Waiting for a GPS position';
-        }, { enableHighAccuracy: true, maximumAge: 0 });
-    }
-    function stopWatch() {
-        if (watchId !== null) {
-            navigator.geolocation.clearWatch(watchId);
-            watchId = null;
-        }
-    }
-    startWatch();
-    let unsubscribeFromLocation: () => void = () => {};
-    unsubscribeFromLocation = store.subscribe(state => {
-        if (state.screen !== 'location') {
-            stopWatch();
-            unsubscribeFromLocation();
-        }
-    });
     shareBtn.addEventListener('click', async () => {
-        stopWatch();
         shareBtn.disabled = true;
         skipBtn.disabled = true;
         errorEl.textContent = '';
-        accuracyText.textContent = 'Getting a fresh, accurate GPS fix…';
+        mapStatus.textContent = 'Requesting location permission and getting your current location…';
         const result = await getLocation(12000);
         if (result.ok === true) {
-            updateMap(result.coords.latitude, result.coords.longitude, result.accuracy, true);
-            addressLine.textContent = `Nearby mapped address: ${result.address}`;
-            accuracyBadge.textContent = `±${Math.round(result.accuracy)} m`;
-            mapsLink.href = result.mapsUrl;
-            accuracyWrap.style.display = 'none';
-            addressCard.style.display = 'flex';
+            updateMap(result.coords.latitude, result.coords.longitude, result.accuracy, result.address);
             store.setLocationShared(true, result.text);
-            await new Promise<void>(r => setTimeout(r, 1200));
             store.startSending();
         }
         else {
             shareBtn.disabled = false;
             skipBtn.disabled = false;
             errorEl.textContent = result.reason;
+            mapStatus.textContent = result.reason;
         }
     });
     skipBtn.addEventListener('click', () => {
-        stopWatch();
         store.setLocationShared(false, 'Location not shared');
         store.startSending();
     });
