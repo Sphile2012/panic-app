@@ -28,6 +28,22 @@ export function renderLocation(root) {
         <p class="location-map-details" id="location-map-details" hidden></p>
       </section>
 
+      <div class="location-actions-modern">
+        <button class="btn-skip-location" id="btn-live-toggle" type="button" aria-pressed="false">Show my live location</button>
+        <button class="btn-share-location" id="btn-share">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 8v8M8 12h8"/>
+          </svg>
+          Share my location
+        </button>
+        <button class="btn-skip-location" id="btn-skip">
+          Send without location
+        </button>
+        <button class="btn-secondary location-retry" id="btn-location-retry" type="button" hidden>Try again</button>
+        <p class="location-error" id="loc-error" aria-live="assertive"></p>
+      </div>
+
       <div class="loc-accuracy-wrap" id="loc-accuracy-wrap" style="display:none">
         <div class="loc-accuracy-bar">
           <div class="loc-accuracy-fill" id="loc-accuracy-fill"></div>
@@ -65,8 +81,10 @@ export function renderLocation(root) {
             <li>A Google Maps link to the GPS coordinates, with the device-reported accuracy</li>
           </ul>
           <p>
-            Location is captured once when you tap Share. This browser-only SMS flow cannot send automatic location updates every 10 seconds.
-            Location is not stored on a Panic Ring server. The map and address lookup send coordinates to OpenStreetMap to display your position.
+            Tap Show my live location to display and refresh your position while this screen is open. Tap Stop live location to stop access.
+            Share my location sends one current fix in an SMS draft for you to review and send. Live coordinates are not sent to contacts automatically.
+            The map sends coordinates to OpenStreetMap to display your position.
+            Your browser will ask for location permission. If device Location is turned off, enable it in device settings; this website cannot turn on that system setting for you.
           </p>
           <p>SMS and WhatsApp links cannot attach photo files in this browser flow.</p>
           <p>
@@ -77,20 +95,6 @@ export function renderLocation(root) {
           </p>
         </div>
 
-        <div class="location-actions-modern">
-          <button class="btn-share-location" id="btn-share">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"/>
-              <path d="M12 8v8M8 12h8"/>
-            </svg>
-            Share my location
-          </button>
-          <button class="btn-skip-location" id="btn-skip">
-            Send without location
-          </button>
-        </div>
-
-        <p class="location-error" id="loc-error" aria-live="assertive"></p>
       </div>
     </div>
   `;
@@ -101,33 +105,123 @@ export function renderLocation(root) {
     const errorEl = root.querySelector('#loc-error');
     const shareBtn = root.querySelector('#btn-share');
     const skipBtn = root.querySelector('#btn-skip');
-    function updateMap(lat, lng, accuracy, address) {
+    const liveToggle = root.querySelector('#btn-live-toggle');
+    const retryBtn = root.querySelector('#btn-location-retry');
+    let watchId = null;
+    let lastMapPosition = null;
+    let retryAction = null;
+    function updateMap(lat, lng, accuracy, label) {
         const delta = 0.006;
-        const bounds = `${(lng - delta).toFixed(6)}%2C${(lat - delta).toFixed(6)}%2C${(lng + delta).toFixed(6)}%2C${(lat + delta).toFixed(6)}`;
-        mapFrame.src = `https://www.openstreetmap.org/export/embed.html?bbox=${bounds}&layer=mapnik&marker=${lat.toFixed(6)}%2C${lng.toFixed(6)}`;
+        const movedEnough = !lastMapPosition ||
+            Math.abs(lastMapPosition.lat - lat) >= 0.0002 ||
+            Math.abs(lastMapPosition.lng - lng) >= 0.0002;
+        if (movedEnough) {
+            const bounds = `${(lng - delta).toFixed(6)}%2C${(lat - delta).toFixed(6)}%2C${(lng + delta).toFixed(6)}%2C${(lat + delta).toFixed(6)}`;
+            mapFrame.src = `https://www.openstreetmap.org/export/embed.html?bbox=${bounds}&layer=mapnik&marker=${lat.toFixed(6)}%2C${lng.toFixed(6)}`;
+            lastMapPosition = { lat, lng };
+        }
         mapFrame.title = `Map showing your current location with reported accuracy of approximately ${Math.round(accuracy)} metres`;
         mapFrame.hidden = false;
         mapPlaceholder.hidden = true;
-        mapStatus.textContent = `GPS accuracy ±${Math.round(accuracy)} m`;
-        mapDetails.textContent = `Nearby mapped address (approximate): ${address}. Device-reported accuracy: ±${Math.round(accuracy)} m.`;
+        mapStatus.textContent = `${label} · GPS accuracy ±${Math.round(accuracy)} m`;
+        mapDetails.textContent = `Current coordinates: ${lat.toFixed(6)}, ${lng.toFixed(6)} · Updated ${new Date().toLocaleTimeString()}`;
         mapDetails.hidden = false;
     }
+    function showLocationError(reason, action) {
+        mapStatus.textContent = reason;
+        errorEl.textContent = reason;
+        retryAction = action;
+        retryBtn.hidden = false;
+    }
+    function stopLiveLocation() {
+        if (watchId !== null) {
+            navigator.geolocation.clearWatch(watchId);
+            watchId = null;
+        }
+        liveToggle.textContent = 'Show my live location';
+        liveToggle.setAttribute('aria-pressed', 'false');
+    }
+    function startLiveLocation() {
+        if (!window.isSecureContext && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+            showLocationError('Location requires HTTPS. Open Panic Ring using its secure HTTPS address, then try again.', 'live');
+            return;
+        }
+        if (!('geolocation' in navigator)) {
+            showLocationError('Location is not available in this browser. Try a browser that supports location access.', 'live');
+            return;
+        }
+        errorEl.textContent = '';
+        retryBtn.hidden = true;
+        retryAction = null;
+        mapStatus.textContent = 'Requesting permission and waiting for a GPS fix…';
+        liveToggle.textContent = 'Stop live location';
+        liveToggle.setAttribute('aria-pressed', 'true');
+        try {
+            watchId = navigator.geolocation.watchPosition(position => {
+                const { latitude, longitude, accuracy } = position.coords;
+                if (!Number.isFinite(latitude) || !Number.isFinite(longitude) ||
+                    latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180 ||
+                    !Number.isFinite(accuracy) || accuracy <= 0) {
+                    showLocationError('The device returned an invalid location. Check Location settings and try again.', 'live');
+                    return;
+                }
+                retryBtn.hidden = true;
+                retryAction = null;
+                updateMap(latitude, longitude, accuracy, 'Live location active');
+            }, geoError => {
+                const reason = geoError.code === geoError.PERMISSION_DENIED
+                    ? 'Location permission is off for this site. Allow location access in your browser settings, then try again.'
+                    : geoError.code === geoError.POSITION_UNAVAILABLE
+                        ? 'Your location is unavailable. Check that device Location is turned on and that this site can use it, then try again.'
+                        : 'Getting your location timed out. Move to an open area and try again.';
+                stopLiveLocation();
+                showLocationError(reason, 'live');
+            }, { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 });
+        } catch (error) {
+            stopLiveLocation();
+            const reason = error instanceof Error ? error.message : 'The browser could not start location tracking.';
+            showLocationError(reason, 'live');
+        }
+    }
+    liveToggle.addEventListener('click', () => {
+        if (watchId !== null) {
+            stopLiveLocation();
+            mapStatus.textContent = 'Live location stopped.';
+            return;
+        }
+        startLiveLocation();
+    });
+    retryBtn.addEventListener('click', () => {
+        if (retryAction === 'live') {
+            startLiveLocation();
+            return;
+        }
+        if (retryAction === 'share')
+            shareBtn.click();
+    });
+    const unsubscribeFromLocation = store.subscribe(state => {
+        if (state.screen !== 'location') {
+            stopLiveLocation();
+            unsubscribeFromLocation();
+        }
+    });
     shareBtn.addEventListener('click', async () => {
         shareBtn.disabled = true;
         skipBtn.disabled = true;
         errorEl.textContent = '';
+        retryBtn.hidden = true;
+        retryAction = null;
         mapStatus.textContent = 'Requesting location permission and getting your current location…';
         const result = await getLocation(12000);
         if (result.ok === true) {
-            updateMap(result.coords.latitude, result.coords.longitude, result.accuracy, result.address);
+            updateMap(result.coords.latitude, result.coords.longitude, result.accuracy, 'Current location');
             store.setLocationShared(true, result.text);
             store.startSending();
         }
         else {
             shareBtn.disabled = false;
             skipBtn.disabled = false;
-            errorEl.textContent = result.reason;
-            mapStatus.textContent = result.reason;
+            showLocationError(`${result.reason} If device Location is off, turn it on in your device settings before trying again.`, 'share');
         }
     });
     skipBtn.addEventListener('click', () => {

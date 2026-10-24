@@ -1299,6 +1299,8 @@ html[data-photo-background="true"] .phone-screen > .screen { background: transpa
   cursor: not-allowed;
 }
 
+.location-retry[hidden] { display: none; }
+
 .location-error {
   font-size: 0.78rem;
   color: #e07070;
