@@ -205,7 +205,7 @@ class Store {
             await saveVault(vault, this.state.pinHash);
         })().catch(console.error);
     }
-    async addContact(name: string, phone: string, relationship = 'Other'): Promise<boolean> {
+    async addContact(name: string, phone: string, relationship = 'Other', photo?: string): Promise<boolean> {
         const cleanName = name.trim();
         const cleanPhone = phone.trim();
         const phoneDigits = cleanPhone.replace(/\D/g, '');
@@ -214,7 +214,7 @@ class Store {
         if (this.state.contacts.some(contact => contact.phone.replace(/\D/g, '') === phoneDigits))
             return false;
         const contact: Contact = {
-            id: uid(), name: cleanName, phone: cleanPhone, relationship,
+            id: uid(), name: cleanName, phone: cleanPhone, relationship, photo,
             initials: initials(cleanName), status: 'pending',
         };
         const updated = [...this.state.contacts, contact];

@@ -34,6 +34,30 @@ function buildInitialState() {
 }
 class Store {
     constructor() {
+        Object.defineProperty(this, "state", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "listeners", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "lockTimer", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "screenHistory", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
         this.state = buildInitialState();
         this.listeners = [];
         this.lockTimer = null;
@@ -171,7 +195,7 @@ class Store {
             await saveVault(vault, this.state.pinHash);
         })().catch(console.error);
     }
-    async addContact(name, phone, relationship = 'Other') {
+    async addContact(name, phone, relationship = 'Other', photo) {
         const cleanName = name.trim();
         const cleanPhone = phone.trim();
         const phoneDigits = cleanPhone.replace(/\D/g, '');
@@ -180,7 +204,7 @@ class Store {
         if (this.state.contacts.some(contact => contact.phone.replace(/\D/g, '') === phoneDigits))
             return false;
         const contact = {
-            id: uid(), name: cleanName, phone: cleanPhone, relationship,
+            id: uid(), name: cleanName, phone: cleanPhone, relationship, photo,
             initials: initials(cleanName), status: 'pending',
         };
         const updated = [...this.state.contacts, contact];

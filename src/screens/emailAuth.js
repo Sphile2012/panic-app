@@ -143,9 +143,6 @@ export function renderSignup(root) {
           <input class="text-input" id="su-password" type="password" placeholder="Create a password (at least 8 characters)" autocomplete="new-password" minlength="8" required />
           <label class="auth-visually-hidden" for="su-password-confirm">Confirm password</label>
           <input class="text-input" id="su-password-confirm" type="password" placeholder="Confirm password" autocomplete="new-password" minlength="8" required />
-
-
-
           <p class="auth-subtitle">Verify it with the code we send to activate your account.</p>
           <p class="auth-error" id="su-error" aria-live="polite"></p>
           <button class="btn-primary auth-entry-btn" type="submit" id="su-submit">Create account</button>

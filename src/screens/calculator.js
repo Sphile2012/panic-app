@@ -16,7 +16,7 @@ export function renderCalculator(root) {
       <div class="calc-display">
         <div class="calc-expression" id="calc-expression">&nbsp;</div>
         <div class="calc-result" id="calc-result">0</div>
-        <button class="calc-pin-toggle" id="calc-pin-toggle" type="button" aria-label="Show entered PIN" hidden>Show PIN</button>
+        <button class="calc-pin-toggle" id="calc-pin-toggle" type="button" aria-label="Show entered PIN" hidden></button>
       </div>
       <p class="calc-login-error" id="calc-login-error" role="alert" hidden></p>
       <button class="calc-create-account" id="btn-create-account" type="button" hidden>Create account</button>
@@ -52,7 +52,7 @@ export function renderCalculator(root) {
     }
     pinToggle.addEventListener('click', () => {
         pinVisible = !pinVisible;
-        pinToggle.textContent = pinVisible ? 'Hide PIN' : 'Show PIN';
+        pinToggle.dataset['visible'] = String(pinVisible);
         pinToggle.setAttribute('aria-label', `${pinVisible ? 'Hide' : 'Show'} entered PIN`);
         updatePinDisplay();
     });
@@ -71,7 +71,7 @@ export function renderCalculator(root) {
             store.clearPin();
             calcBuffer = '';
             pinVisible = false;
-            pinToggle.textContent = 'Show PIN';
+            pinToggle.dataset['visible'] = 'false';
             pinToggle.setAttribute('aria-label', 'Show entered PIN');
             clearLoginFeedback();
             display.textContent = '0';
@@ -80,7 +80,7 @@ export function renderCalculator(root) {
         }
         if (v === '=') {
             pinVisible = false;
-            pinToggle.textContent = 'Show PIN';
+            pinToggle.dataset['visible'] = 'false';
             pinToggle.setAttribute('aria-label', 'Show entered PIN');
             updatePinDisplay();
             store.evaluatePin().then(route => {
@@ -107,7 +107,7 @@ export function renderCalculator(root) {
         store.clearPin();
         pinToggle.hidden = true;
         pinVisible = false;
-        pinToggle.textContent = 'Show PIN';
+        pinToggle.dataset['visible'] = 'false';
         pinToggle.setAttribute('aria-label', 'Show entered PIN');
         calcBuffer += ` ${v} `;
         display.textContent = v;

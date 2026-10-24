@@ -29,7 +29,7 @@ export const RECOVERY_QUESTIONS = [
 export function renderSetupDisguise(root) {
     const appearance = loadAppearance();
     root.innerHTML = `
-      <div class="screen setup-screen">
+      <div class="screen setup-screen setup-disguise-screen">
         <h1 class="setup-title">Choose your disguise</h1>
         <p class="setup-body">Choose what the app displays while locked.</p>
         <form class="setup-form" id="setup-disguise-form">
@@ -72,12 +72,24 @@ export function renderSetupPin(root) {
       <div class="screen setup-screen">
         <h1 class="setup-title">PINs already set up</h1>
         <p class="setup-body">This device is already protected. Open the app or use Forgot PIN to reset your security questions.</p>
-        <button class="btn-primary" id="btn-existing-login" type="button">Back to login</button>
-        <button class="auth-link-btn" id="btn-existing-recovery" type="button">Forgot PIN?</button>
+        <button class="btn-back-small" id="btn-back-to-welcome" aria-label="Back">←</button>
+        <div class="setup-form">
+          <button class="btn-primary" id="btn-existing-login" type="button">Back to login</button>
+          <button class="btn-secondary-outline" id="btn-existing-recovery" type="button">Forgot PIN?</button>
+          <button class="btn-danger" id="btn-clear-data" type="button" style="margin-top: 20px;">Clear data & start fresh</button>
+        </div>
       </div>
     `;
+        root.querySelector('#btn-back-to-welcome')?.addEventListener('click', () => store.navigateTo('welcome'));
         root.querySelector('#btn-existing-login')?.addEventListener('click', () => store.navigateTo('calculator'));
         root.querySelector('#btn-existing-recovery')?.addEventListener('click', () => store.navigateTo('pin-recovery'));
+        root.querySelector('#btn-clear-data')?.addEventListener('click', async () => {
+            if (confirm('⚠️ This will delete ALL your data including contacts, notes, and settings. This cannot be undone. Continue?')) {
+                await store.factoryReset();
+                alert('All data cleared. You can now create a new account.');
+                store.navigateTo('welcome');
+            }
+        });
         return;
     }
     root.innerHTML = `
@@ -499,7 +511,7 @@ export function renderSetupContacts(root, notice = '') {
       <ul class="contact-list contact-list-modern" id="setup-contact-list">
         ${contacts.map(c => `
           <li class="contact-item">
-            <div class="contact-avatar">${escapeHtml(c.initials)}</div>
+            <div class="contact-avatar">${c.photo ? `<img src="${escapeHtml(c.photo)}" alt="" />` : escapeHtml(c.initials)}</div>
             <div class="contact-info">
               <span class="contact-name">${escapeHtml(c.name)}</span>
               <span class="contact-phone">${escapeHtml(c.phone)}</span>
@@ -510,7 +522,7 @@ export function renderSetupContacts(root, notice = '') {
         `).join('')}
       </ul>
 
-      <form class="setup-form setup-form-modern" id="add-contact-form" autocomplete="off">
+      <form class="setup-form setup-form-modern" id="add-contact-form" autocomplete="off" novalidate>
         <div class="contact-photo-upload">
           <input type="file" id="contact-photo" accept="image/*" class="photo-input" />
           <label for="contact-photo" class="photo-upload-label">
@@ -552,13 +564,14 @@ export function renderSetupContacts(root, notice = '') {
         <p class="setup-hint" id="contact-success" role="status" aria-live="polite">${escapeHtml(notice)}</p>
         <p class="setup-hint" id="contact-error" role="alert" aria-live="polite"></p>
         <button class="btn-secondary-outline" type="submit" ${contacts.length >= 5 ? 'disabled' : ''}>
-          ${contacts.length >= 5 ? 'Circle full (5/5)' : 'Add contact'}
+          ${contacts.length >= 5 ? 'Circle full (5/5)' : contacts.length > 0 ? 'Add another person' : 'Add contact'}
         </button>
       </form>
 
       <button
         class="btn-primary"
         id="btn-setup-done"
+        type="button"
         ${contacts.length === 0 ? 'disabled' : ''}>
         ${contacts.length > 0 ? 'Continue — start using app' : 'Add at least one contact'}
       </button>
@@ -632,7 +645,7 @@ export function renderSetupContacts(root, notice = '') {
             if (button)
                 button.disabled = true;
             try {
-                const added = await store.addContact(name, phone, relationship);
+                const added = await store.addContact(name, phone, relationship, photoDataUrl);
                 if (!added) {
                     errEl.textContent = store.getState().contacts.length >= 5
                         ? 'You can add up to 5 trusted contacts.'

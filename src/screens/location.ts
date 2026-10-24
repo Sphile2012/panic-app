@@ -131,9 +131,9 @@ export function renderLocation(root) {
         addressCard.style.display = 'flex';
         watchId = navigator.geolocation.watchPosition(pos => {
             const acc = Math.round(pos.coords.accuracy);
-            const pct = Math.max(0, Math.min(100, 100 - acc));
             const label = acc <= 10 ? 'Excellent' : acc <= 30 ? 'Good' : acc <= 100 ? 'Fair' : 'Poor';
             const colour = acc <= 10 ? '#1abf7a' : acc <= 30 ? '#59c93d' : acc <= 100 ? '#e09a19' : '#e0193a';
+            const pct = Math.max(0, Math.min(100, 100 - (acc / 2)));
             accuracyFill.style.width = `${pct}%`;
             accuracyFill.style.background = colour;
             accuracyText.textContent = `GPS signal: ${label} (±${acc} m)`;

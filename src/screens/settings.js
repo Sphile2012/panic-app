@@ -189,7 +189,7 @@ export function renderChangePins(root) {
         root.querySelector('#btn-back-settings')?.addEventListener('click', () => store.navigateTo('settings'));
         return;
     }
-    const questions = questionIds.map(id => PIN_QUESTIONS[id] || id);
+    const questions = questionIds.map(id => RECOVERY_QUESTIONS.find(q => q.id === id)?.label || id);
     root.innerHTML = `
     <div class="screen setup-screen">
       <h1 class="setup-title">Change PINs</h1>
@@ -275,7 +275,7 @@ export function renderPinRecovery(root) {
         root.querySelector('#btn-back-calc')?.addEventListener('click', () => store.navigateTo('calculator'));
         return;
     }
-    const questions = questionIds.map(id => PIN_QUESTIONS[id] || id);
+    const questions = questionIds.map(id => RECOVERY_QUESTIONS.find(q => q.id === id)?.label || id);
     root.innerHTML = `
     <div class="screen setup-screen">
       <h1 class="setup-title">Forgot PIN?</h1>

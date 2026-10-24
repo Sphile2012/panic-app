@@ -22,6 +22,7 @@ const ICONS: Record<string, string> = {
     companion: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/>',
     about: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
     chat: '<path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8A8.5 8.5 0 0 1 8.7 3.9a8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8z"/>',
+    signout: '<path d="M10 4H5v16h5"/><path d="M15 8l4 4-4 4M19 12H9"/>',
 };
 
 type Item = { screen: string; label: string };
@@ -40,7 +41,7 @@ function sections(): Array<{ title: string; items: Item[] }> {
             { screen: 'contacts', label: t('menu.contacts') },
             { screen: 'emergency', label: 'Emergency dialer' },
             { screen: 'live', label: t('menu.map') },
-            { screen: 'chat', label: 'Messages' },
+            { screen: 'chat', label: 'Safety assistant' },
         ] },
         { title: t('menu.safety'), items: [
             { screen: 'safety-plan', label: 'Safety plan' },
@@ -95,15 +96,32 @@ export function openMenu() {
         `).join('')}
       </nav>
       <div class="side-menu-foot">
+        <button class="side-menu-item side-menu-signout" id="side-menu-signout" type="button">
+          <span class="side-menu-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS.signout}</svg></span>
+          <span>Sign out</span>
+        </button>
         <p class="side-menu-version">Panic Ring v1.0</p>
       </div>
     </aside>`;
     document.body.appendChild(wrap);
 
-    wrap.addEventListener('click', (e) => {
+    wrap.addEventListener('click', async (e) => {
         const el = e.target as HTMLElement;
         if (el.closest('[data-close]')) {
             closeMenu();
+            return;
+        }
+        if (el.closest('#side-menu-signout')) {
+            closeMenu();
+            if (!confirm('Sign out? The app will lock and you will need to sign in again.'))
+                return;
+            try {
+                await store.signOut();
+            }
+            catch (error) {
+                console.error('[menu] Could not sign out:', error);
+                alert('Could not sign out. Please try again.');
+            }
             return;
         }
         const go = el.closest<HTMLElement>('[data-go]');
