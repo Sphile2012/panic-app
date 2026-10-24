@@ -1,5 +1,5 @@
 import './style.css';
-import { store } from './state.js';
+import { PIN_FAILURE_LIMIT, store } from './state.js';
 import { renderCalculator } from './screens/calculator.js';
 import { renderSetupPin, renderSetupDisguise, renderSetupProfile, renderSetupContacts, renderRecoverySetup } from './screens/setup.js';
 import { renderApp } from './screens/app.js';
@@ -23,9 +23,9 @@ import { renderClock } from './screens/disguise/clock.js';
 import { renderCompanion } from './screens/companion.js';
 import { renderAbout } from './screens/about.js';
 import { renderTerms } from './screens/terms.js';
+import { renderEmergencyDialer, renderTroubleshooting } from './screens/emergency.js';
 import { renderDecoy } from './screens/decoy.js';
-import { renderWelcome, renderSignup, renderLogin, renderVerifyEmail, renderForgotPassword, renderResetPassword, renderChangePassword } from './screens/auth.js';
-import { renderAccountPinGate } from './screens/accountPin.js';
+import { renderWelcome } from './screens/emailAuth.js';
 import { runAlertSequence } from './alertService.js';
 import { pruneStaleQueue, watchForReconnect } from './alertQueue.js';
 import { loadAppearance, applyAppearance } from './theme.js';
@@ -35,18 +35,6 @@ const appRoot = document.getElementById('app-root') as HTMLElement | null;
 if (!appRoot) {
     throw new Error('App root element not found.');
 }
-const authCallbackParams = new URLSearchParams(window.location.search);
-const authCallbackHash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
-if (authCallbackParams.has('flow') && authCallbackHash.has('access_token')) {
-    // Check if this is a password recovery flow
-    const type = authCallbackHash.get('type');
-    if (type === 'recovery') {
-        store.navigateTo('reset-password');
-    } else {
-        store.navigateTo('account-pin-check');
-    }
-}
-
 initPwa();
 
 let currentScreen: string | null = null;
@@ -92,28 +80,6 @@ function render(screen: string) {
         case 'welcome':
             renderWelcome(appRoot);
             break;
-        case 'signup':
-            renderSignup(appRoot);
-            break;
-        case 'login':
-            renderLogin(appRoot);
-            break;
-        case 'verify-email':
-            renderVerifyEmail(appRoot);
-            break;
-        case 'forgot-password':
-            renderForgotPassword(appRoot);
-            break;
-        case 'reset-password':
-            renderResetPassword(appRoot);
-            break;
-        case 'change-password':
-            renderChangePassword(appRoot);
-            break;
-        case 'account-pin-check':
-        case 'account-pin-login':
-            void renderAccountPinGate(appRoot);
-            break;
         case 'calculator':
             renderDisguise();
             break;
@@ -133,7 +99,7 @@ function render(screen: string) {
             renderSetupContacts(appRoot);
             break;
         case 'recovery-setup':
-            renderRecoverySetup(appRoot, 'setup-contacts');
+            renderRecoverySetup(appRoot, 'setup-profile');
             break;
         case 'recovery-settings':
             renderRecoverySetup(appRoot, 'settings');
@@ -189,6 +155,12 @@ function render(screen: string) {
         case 'support':
             renderSupport(appRoot);
             break;
+        case 'emergency':
+            renderEmergencyDialer(appRoot);
+            break;
+        case 'troubleshoot':
+            renderTroubleshooting(appRoot);
+            break;
         case 'companion':
             renderCompanion(appRoot);
             break;
@@ -228,6 +200,28 @@ function render(screen: string) {
             renderCalculator(appRoot);
             break;
     }
+    attachBackButton(screen);
+}
+
+function attachBackButton(screen: string) {
+    if (['welcome', 'calculator', 'decoy', 'sending'].includes(screen))
+        return;
+    if (screen === 'pin-recovery' && store.getState().pinFailures >= PIN_FAILURE_LIMIT)
+        return;
+    const button = document.createElement('button');
+    button.className = 'global-back-button';
+    button.type = 'button';
+    button.setAttribute('aria-label', 'Back');
+    button.textContent = '←';
+    if (screen === 'app') {
+        button.classList.add('global-back-button--inline');
+        appRoot.querySelector('.app-header')?.prepend(button);
+        return;
+    }
+    const screenRoot = appRoot.querySelector<HTMLElement>('.screen');
+    if (!screenRoot || screenRoot.querySelector('.btn-back-small'))
+        return;
+    screenRoot.prepend(button);
 }
 
 store.subscribe((state) => {
@@ -235,12 +229,26 @@ store.subscribe((state) => {
         render(state.screen);
 });
 
+document.addEventListener('click', event => {
+    const target = event.target;
+    if (!(target instanceof Element))
+        return;
+    const button = target.closest<HTMLButtonElement>('.btn-back-small, .global-back-button');
+    if (!button)
+        return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    if (store.getState().screen === 'sent')
+        store.navigateTo('app');
+    else
+        store.navigateBack();
+}, true);
+
 document.addEventListener('keydown', (event: KeyboardEvent) => {
     if (event.key === 'Escape') {
         const safe = [
-            'calculator', 'decoy', 'setup-pin', 'setup-disguise', 'setup-profile', 'setup-contacts',
-            'welcome', 'signup', 'login', 'verify-email', 'forgot-password', 'reset-password', 'change-password',
-            'account-pin-check', 'account-pin-login',
+            'calculator', 'decoy', 'setup-pin', 'setup-profile', 'setup-contacts',
+            'welcome',
         ];
         if (!safe.includes(store.getState().screen)) {
             window.location.href = 'https://www.google.com';
@@ -289,14 +297,36 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(() => { });
 }
 
-document.getElementById('install-btn')?.addEventListener('click', async () => {
+async function handleInstallClick() {
+    const coverMessage = document.getElementById('splash-install-message');
+    if (isInstalled()) {
+        if (coverMessage) {
+            coverMessage.textContent = 'Panic Ring is already installed.';
+            coverMessage.hidden = false;
+        }
+        return;
+    }
     if (isIosSafari()) {
         const msg = document.getElementById('ios-install-msg');
         if (msg)
             msg.style.display = 'block';
+        if (coverMessage) {
+            coverMessage.textContent = 'Tap Share, then Add to Home Screen.';
+            coverMessage.hidden = false;
+        }
         return;
     }
-    await promptInstall();
+    const outcome = await promptInstall();
+    if (outcome === 'unavailable' && coverMessage) {
+        coverMessage.textContent = 'Install is not available in this browser yet.';
+        coverMessage.hidden = false;
+    }
+}
+
+document.getElementById('install-btn')?.addEventListener('click', () => void handleInstallClick());
+appRoot.addEventListener('click', event => {
+    if ((event.target as HTMLElement).closest('#splash-install'))
+        void handleInstallClick();
 });
 
 onInstallReady(() => updateInstallBanner());
@@ -306,17 +336,15 @@ onInstalled(() => {
         banner.style.display = 'none';
 });
 
-store.initAuth().then(() => {
-    pruneStaleQueue();
-    watchForReconnect(({ locationText, locationShared }) => {
-        store.startSending();
-        runAlertSequence(locationText, locationShared, () => {
-            if (store.getState().screen === 'sending')
-                updateSendingList(appRoot);
-        });
+pruneStaleQueue();
+watchForReconnect(({ locationText, locationShared }) => {
+    store.startSending();
+    runAlertSequence(locationText, locationShared, () => {
+        if (store.getState().screen === 'sending')
+            updateSendingList(appRoot);
     });
-    render(store.getState().screen);
-    updateInstallBanner();
-    const appearance = loadAppearance();
-    applyAppearance(appearance);
 });
+render(store.getState().screen);
+updateInstallBanner();
+const appearance = loadAppearance();
+applyAppearance(appearance);

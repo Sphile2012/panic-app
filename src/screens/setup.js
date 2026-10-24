@@ -1,8 +1,22 @@
-import { store } from '../state.js';
-import { getRecoveryQuestionIds, setRecoveryQuestions, setCloudBackup, hasCloudBackup } from '../storage.js';
-import { setupPinsInCloud, DB_CONFIGURED, getUser, changePinsInCloud } from '../db.js';
-import { DISGUISE_OPTIONS, loadAppearance, saveAppearance, applyAppearance } from '../theme.js';
-const RECOVERY_QUESTIONS = [
+import { hasDistinctPinDigits, PIN_FAILURE_LIMIT, store } from '../state.js';
+import { getRecoveryQuestionIds, setRecoveryQuestions } from '../storage.js';
+import { wirePasswordToggles } from '../formControls.js';
+function escapeHtml(value) {
+    return value.replace(/[&<>"']/g, character => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;',
+    })[character] ?? character);
+}
+function revealableInput(id, label, className = 'text-input') {
+    return `<div class="password-wrap">
+      <input class="${className}" id="${id}" type="password" autocomplete="off" required />
+      <button class="pw-toggle" type="button" data-target="${id}" data-description="${label}" aria-label="Show ${label}">Show</button>
+    </div>`;
+}
+export const RECOVERY_QUESTIONS = [
     { id: 'first-school', label: 'What was the name of your first school?' },
     { id: 'childhood-street', label: 'What street did you live on as a child?' },
     { id: 'first-pet', label: 'What was the name of your first pet?' },
@@ -11,6 +25,19 @@ const RECOVERY_QUESTIONS = [
     { id: 'family-nickname', label: 'What nickname did your family use for you?' },
 ];
 export function renderSetupPin(root) {
+    if (store.getState().pinHash) {
+        root.innerHTML = `
+      <div class="screen setup-screen">
+        <h1 class="setup-title">Account already set up</h1>
+        <p class="setup-body">This device already has an account. Log in, or use Forgot PIN to reset your PINs with your security questions.</p>
+        <button class="btn-primary" id="btn-existing-login" type="button">Back to login</button>
+        <button class="auth-link-btn" id="btn-existing-recovery" type="button">Forgot PIN?</button>
+      </div>
+    `;
+        root.querySelector('#btn-existing-login')?.addEventListener('click', () => store.navigateTo('calculator'));
+        root.querySelector('#btn-existing-recovery')?.addEventListener('click', () => store.navigateTo('pin-recovery'));
+        return;
+    }
     root.innerHTML = `
     <div class="screen setup-screen">
       <div class="setup-logo">○</div>
@@ -24,6 +51,7 @@ export function renderSetupPin(root) {
       <form class="setup-form" id="setup-pin-form" autocomplete="off">
 
         <label class="field-label" for="pin-input">Secret PIN (4 digits)</label>
+        <div class="password-wrap">
         <input
           class="pin-input"
           id="pin-input"
@@ -34,8 +62,11 @@ export function renderSetupPin(root) {
           placeholder="Enter 4 digits"
           autocomplete="new-password"
           required />
+        <button class="pw-toggle" type="button" data-target="pin-input" data-description="secret PIN" aria-label="Show secret PIN">Show</button>
+        </div>
 
         <label class="field-label" for="pin-confirm">Confirm secret PIN</label>
+        <div class="password-wrap">
         <input
           class="pin-input"
           id="pin-confirm"
@@ -46,8 +77,11 @@ export function renderSetupPin(root) {
           placeholder="Re-enter your secret PIN"
           autocomplete="new-password"
           required />
+        <button class="pw-toggle" type="button" data-target="pin-confirm" data-description="secret PIN confirmation" aria-label="Show secret PIN confirmation">Show</button>
+        </div>
 
         <label class="field-label" for="decoy-input">Decoy PIN (4 digits, must be different)</label>
+        <div class="password-wrap">
         <input
           class="pin-input"
           id="decoy-input"
@@ -58,8 +92,11 @@ export function renderSetupPin(root) {
           placeholder="Enter different 4 digits"
           autocomplete="new-password"
           required />
+        <button class="pw-toggle" type="button" data-target="decoy-input" data-description="decoy PIN" aria-label="Show decoy PIN">Show</button>
+        </div>
 
         <label class="field-label" for="decoy-confirm">Confirm decoy PIN</label>
+        <div class="password-wrap">
         <input
           class="pin-input"
           id="decoy-confirm"
@@ -70,6 +107,8 @@ export function renderSetupPin(root) {
           placeholder="Re-enter your decoy PIN"
           autocomplete="new-password"
           required />
+        <button class="pw-toggle" type="button" data-target="decoy-confirm" data-description="decoy PIN confirmation" aria-label="Show decoy PIN confirmation">Show</button>
+        </div>
 
         <p class="setup-hint" id="pin-error" aria-live="polite"></p>
 
@@ -77,6 +116,7 @@ export function renderSetupPin(root) {
       </form>
     </div>
   `;
+    wirePasswordToggles(root);
     const form = root.querySelector('#setup-pin-form');
     const pinInput = root.querySelector('#pin-input');
     const pinConfirm = root.querySelector('#pin-confirm');
@@ -93,12 +133,20 @@ export function renderSetupPin(root) {
             errorEl.textContent = 'Secret PIN must be exactly 4 digits.';
             return;
         }
+        if (!hasDistinctPinDigits(pin)) {
+            errorEl.textContent = 'Secret PIN cannot repeat digits. Choose four different digits.';
+            return;
+        }
         if (pin !== pinConf) {
             errorEl.textContent = 'Secret PINs do not match. Please try again.';
             return;
         }
         if (decoy.length !== 4 || !/^\d{4}$/.test(decoy)) {
             errorEl.textContent = 'Decoy PIN must be exactly 4 digits.';
+            return;
+        }
+        if (!hasDistinctPinDigits(decoy)) {
+            errorEl.textContent = 'Decoy PIN cannot repeat digits. Choose four different digits.';
             return;
         }
         if (decoy !== decoyConf) {
@@ -220,7 +268,7 @@ export function renderSetupProfile(root) {
         }
         errorEl.textContent = '';
         store.saveProfile({ name, phone, photo: currentProfile.photo });
-        store.navigateTo('recovery-setup');
+        store.navigateTo('setup-contacts');
     });
 }
 export function renderRecoverySetup(root, nextScreen) {
@@ -243,21 +291,22 @@ export function renderRecoverySetup(root, nextScreen) {
           ${options}
         </select>
         <label class="field-label" for="recovery-answer-one">Your answer</label>
-        <input class="text-input" id="recovery-answer-one" type="password" placeholder="Enter a memorable answer" autocomplete="off" required />
-        
+        ${revealableInput('recovery-answer-one', 'first security answer')}
+
         <label class="field-label" for="recovery-question-two">Security question 2</label>
         <select class="text-input" id="recovery-question-two" required>
           <option value="" disabled ${currentQuestions[1] ? '' : 'selected'}>Choose a different question</option>
           ${options}
         </select>
         <label class="field-label" for="recovery-answer-two">Your answer</label>
-        <input class="text-input" id="recovery-answer-two" type="password" placeholder="Enter a memorable answer" autocomplete="off" required />
-        
+        ${revealableInput('recovery-answer-two', 'second security answer')}
+
         <p class="setup-hint" id="recovery-setup-error" aria-live="polite"></p>
         <button class="btn-primary" type="submit">${existing ? 'Save security questions' : 'Continue to contacts →'}</button>
       </form>
     </div>
   `;
+    wirePasswordToggles(root);
     const questionOne = root.querySelector('#recovery-question-one');
     const questionTwo = root.querySelector('#recovery-question-two');
     if (currentQuestions[0])
@@ -309,63 +358,68 @@ export function renderRecoverySetup(root, nextScreen) {
             }
             store.navigateTo(nextScreen);
         }
-        catch (err) {
+        catch {
             error.textContent = 'Security questions could not be saved. Please try again.';
-            console.error('[recovery-setup] Error:', err);
-        }
-        finally {
-            submitBtn.disabled = false;
-            submitBtn.textContent = existing ? 'Save security questions' : 'Continue to contacts →';
         }
     });
 }
 export function renderPinRecovery(root) {
     const questionIds = getRecoveryQuestionIds();
+    const locked = store.getState().pinFailures >= PIN_FAILURE_LIMIT;
     if (!questionIds) {
         root.innerHTML = `
       <div class="screen setup-screen">
         <h1 class="setup-title">Cannot recover PIN</h1>
-        <p class="setup-body">Security questions were not set up on this device. You cannot recover your PIN without them.</p>
-        <button class="btn-primary" id="btn-recovery-cancel" type="button">Back to calculator</button>
+        <p class="setup-body">Security questions were not set up on this device. You cannot recover your PIN without them. Contact support for help restoring access.</p>
+        ${locked ? '' : '<button class="btn-primary" id="btn-recovery-cancel" type="button">Back to calculator</button>'}
       </div>
     `;
-        root.querySelector('#btn-recovery-cancel').addEventListener('click', () => store.navigateTo('calculator'));
+        root.querySelector('#btn-recovery-cancel')?.addEventListener('click', () => store.navigateTo('calculator'));
         return;
     }
     const questionText = (id) => RECOVERY_QUESTIONS.find(question => question.id === id)?.label ?? 'Security question unavailable';
     root.innerHTML = `
     <div class="screen setup-screen">
       <header class="screen-header">
-        <button class="btn-back-small" id="btn-recovery-cancel" aria-label="Back to calculator">←</button>
+        ${locked ? '' : '<button class="btn-back-small" id="btn-recovery-cancel" aria-label="Back to calculator">←</button>'}
         <h2 class="screen-title">Recover your PINs</h2>
       </header>
-      <p class="setup-body">Answer both security questions correctly, then create new PINs. Your encrypted data will be restored when both answers are correct.</p>
+      <p class="setup-body">${locked
+        ? 'Access is locked after three incorrect PIN attempts. Answer both security questions and reset your PINs to continue.'
+        : 'Answer both security questions correctly, then create new PINs. Your encrypted data will be restored when both answers are correct.'}</p>
       <form class="setup-form" id="pin-recovery-form" autocomplete="off">
         <label class="field-label" for="recovery-answer-one">${questionText(questionIds[0])}</label>
-        <input class="text-input" id="recovery-answer-one" type="password" placeholder="Enter your answer" autocomplete="off" required />
-        
+        ${revealableInput('recovery-answer-one', 'first security answer')}
+
         <label class="field-label" for="recovery-answer-two">${questionText(questionIds[1])}</label>
-        <input class="text-input" id="recovery-answer-two" type="password" placeholder="Enter your answer" autocomplete="off" required />
-        
+        ${revealableInput('recovery-answer-two', 'second security answer')}
+
         <label class="field-label" for="recovery-new-pin">New secret PIN (4 digits)</label>
-        <input class="pin-input" id="recovery-new-pin" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" placeholder="Enter 4 digits" autocomplete="new-password" required />
-        
+        <div class="password-wrap"><input class="pin-input" id="recovery-new-pin" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" placeholder="Enter 4 digits" autocomplete="new-password" required /><button class="pw-toggle" type="button" data-target="recovery-new-pin" data-description="new secret PIN" aria-label="Show new secret PIN">Show</button></div>
+        <label class="field-label" for="recovery-confirm-pin">Confirm new secret PIN</label>
+        <div class="password-wrap"><input class="pin-input" id="recovery-confirm-pin" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" placeholder="Re-enter 4 digits" autocomplete="new-password" required /><button class="pw-toggle" type="button" data-target="recovery-confirm-pin" data-description="secret PIN confirmation" aria-label="Show secret PIN confirmation">Show</button></div>
+
         <label class="field-label" for="recovery-new-decoy">New decoy PIN (4 digits, must be different)</label>
-        <input class="pin-input" id="recovery-new-decoy" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" placeholder="Enter different 4 digits" autocomplete="new-password" required />
-        
+        <div class="password-wrap"><input class="pin-input" id="recovery-new-decoy" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" placeholder="Enter different 4 digits" autocomplete="new-password" required /><button class="pw-toggle" type="button" data-target="recovery-new-decoy" data-description="new decoy PIN" aria-label="Show new decoy PIN">Show</button></div>
+        <label class="field-label" for="recovery-confirm-decoy">Confirm new decoy PIN</label>
+        <div class="password-wrap"><input class="pin-input" id="recovery-confirm-decoy" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" placeholder="Re-enter decoy PIN" autocomplete="new-password" required /><button class="pw-toggle" type="button" data-target="recovery-confirm-decoy" data-description="decoy PIN confirmation" aria-label="Show decoy PIN confirmation">Show</button></div>
+
         <p class="setup-hint" id="pin-recovery-error" aria-live="polite"></p>
         <button class="btn-primary" type="submit">Verify and reset PINs</button>
       </form>
     </div>
   `;
-    root.querySelector('#btn-recovery-cancel').addEventListener('click', () => store.navigateTo('calculator'));
+    root.querySelector('#btn-recovery-cancel')?.addEventListener('click', () => store.navigateTo('calculator'));
+    wirePasswordToggles(root);
     const form = root.querySelector('#pin-recovery-form');
     const answers = [
         root.querySelector('#recovery-answer-one'),
         root.querySelector('#recovery-answer-two'),
     ];
     const newPin = root.querySelector('#recovery-new-pin');
+    const confirmPin = root.querySelector('#recovery-confirm-pin');
     const newDecoy = root.querySelector('#recovery-new-decoy');
+    const confirmDecoy = root.querySelector('#recovery-confirm-decoy');
     const error = root.querySelector('#pin-recovery-error');
     form.addEventListener('submit', async (event) => {
         event.preventDefault();
@@ -375,49 +429,36 @@ export function renderPinRecovery(root) {
             error.textContent = 'Secret PIN must be exactly 4 digits.';
             return;
         }
+        if (!hasDistinctPinDigits(pin)) {
+            error.textContent = 'Secret PIN cannot repeat digits. Choose four different digits.';
+            return;
+        }
         if (!/^\d{4}$/.test(decoy)) {
             error.textContent = 'Decoy PIN must be exactly 4 digits.';
+            return;
+        }
+        if (!hasDistinctPinDigits(decoy)) {
+            error.textContent = 'Decoy PIN cannot repeat digits. Choose four different digits.';
+            return;
+        }
+        if (pin !== confirmPin.value.trim()) {
+            error.textContent = 'Secret PINs do not match. Please try again.';
+            return;
+        }
+        if (decoy !== confirmDecoy.value.trim()) {
+            error.textContent = 'Decoy PINs do not match. Please try again.';
             return;
         }
         if (pin === decoy) {
             error.textContent = 'Secret PIN and decoy PIN must be different.';
             return;
         }
-        const submitBtn = form.querySelector('button[type="submit"]');
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Verifying...';
-        error.textContent = '';
-        try {
-            // Attempt cloud PIN change if cloud backup is enabled
-            if (hasCloudBackup() && DB_CONFIGURED) {
-                const user = await getUser();
-                if (user) {
-                    const { error: cloudError } = await changePinsInCloud(answers[0].value, answers[1].value, pin, decoy);
-                    if (cloudError) {
-                        error.textContent = cloudError;
-                        submitBtn.disabled = false;
-                        submitBtn.textContent = 'Verify and reset PINs';
-                        return;
-                    }
-                }
-            }
-            // Recover local PINs
-            const recovered = await store.recoverPins(answers.map(answer => answer.value), pin, decoy);
-            if (!recovered) {
-                error.textContent = 'Your answers are incorrect. Please check your answers and try again.';
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Verify and reset PINs';
-            }
-        }
-        catch (err) {
-            error.textContent = 'Failed to reset PINs. Please try again.';
-            console.error('[pin-recovery] Error:', err);
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Verify and reset PINs';
-        }
+        const recovered = await store.recoverPins(answers.map(answer => answer.value), pin, decoy);
+        if (!recovered)
+            error.textContent = 'Your answers are incorrect. Please check your answers and try again.';
     });
 }
-export function renderSetupContacts(root) {
+export function renderSetupContacts(root, notice = '') {
     const { contacts } = store.getState();
     root.innerHTML = `
     <div class="screen setup-screen setup-contacts-modern">
@@ -426,37 +467,22 @@ export function renderSetupContacts(root) {
         Add people who will receive SMS alerts when you activate the panic button. You can add more contacts later from settings.
       </p>
 
-      <ul class="contact-list contact-list-modern" id="setup-contact-list">
+      <ul class="contact-list" id="setup-contact-list">
         ${contacts.map(c => `
-          <li class="contact-item contact-item-modern">
-            <div class="contact-avatar-wrapper">
-              ${c.photo ? `<img src="${c.photo}" alt="${c.name}" class="contact-avatar-img" />` : `<div class="contact-avatar">${c.initials}</div>`}
-            </div>
+          <li class="contact-item">
+            <div class="contact-avatar">${escapeHtml(c.initials)}</div>
             <div class="contact-info">
-              <span class="contact-name">${c.name}</span>
-              ${c.relationship ? `<span class="contact-relationship">${c.relationship}</span>` : ''}
-              <span class="contact-phone">${c.phone}</span>
+              <span class="contact-name">${escapeHtml(c.name)}</span>
+              <span class="contact-phone">${escapeHtml(c.phone)}</span>
+              <span class="contact-relationship">${escapeHtml(c.relationship || 'Other')}</span>
             </div>
-            <button class="contact-delete" data-id="${c.id}" aria-label="Remove ${c.name}">✕</button>
+            <button class="contact-delete" data-id="${escapeHtml(c.id)}" aria-label="Remove ${escapeHtml(c.name)}">✕</button>
           </li>
         `).join('')}
       </ul>
 
-      <form class="setup-form setup-form-modern" id="add-contact-form" autocomplete="off">
-        <div class="contact-photo-upload">
-          <input type="file" id="contact-photo" accept="image/*" class="photo-input" />
-          <label for="contact-photo" class="photo-upload-label">
-            <div class="photo-preview" id="photo-preview">
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/>
-                <path d="M12 8v8M8 12h8"/>
-              </svg>
-              <span>Add Photo</span>
-            </div>
-          </label>
-        </div>
-
-        <label class="field-label" for="contact-name">CONTACT NAME</label>
+      <form class="setup-form" id="add-contact-form" autocomplete="off">
+        <label class="field-label" for="contact-name">Contact name</label>
         <input
           class="text-input modern-input"
           id="contact-name"
@@ -474,41 +500,52 @@ export function renderSetupContacts(root) {
           autocomplete="off"
           required />
 
-        <label class="field-label" for="contact-relationship">RELATIONSHIP (OPTIONAL)</label>
-        <select class="text-input modern-input" id="contact-relationship">
-          <option value="">Select relationship</option>
-          <option value="Family">Family</option>
-          <option value="Friend">Friend</option>
-          <option value="Partner">Partner</option>
-          <option value="Colleague">Colleague</option>
-          <option value="Neighbor">Neighbor</option>
-          <option value="Other">Other</option>
+        <label class="field-label" for="contact-relationship">Relationship</label>
+        <select class="text-input" id="contact-relationship" required>
+          <option value="" disabled selected>Choose a relationship</option>
+          <option>Family member</option><option>Friend</option><option>Partner</option>
+          <option>Caregiver</option><option>Neighbour</option><option>Colleague</option><option>Other</option>
         </select>
 
-        <p class="setup-hint" id="contact-error" aria-live="polite"></p>
-        <button class="btn-add-contact" type="submit">Add contact</button>
+        <p class="setup-hint" id="contact-success" role="status" aria-live="polite">${escapeHtml(notice)}</p>
+        <p class="setup-hint" id="contact-error" role="alert" aria-live="polite"></p>
+        <button class="btn-secondary-outline" type="submit" ${contacts.length >= 5 ? 'disabled' : ''}>
+          ${contacts.length >= 5 ? 'Circle full (5/5)' : 'Add contact'}
+        </button>
       </form>
 
       <button
         class="btn-primary"
         id="btn-setup-done"
         ${contacts.length === 0 ? 'disabled' : ''}>
-        ${contacts.length > 0 ? 'Done — start using app' : 'Add at least one contact'}
+        ${contacts.length > 0 ? 'Continue — start using app' : 'Add at least one contact'}
       </button>
       ${contacts.length === 0
         ? '<p class="setup-hint">You must add at least one trusted contact to continue.</p>'
         : ''}
     </div>
   `;
-    root.querySelector('#setup-contact-list')?.addEventListener('click', (e) => {
-        const btn = e.target.closest('.contact-delete');
+    root.querySelector('#setup-contact-list')?.addEventListener('click', async (e) => {
+        const target = e.target instanceof Element ? e.target : null;
+        const btn = target?.closest('.contact-delete');
         if (!btn)
             return;
         const id = btn.dataset['id'];
         if (!id)
             return;
-        store.deleteContact(id);
-        store.navigateTo('setup-contacts');
+        const error = root.querySelector('#contact-error');
+        btn.disabled = true;
+        try {
+            const removed = await store.deleteContact(id);
+            if (!removed)
+                throw new Error('Contact was not found.');
+            renderSetupContacts(root, 'Contact removed.');
+        }
+        catch {
+            btn.disabled = false;
+            if (error)
+                error.textContent = 'Could not remove this contact. Please try again.';
+        }
     });
     const addForm = root.querySelector('#add-contact-form');
     const photoInput = root.querySelector('#contact-photo');
@@ -531,11 +568,11 @@ export function renderSetupContacts(root) {
         const phoneInput = root.querySelector('#contact-phone');
         const relationshipInput = root.querySelector('#contact-relationship');
         const errEl = root.querySelector('#contact-error');
-        addForm.addEventListener('submit', (e) => {
+        addForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const name = nameInput.value.trim();
             const phone = phoneInput.value.trim();
-            const relationship = relationshipInput.value.trim();
+            const relationship = relationshipInput.value;
             if (!name) {
                 errEl.textContent = 'Please enter a contact name.';
                 return;
@@ -544,9 +581,31 @@ export function renderSetupContacts(root) {
                 errEl.textContent = 'Please enter a phone number.';
                 return;
             }
+            if (!relationship) {
+                errEl.textContent = 'Please choose your relationship to this contact.';
+                return;
+            }
             errEl.textContent = '';
-            store.addContact(name, phone, relationship || undefined, photoDataUrl);
-            store.navigateTo('setup-contacts');
+            const button = addForm.querySelector('button[type="submit"]');
+            if (button)
+                button.disabled = true;
+            try {
+                const added = await store.addContact(name, phone, relationship);
+                if (!added) {
+                    errEl.textContent = store.getState().contacts.length >= 5
+                        ? 'You can add up to 5 trusted contacts.'
+                        : 'Enter a valid, unique phone number with 7 to 15 digits.';
+                    return;
+                }
+                renderSetupContacts(root, 'Contact successfully added.');
+            }
+            catch {
+                errEl.textContent = 'Could not save this contact on this device. Please try again.';
+            }
+            finally {
+                if (button)
+                    button.disabled = store.getState().contacts.length >= 5;
+            }
         });
     }
     root.querySelector('#btn-setup-done').addEventListener('click', () => {

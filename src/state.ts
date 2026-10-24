@@ -1,9 +1,15 @@
-import { EMPTY_PROFILE, loadPublicSync, loadVault, saveVault, savePinHashes, saveAutoLock, clearAll, hashPin, recoverVaultWithAnswers, uid, initials, type Contact as StorageContact, type Note as StorageNote, type Profile, type SafetyPlan as StorageSafetyPlan, type VaultData } from './storage.js';
-import { onAuthStateChange, DB_CONFIGURED, signOut } from './db.js';
+import { EMPTY_PROFILE, loadPublicSync, loadPinFailures, savePinFailures, loadVault, saveVault, savePinHashes, saveAutoLock, clearAll, hashPin, recoverVaultWithAnswers, uid, initials, type Contact as StorageContact, type Note as StorageNote, type Profile, type SafetyPlan as StorageSafetyPlan, type VaultData } from './storage.js';
+import { DB_CONFIGURED, onAuthStateChange, signOut } from './db.js';
 
 type Contact = StorageContact;
 type Note = StorageNote;
 type SafetyPlan = StorageSafetyPlan;
+
+export const PIN_FAILURE_LIMIT = 3;
+
+export function hasDistinctPinDigits(pin: string): boolean {
+    return /^\d+$/.test(pin) && new Set(pin).size === pin.length;
+}
 
 type AppState = {
     screen: string;
@@ -31,7 +37,7 @@ function buildInitialState(): AppState {
     // Show welcome screen with signup/login options
     const initialScreen = 'welcome';
     return {
-        screen: initialScreen,
+        screen: 'welcome',
         profile: { ...EMPTY_PROFILE },
         pinBuffer: '',
         pinHash: pub.pin,
@@ -50,7 +56,7 @@ function buildInitialState(): AppState {
         editingNoteId: null,
         isFirstRun: pub.pin === '',
         recoveryConfigured: pub.recoveryQuestionIds !== null,
-        pinFailures: 0,
+        pinFailures: loadPinFailures(),
         lastActivityAt: Date.now(),
     };
 }
@@ -59,11 +65,13 @@ class Store {
     state: AppState;
     listeners: Array<(state: AppState) => void>;
     lockTimer: number | null;
+    screenHistory: string[];
 
     constructor() {
         this.state = buildInitialState();
         this.listeners = [];
         this.lockTimer = null;
+        this.screenHistory = [];
     }
     getState(): AppState { return this.state; }
     subscribe(fn: (state: AppState) => void) {
@@ -88,7 +96,28 @@ class Store {
         }, mins * 60 * 1000);
     }
     navigateTo(screen: string) {
+        if (this.state.screen === 'pin-recovery' && this.state.pinFailures >= PIN_FAILURE_LIMIT && screen !== 'pin-recovery')
+            return;
+        if (screen !== this.state.screen) {
+            if (screen === 'app') {
+                this.screenHistory = [];
+            }
+            else {
+                this.screenHistory.push(this.state.screen);
+                if (this.screenHistory.length > 50)
+                    this.screenHistory.shift();
+            }
+        }
         this.state = { ...this.state, screen };
+        this.touch();
+        this.notify();
+    }
+    navigateBack() {
+        if (this.state.screen === 'pin-recovery' && this.state.pinFailures >= PIN_FAILURE_LIMIT)
+            return;
+        const previousScreen = this.screenHistory.pop()
+            ?? (this.state.screen === 'app' ? 'calculator' : 'welcome');
+        this.state = { ...this.state, screen: previousScreen };
         this.touch();
         this.notify();
     }
@@ -107,33 +136,46 @@ class Store {
         this.notify();
     }
     async evaluatePin() {
+        if (this.state.pinFailures >= PIN_FAILURE_LIMIT) {
+            this.navigateTo('pin-recovery');
+            return null;
+        }
         const pin = this.state.pinBuffer;
         this.clearPin();
         const pub = loadPublicSync();
         const hashed = await hashPin(pin);
         if (hashed === pub.pin) {
+            this.screenHistory = [];
             const vault: VaultData = await loadVault(hashed);
             this.state = {
                 ...this.state,
                 screen: 'app',
                 pinHash: hashed,
                 profile: { ...EMPTY_PROFILE, ...(vault.profile ?? {}) },
-                contacts: vault.contacts.map(c => ({ ...c, status: 'pending' as const })),
+                contacts: vault.contacts.map(c => ({ ...c, relationship: c.relationship || 'Other', status: 'pending' as const })),
                 notes: vault.notes,
                 safetyPlan: vault.safetyPlan,
                 pinFailures: 0,
             };
+            savePinFailures(0);
             this.touch();
             this.scheduleAutoLock();
             this.notify();
             return 'app';
         }
         if (pub.decoyPin !== '' && hashed === pub.decoyPin) {
-            this.state = { ...this.state, screen: 'decoy', pinFailures: 0 };
+            this.screenHistory = [];
+            this.state = { ...this.state, screen: 'decoy' };
             this.notify();
             return 'decoy';
         }
-        this.state = { ...this.state, pinFailures: this.state.pinFailures + 1 };
+        const pinFailures = this.state.pinFailures + 1;
+        savePinFailures(pinFailures);
+        this.state = {
+            ...this.state,
+            pinFailures,
+            ...(pinFailures >= PIN_FAILURE_LIMIT ? { screen: 'pin-recovery' } : {}),
+        };
         this.notify();
         return null;
     }
@@ -146,9 +188,12 @@ class Store {
         this.notify();
     }
     async _saveContacts(contacts: Contact[]) {
-        const vault: VaultData = await loadVault(this.state.pinHash);
+        const pinHash = this.state.pinHash;
+        if (!pinHash)
+            throw new Error('Unlock the app before changing trusted contacts.');
+        const vault: VaultData = await loadVault(pinHash);
         vault.contacts = contacts;
-        await saveVault(vault, this.state.pinHash);
+        await saveVault(vault, pinHash);
     }
     saveProfile(profile: Profile) {
         this.state = { ...this.state, profile };
@@ -160,40 +205,52 @@ class Store {
             await saveVault(vault, this.state.pinHash);
         })().catch(console.error);
     }
-    addContact(name: string, phone: string, relationship?: string, photo?: string): boolean {
+    async addContact(name: string, phone: string, relationship = 'Other'): Promise<boolean> {
+        const cleanName = name.trim();
+        const cleanPhone = phone.trim();
+        const phoneDigits = cleanPhone.replace(/\D/g, '');
+        if (!cleanName || phoneDigits.length < 7 || phoneDigits.length > 15 || this.state.contacts.length >= 5)
+            return false;
+        if (this.state.contacts.some(contact => contact.phone.replace(/\D/g, '') === phoneDigits))
+            return false;
         const contact: Contact = {
-            id: uid(), name: name.trim(), phone: phone.trim(),
-            initials: initials(name), status: 'pending',
-            relationship: relationship?.trim(),
-            photo: photo,
+            id: uid(), name: cleanName, phone: cleanPhone, relationship,
+            initials: initials(cleanName), status: 'pending',
         };
         const updated = [...this.state.contacts, contact];
+        await this._saveContacts(updated);
         this.state = { ...this.state, contacts: updated };
         this.touch();
         this.notify();
-        this._saveContacts(updated).catch(console.error);
         return true;
     }
-    updateContact(id: string, name: string, phone: string, relationship?: string, photo?: string) {
-        const updated = this.state.contacts.map(c => c.id === id ? { 
-            ...c, 
-            name: name.trim(), 
-            phone: phone.trim(), 
-            initials: initials(name),
-            relationship: relationship?.trim(),
-            photo: photo
-        } : c);
+    async updateContact(id: string, name: string, phone: string, relationship = 'Other'): Promise<boolean> {
+        const cleanName = name.trim();
+        const cleanPhone = phone.trim();
+        const phoneDigits = cleanPhone.replace(/\D/g, '');
+        if (!cleanName || phoneDigits.length < 7 || phoneDigits.length > 15)
+            return false;
+        if (!this.state.contacts.some(contact => contact.id === id) ||
+            this.state.contacts.some(contact => contact.id !== id && contact.phone.replace(/\D/g, '') === phoneDigits))
+            return false;
+        const updated = this.state.contacts.map(c => c.id === id
+            ? { ...c, name: cleanName, phone: cleanPhone, relationship, initials: initials(cleanName) }
+            : c);
+        await this._saveContacts(updated);
         this.state = { ...this.state, contacts: updated };
         this.touch();
         this.notify();
-        this._saveContacts(updated).catch(console.error);
+        return true;
     }
-    deleteContact(id: string) {
+    async deleteContact(id: string): Promise<boolean> {
+        if (!this.state.contacts.some(contact => contact.id === id))
+            return false;
         const updated = this.state.contacts.filter(c => c.id !== id);
+        await this._saveContacts(updated);
         this.state = { ...this.state, contacts: updated };
         this.touch();
         this.notify();
-        this._saveContacts(updated).catch(console.error);
+        return true;
     }
     setLocationShared(shared: boolean, locationText: string) {
         this.state = { ...this.state, locationShared: shared, alertLocation: locationText };
@@ -272,8 +329,9 @@ class Store {
     async changePins(newPin: string, newDecoy: string) {
         await this.savePin(newPin, newDecoy);
     }
-    async recoverPins(answers: string[], newPin: string, newDecoy: string): Promise<boolean> {
-        if (!/^\d{4}$/.test(newPin) || !/^\d{4}$/.test(newDecoy) || newPin === newDecoy)
+    async recoverPins(answers: string[], newPin: string, newDecoy: string, returnTo = 'app'): Promise<boolean> {
+        if (!/^\d{4}$/.test(newPin) || !/^\d{4}$/.test(newDecoy) ||
+            !hasDistinctPinDigits(newPin) || !hasDistinctPinDigits(newDecoy) || newPin === newDecoy)
             return false;
         try {
             const pinHash = await hashPin(newPin);
@@ -282,18 +340,21 @@ class Store {
             if (!vault)
                 return false;
             await savePinHashes(pinHash, decoyHash, this.state.autoLockMinutes);
+            if (returnTo === 'app')
+                this.screenHistory = [];
             this.state = {
                 ...this.state,
-                screen: 'app',
+                screen: returnTo,
                 pinHash,
                 profile: { ...EMPTY_PROFILE, ...(vault.profile ?? {}) },
-                contacts: vault.contacts.map(c => ({ ...c, status: 'pending' as const })),
+                contacts: vault.contacts.map(c => ({ ...c, relationship: c.relationship || 'Other', status: 'pending' as const })),
                 notes: vault.notes,
                 safetyPlan: vault.safetyPlan,
                 isFirstRun: false,
                 recoveryConfigured: true,
                 pinFailures: 0,
             };
+            savePinFailures(0);
             this.touch();
             this.notify();
             return true;
@@ -354,6 +415,7 @@ class Store {
             clearTimeout(this.lockTimer);
         clearAll();
         await signOut().catch(() => { });
+        this.screenHistory = [];
         this.state = buildInitialState();
         this.notify();
     }
@@ -387,12 +449,13 @@ class Store {
             ...this.state,
             pinHash,
             profile: { ...EMPTY_PROFILE, ...(vault.profile ?? {}) },
-            contacts: vault.contacts.map(contact => ({ ...contact, status: 'pending' as const })),
+            contacts: vault.contacts.map(contact => ({ ...contact, relationship: contact.relationship || 'Other', status: 'pending' as const })),
             notes: vault.notes,
             safetyPlan: vault.safetyPlan,
             pinFailures: 0,
             accountPinUnlocked: true,
         };
+        savePinFailures(0);
         this.notify();
         return true;
     }

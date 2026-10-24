@@ -1,46 +1,4 @@
-import { store } from '../state.js';
-function safeEval(expr) {
-    const tokens = expr.trim().match(/[\d.]+|[+\-*/]/g);
-    if (!tokens)
-        return 'Error';
-    try {
-        const prec = { '+': 1, '-': 1, '*': 2, '/': 2 };
-        const out = [];
-        const ops = [];
-        const applyOp = () => {
-            const op = ops.pop();
-            const b = out.pop();
-            const a = out.pop();
-            if (op === '+')
-                out.push(a + b);
-            else if (op === '-')
-                out.push(a - b);
-            else if (op === '*')
-                out.push(a * b);
-            else if (op === '/')
-                out.push(a / b);
-        };
-        for (const tok of tokens) {
-            if (/[\d.]/.test(tok)) {
-                out.push(parseFloat(tok));
-            }
-            else {
-                while (ops.length && prec[ops[ops.length - 1]] >= prec[tok])
-                    applyOp();
-                ops.push(tok);
-            }
-        }
-        while (ops.length)
-            applyOp();
-        const result = out[0] ?? NaN;
-        if (!isFinite(result))
-            return 'Error';
-        return parseFloat(result.toPrecision(12)).toString();
-    }
-    catch {
-        return 'Error';
-    }
-}
+import { PIN_FAILURE_LIMIT, store } from '../state.js';
 const KEYS = [
     ['7', '7'], ['8', '8'], ['9', '9'], ['÷', '/'],
     ['4', '4'], ['5', '5'], ['6', '6'], ['×', '*'],
@@ -48,14 +6,21 @@ const KEYS = [
     ['C', 'C'], ['0', '0'], ['=', '='], ['+', '+'],
 ];
 export function renderCalculator(root) {
+    if (store.getState().pinFailures >= PIN_FAILURE_LIMIT) {
+        store.navigateTo('pin-recovery');
+        return;
+    }
     const recoveryConfigured = store.getState().recoveryConfigured;
     root.innerHTML = `
     <div class="screen calculator-screen">
       <div class="calc-display">
         <div class="calc-expression" id="calc-expression">&nbsp;</div>
         <div class="calc-result" id="calc-result">0</div>
+        <button class="calc-pin-toggle" id="calc-pin-toggle" type="button" aria-label="Show entered PIN" hidden>Show PIN</button>
       </div>
-            ${recoveryConfigured ? '<button class="calc-forgot-pin" id="btn-forgot-pin" type="button">Forgot app PIN? Answer your security questions</button>' : ''}
+      <p class="calc-login-error" id="calc-login-error" role="alert" hidden></p>
+      <button class="calc-create-account" id="btn-create-account" type="button" hidden>Create account</button>
+      ${recoveryConfigured ? '<button class="calc-forgot-pin" id="btn-forgot-pin" type="button">Forgot app PIN? Answer your security questions</button>' : ''}
       <div class="calc-keys">
         ${KEYS.map(([label, value]) => `
           <button
@@ -70,9 +35,31 @@ export function renderCalculator(root) {
   `;
     const display = root.querySelector('#calc-result');
     const expression = root.querySelector('#calc-expression');
+    const pinToggle = root.querySelector('#calc-pin-toggle');
+    const loginError = root.querySelector('#calc-login-error');
+    const createAccount = root.querySelector('#btn-create-account');
     const recoveryButton = root.querySelector('#btn-forgot-pin');
     recoveryButton?.addEventListener('click', () => store.navigateTo('pin-recovery'));
+    createAccount.addEventListener('click', () => store.navigateTo('setup-pin'));
     let calcBuffer = '';
+    let pinVisible = false;
+    function updatePinDisplay() {
+        const pin = store.getState().pinBuffer;
+        const displayedPin = pinVisible ? pin : '•'.repeat(pin.length);
+        expression.textContent = displayedPin || '\u00a0';
+        display.textContent = displayedPin || '0';
+        pinToggle.hidden = pin.length === 0;
+    }
+    pinToggle.addEventListener('click', () => {
+        pinVisible = !pinVisible;
+        pinToggle.textContent = pinVisible ? 'Hide PIN' : 'Show PIN';
+        pinToggle.setAttribute('aria-label', `${pinVisible ? 'Hide' : 'Show'} entered PIN`);
+        updatePinDisplay();
+    });
+    function clearLoginFeedback() {
+        loginError.hidden = true;
+        createAccount.hidden = true;
+    }
     root.querySelector('.calc-keys').addEventListener('click', e => {
         const btn = e.target.closest('.calc-key');
         if (!btn)
@@ -83,28 +70,45 @@ export function renderCalculator(root) {
         if (v === 'C') {
             store.clearPin();
             calcBuffer = '';
+            pinVisible = false;
+            pinToggle.textContent = 'Show PIN';
+            pinToggle.setAttribute('aria-label', 'Show entered PIN');
+            clearLoginFeedback();
             display.textContent = '0';
             expression.innerHTML = '&nbsp;';
             return;
         }
         if (v === '=') {
+            pinVisible = false;
+            pinToggle.textContent = 'Show PIN';
+            pinToggle.setAttribute('aria-label', 'Show entered PIN');
+            updatePinDisplay();
             store.evaluatePin().then(route => {
                 if (!route) {
-                    display.textContent = safeEval(calcBuffer || '0');
-                    expression.textContent = calcBuffer + ' =';
+                    display.textContent = 'Incorrect PIN';
+                    expression.textContent = '';
                     calcBuffer = '';
+                    pinToggle.hidden = true;
+                    loginError.textContent = 'Please try again or create an account.';
+                    loginError.hidden = false;
+                    createAccount.hidden = false;
                 }
             });
             return;
         }
         if (/\d/.test(v)) {
+            clearLoginFeedback();
             store.appendPin(v);
-            expression.textContent = '•'.repeat(store.getState().pinBuffer.length);
             calcBuffer += v;
-            display.textContent = calcBuffer;
+            updatePinDisplay();
             return;
         }
+        clearLoginFeedback();
         store.clearPin();
+        pinToggle.hidden = true;
+        pinVisible = false;
+        pinToggle.textContent = 'Show PIN';
+        pinToggle.setAttribute('aria-label', 'Show entered PIN');
         calcBuffer += ` ${v} `;
         display.textContent = v;
         expression.textContent = calcBuffer;

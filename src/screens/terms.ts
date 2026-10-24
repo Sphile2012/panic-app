@@ -20,7 +20,7 @@ export function renderTerms(root) {
         <p class="terms-intro">${t('b.terms.intro')}</p>
         <p class="terms-effective">${t('b.terms.effective')}</p>
         ${section(1, ['p1'])}
-        ${section(2, ['p1', 'p2', 'p3', 'p4', 'p5'])}
+        ${section(2, ['p1', 'p3', 'p4', 'p5'])}
         ${section(3, ['p1', 'p2', 'p3', 'p4'], { after: 1, items: ['li1', 'li2', 'li3'] })}
         ${section(4, ['p1', 'p2'])}
         ${section(5, ['p1', 'p2'])}
@@ -29,6 +29,7 @@ export function renderTerms(root) {
         ${section(8, ['p1'])}
         ${section(9, ['p1'])}
         ${section(10, ['p1'])}
+        ${section(11, ['p1', 'p2'])}
 
         <div class="terms-emergency-reminder">
           <p>${t('b.terms.emerg')}</p>

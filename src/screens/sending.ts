@@ -1,5 +1,5 @@
 import { store } from '../state.js';
-import { telUri } from '../storage.js';
+import { buildSmsBody, telUri, whatsappUri } from '../storage.js';
 export function renderSending(root) {
     const { contacts } = store.getState();
     root.innerHTML = `
@@ -8,10 +8,9 @@ export function renderSending(root) {
         <div class="sending-pulse"></div>
         <div class="sending-icon" aria-hidden="true"></div>
       </div>
-      <h2 class="sending-title">Alerting your circle…</h2>
+      <h2 class="sending-title">Preparing your alerts…</h2>
       <p class="sending-sub" id="sending-sub">
-        Your Messages app will open for each contact.
-        Send the message, then come back.
+        Your SMS app will open for each contact. Review the message and tap Send, then return here.
       </p>
       <ul class="sending-list" id="sending-list">
         ${contacts.map(sendingRow).join('')}
@@ -26,17 +25,17 @@ export function updateSendingList(root) {
     list.innerHTML = store.getState().contacts.map(sendingRow).join('');
 }
 export function renderSent(root) {
-    const { contacts, alertLocation, locationShared } = store.getState();
-    const opened = contacts.filter(c => c.status === 'delivered').length;
+    const { contacts, alertLocation, locationShared, notes } = store.getState();
+    const opened = contacts.filter(c => c.status === 'opened').length;
     const failed = contacts.filter(c => c.status === 'failed').length;
     const summaryLine = failed > 0
-        ? `${opened} messages opened · ${failed} failed (no network)`
-        : `${opened} message${opened !== 1 ? 's' : ''} opened`;
+        ? `${opened} SMS composers opened · ${failed} could not be prepared`
+        : `${opened} SMS composer${opened !== 1 ? 's' : ''} opened; tap Send in your Messages app`;
     root.innerHTML = `
     <div class="screen sent-screen">
 
       <div class="sent-hero" aria-hidden="true">${failed > 0 ? '!' : 'OK'}</div>
-      <h2 class="sent-title">Alert sent</h2>
+      <h2 class="sent-title">SMS alert prepared</h2>
       <p class="sent-summary">${summaryLine}</p>
 
       ${failed > 0 ? `
@@ -47,7 +46,10 @@ export function renderSent(root) {
       ` : ''}
 
       <ul class="sending-list">
-        ${contacts.map(sentRow).join('')}
+        ${contacts.map(contact => sentRow(contact, whatsappUri(
+            contact.phone,
+            buildSmsBody(contact.name, alertLocation, locationShared, notes),
+        ))).join('')}
       </ul>
 
       ${locationShared ? `
@@ -101,7 +103,7 @@ function sendingRow(c) {
     </li>
   `;
 }
-function sentRow(c) {
+function sentRow(c, whatsappLink) {
     const callLink = c.status === 'failed'
         ? `<a class="sent-call-link" href="${telUri(c.phone)}">Call ${c.name}</a>`
         : '';
@@ -112,6 +114,7 @@ function sentRow(c) {
         <span class="contact-name">${c.name}</span>
         <span class="contact-phone">${c.phone}</span>
         ${callLink}
+        <a class="sent-whatsapp-fallback" href="${whatsappLink}" target="_blank" rel="noopener noreferrer">WhatsApp backup</a>
       </div>
       <span class="sending-status">${deliveryIcon(c.status)}</span>
     </li>
@@ -121,7 +124,7 @@ function deliveryIcon(status) {
     switch (status) {
         case 'pending': return '–';
         case 'sending': return '<span class="spinner"></span>';
-        case 'delivered': return 'Sent';
+        case 'opened': return 'SMS opened';
         case 'failed': return 'Failed';
     }
 }

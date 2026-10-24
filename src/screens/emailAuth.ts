@@ -82,79 +82,38 @@ function showPhoneCodeForm(form: HTMLFormElement, phone: string, purpose: 'signu
 }
 
 export function renderWelcome(root: HTMLElement) {
-  const hasPinStored = store.getState().pinHash !== '';
-  
-  // Show splash screen with animations
+  const hasPinStored = Boolean(store.getState().pinHash);
   root.innerHTML = `
     <div class="screen splash-screen">
-      <div class="splash-decorative-line splash-decorative-line--top"></div>
       <div class="splash-container">
-        <div class="splash-logo" id="splash-logo">
-          <svg width="140" height="140" viewBox="0 0 140 140" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <linearGradient id="ringGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" style="stop-color:#ec4899;stop-opacity:1" />
-                <stop offset="50%" style="stop-color:#8B5CF6;stop-opacity:1" />
-                <stop offset="100%" style="stop-color:#6366F1;stop-opacity:1" />
-              </linearGradient>
-            </defs>
-            <circle cx="70" cy="70" r="60" stroke="url(#ringGradient)" stroke-width="8" fill="none" opacity="0.3"/>
-            <circle cx="70" cy="70" r="45" stroke="url(#ringGradient)" stroke-width="10" fill="none"/>
-            <circle cx="70" cy="70" r="25" fill="url(#ringGradient)"/>
-          </svg>
+        <div class="splash-cover-image">
+          <img src="/cover-panic-ring.png" alt="Red Panic Ring emergency button" />
         </div>
-        <h2 class="splash-tagline" id="splash-tagline">Your Safety Matters</h2>
-        <div class="splash-actions" id="splash-actions">
-          <button class="btn-primary splash-btn" id="splash-login" type="button">Login</button>
+        <div class="splash-content">
+          <h1 class="splash-tagline">Your Safety Matters</h1>
+          <span class="splash-accent-line" aria-hidden="true"></span>
+          <p class="splash-pin-hint">Sign in with your 4-digit PIN. No password needed.</p>
+          <div class="splash-actions">
+          <button class="btn-primary splash-btn" id="splash-login" type="button">Login with PIN</button>
           <p class="splash-signup-text">No account? <button class="auth-link-btn" id="splash-signup" type="button">Sign up</button></p>
-          <p class="splash-forgot-text">
-            <button class="auth-link-btn splash-forgot-link" id="splash-forgot" type="button">Forgot your PIN?</button>
-          </p>
+          <button class="auth-link-btn splash-forgot-link" id="splash-forgot" type="button">Forgot your PIN?</button>
+          <button class="splash-install-btn" id="splash-install" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 3v12m-5-5 5 5 5-5" />
+              <path d="M5 16v4h14v-4" />
+            </svg>
+            <span>Click here to install</span>
+          </button>
+          <p class="splash-install-message" id="splash-install-message" role="status" hidden></p>
+          </div>
         </div>
       </div>
-      <div class="splash-decorative-line splash-decorative-line--bottom"></div>
     </div>`;
-
-  // Animation sequence
-  const logo = root.querySelector('#splash-logo') as HTMLElement;
-  const tagline = root.querySelector('#splash-tagline') as HTMLElement;
-  const actions = root.querySelector('#splash-actions') as HTMLElement;
-  
-  // Step 1: Fade in logo
-  setTimeout(() => {
-    logo.style.opacity = '1';
-  }, 100);
-  
-  // Step 2: Fade in tagline after logo
-  setTimeout(() => {
-    tagline.style.opacity = '1';
-  }, 800);
-  
-  // Step 3: Fade in buttons after tagline
-  setTimeout(() => {
-    actions.style.opacity = '1';
-  }, 1500);
-  
-  // Wire up button events
   root.querySelector('#splash-login')?.addEventListener('click', () => {
-    if (hasPinStored) {
-      store.navigateTo('calculator');
-    } else {
-      // No PIN stored, go to signup
-      store.navigateTo('setup-pin');
-    }
+    store.navigateTo(hasPinStored ? 'calculator' : 'setup-pin');
   });
-  
   root.querySelector('#splash-signup')?.addEventListener('click', () => store.navigateTo('setup-pin'));
-  
-  root.querySelector('#splash-forgot')?.addEventListener('click', () => {
-    const hasRecovery = store.getState().recoveryConfigured;
-    if (hasRecovery) {
-      store.navigateTo('pin-recovery');
-    } else {
-      alert('Recovery questions not set up. You need to create a new account.');
-    }
-  });
+  root.querySelector('#splash-forgot')?.addEventListener('click', () => store.navigateTo('pin-recovery'));
 }
 
 export function renderSignup(root: HTMLElement) {

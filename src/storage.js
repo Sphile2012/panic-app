@@ -4,7 +4,15 @@ import { LANGS } from './i18n.js';
 export const EMPTY_PROFILE = { name: '', phone: '', photo: '' };
 const KEY_PUBLIC = 'pr_public';
 const KEY_VAULT = 'pr_vault';
+const KEY_PIN_FAILURES = 'pr_pin_failures';
 export const LANGUAGES = LANGS;
+export function loadPinFailures() {
+    const failures = Number(localStorage.getItem(KEY_PIN_FAILURES) ?? 0);
+    return Number.isInteger(failures) && failures > 0 ? failures : 0;
+}
+export function savePinFailures(failures) {
+    localStorage.setItem(KEY_PIN_FAILURES, String(Math.max(0, Math.floor(failures))));
+}
 export function getPreferredLanguage() {
     const stored = localStorage.getItem('pr_lang');
     return LANGUAGES.some(language => language.code === stored) ? stored : 'en';
@@ -37,7 +45,15 @@ export async function loadVault(pinHash) {
         if (!b64)
             return { ...EMPTY_VAULT };
         const data = await decryptJson(b64, pinHash);
-        return data ?? { ...EMPTY_VAULT };
+        if (!data)
+            return { ...EMPTY_VAULT };
+        return {
+            ...data,
+            contacts: data.contacts.map(contact => ({
+                ...contact,
+                relationship: contact.relationship || 'Other',
+            })),
+        };
     }
     catch {
         return { ...EMPTY_VAULT };
@@ -133,8 +149,10 @@ export async function savePinHashes(pinHash, decoyHash, autoLock, oldPinHash) {
     if (vault)
         await saveVault(vault, pinHash);
     getUser().then(user => {
-        upsertDevice({
-            user_id: user?.id ?? '',
+        if (!user)
+            return;
+        return upsertDevice({
+            user_id: user.id,
             device_id: getDeviceId(),
             auto_lock: autoLock,
         }).catch(() => { });
@@ -158,8 +176,10 @@ export function saveAutoLock(minutes) {
     pub.autoLock = minutes;
     savePublic(pub);
     getUser().then(user => {
-        upsertDevice({
-            user_id: user?.id ?? '',
+        if (!user)
+            return;
+        return upsertDevice({
+            user_id: user.id,
             device_id: getDeviceId(),
             pin_hash: pub.pinHash,
             decoy_hash: pub.decoyHash,
@@ -170,6 +190,7 @@ export function saveAutoLock(minutes) {
 export function clearAll() {
     localStorage.removeItem(KEY_PUBLIC);
     localStorage.removeItem(KEY_VAULT);
+    localStorage.removeItem(KEY_PIN_FAILURES);
     localStorage.removeItem('pr_device_id');
 }
 export function initials(name) {
@@ -186,19 +207,39 @@ export function uid() {
 export function dialable(phone) {
     return phone.replace(/[\s\-().]/g, '');
 }
-export function buildSmsBody(contactName, locationText, locationShared) {
+export function buildSmsBody(contactName, locationText, locationShared, notes = []) {
     const header = `ALERT — ${contactName} may need urgent help.`;
     const loc = locationShared
         ? locationText
         : 'Location was not shared. Please call them immediately.';
+    const notesSection = notes.length
+        ? `\n\nSaved notes:\n${notes.map(note => `${note.title}\nCreated: ${formatNoteTimestamp(note.createdAt)}\nLast updated: ${formatNoteTimestamp(note.updatedAt)}\n${note.body}`).join('\n\n')}`
+        : '';
     const footer = `If you cannot reach them: SAPS 10111 | GBV Command Centre 0800 428 428`;
-    return `${header}\n\n${loc}\n\n${footer}`;
+    return `${header}\n\n${loc}${notesSection}\n\n${footer}`;
+}
+export function formatNoteTimestamp(timestamp) {
+    if (!Number.isFinite(timestamp))
+        return 'Unknown date and time';
+    return new Date(timestamp).toLocaleString('en-ZA', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
 }
 export function isOnline() {
     return typeof navigator !== 'undefined' ? navigator.onLine : true;
 }
 export function smsUri(phone, body) {
     return `sms:${dialable(phone)}?body=${encodeURIComponent(body)}`;
+}
+export function whatsappUri(phone, body) {
+    let number = dialable(phone).replace(/\D/g, '');
+    if (number.startsWith('0'))
+        number = `27${number.slice(1)}`;
+    return `https://wa.me/${number}?text=${encodeURIComponent(body)}`;
 }
 export function telUri(phone) {
     return `tel:${dialable(phone)}`;

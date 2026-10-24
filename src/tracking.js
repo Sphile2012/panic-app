@@ -2,7 +2,7 @@ import { DB_CONFIGURED, getClient } from './db.js';
 const TOKEN_KEY = 'pr_track_token';
 const ACTIVE_KEY = 'pr_track_active';
 const INTERVAL_MS = 10000;
-const LOW_LEVELS = [0.2, 0.1];
+const LOW_LEVELS = [0.2];
 let timer = null;
 let last = null;
 let error = null;
@@ -64,6 +64,10 @@ async function initBattery() {
     catch {
         batteryRef = null;
     }
+}
+export async function startBatteryMonitoring() {
+    await initBattery();
+    checkBattery();
 }
 function checkBattery() {
     if (!batteryRef)
