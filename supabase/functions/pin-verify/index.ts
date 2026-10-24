@@ -104,7 +104,14 @@ serve(async (req) => {
 
     if (pin1Valid && pin2Valid) {
       // Reset failed attempts on successful login
-      await supabaseAdmin.rpc('clear_pin_failures', { p_user_id: user.id })
+      const { error: clearError } = await supabaseAdmin.rpc('clear_pin_failures', { p_user_id: user.id })
+      if (clearError) {
+        console.error('PIN failure counter reset failed:', clearError.code ?? 'unknown')
+        return new Response(
+          JSON.stringify({ error: 'PIN verification is temporarily unavailable', success: false }),
+          { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
 
       return new Response(
         JSON.stringify({ success: true, message: 'PINs verified successfully' }),

@@ -205,8 +205,6 @@ serve(async (req) => {
       )
     }
 
-    await supabaseAdmin.rpc('clear_pin_failures', { p_user_id: user.id })
-
     return new Response(
       JSON.stringify({ success: true, message: 'PINs updated successfully' }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

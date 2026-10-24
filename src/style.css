@@ -3318,12 +3318,30 @@ body:has(.splash-screen) {
 }
 .disguise-sheet--open { transform: translateY(0); }
 .disguise-sheet-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   font-size: 0.78rem;
   font-weight: 600;
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: .05em;
   margin-bottom: 12px;
+  cursor: pointer;
+  list-style: none;
+}
+.disguise-sheet-title::-webkit-details-marker { display: none; }
+.disguise-sheet-title::after {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+  transition: transform .15s ease;
+}
+.disguise-dropdown:not([open]) .disguise-sheet-title::after {
+  transform: rotate(-45deg);
 }
 .disguise-sheet-grid {
   display: grid;
@@ -4241,6 +4259,60 @@ select:focus-visible {
     border-color: color-mix(in srgb, var(--accent) 24%, var(--border));
     box-shadow: 0 9px 24px rgba(28, 24, 36, .08);
   }
+}
+
+.live-location-screen {
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 18px;
+  background: #fff;
+}
+
+.live-location-screen .live-intro {
+  margin: 18px 0 4px;
+  color: #292432;
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+.live-location-screen .live-location-card {
+  margin: 0;
+  padding: 8px 0;
+  border: 1px solid #e9e3ee;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: none;
+}
+
+.live-location-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 26px;
+  color: #17141c;
+  font-size: 16px;
+}
+
+.live-location-detail {
+  margin: 8px 12px 0;
+  color: #5b5562;
+  font-size: 14px;
+}
+
+.live-location-screen .live-location-toggle {
+  min-height: 50px;
+  margin-top: 2px;
+  border: 0;
+  border-radius: 13px;
+  background: linear-gradient(105deg, #df36a7 0%, #7949f2 100%);
+  box-shadow: 0 8px 18px rgba(145, 66, 208, .2);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.live-location-screen .live-location-toggle:hover {
+  background: linear-gradient(105deg, #cf2c98 0%, #6940df 100%);
 }
 
 :root,

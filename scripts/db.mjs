@@ -11,6 +11,9 @@ const postconditionSql = `
 select 'devices RLS|' || coalesce((select relrowsecurity::text from pg_class where oid = to_regclass('public.devices')), 'false')
 union all select 'alert log RLS|' || coalesce((select relrowsecurity::text from pg_class where oid = to_regclass('public.alert_logs')), 'false')
 union all select 'live track RLS|' || coalesce((select relrowsecurity::text from pg_class where oid = to_regclass('public.live_tracks')), 'false')
+union all select 'trusted contacts RLS|' || coalesce((select relrowsecurity::text from pg_class where oid = to_regclass('public.trusted_contacts')), 'false')
+union all select 'emergency sessions RLS|' || coalesce((select relrowsecurity::text from pg_class where oid = to_regclass('public.emergency_sessions')), 'false')
+union all select 'emergency location RLS|' || coalesce((select relrowsecurity::text from pg_class where oid = to_regclass('public.emergency_location_updates')), 'false')
 union all select 'device ownership policy|' || exists (
   select 1 from pg_policies
   where schemaname = 'public' and tablename = 'devices' and policyname = 'devices_owner'
@@ -74,6 +77,18 @@ union all select 'anonymous tracking write denied|' || (not has_function_privile
 union all select 'anonymous tracking read|' || has_function_privilege('anon', to_regprocedure('public.get_track(text)'), 'EXECUTE')::text
 union all select 'anonymous direct location access denied|' || (not has_table_privilege(
   'anon', to_regclass('public.live_tracks'), 'SELECT'
+))::text
+union all select 'anonymous emergency table access denied|' || (
+  not has_table_privilege('anon', 'public.trusted_contacts', 'SELECT')
+  and not has_table_privilege('anon', 'public.emergency_sessions', 'SELECT')
+  and not has_table_privilege('anon', 'public.emergency_location_updates', 'SELECT')
+  and not has_table_privilege('anon', 'public.emergency_location_updates', 'INSERT')
+)::text
+union all select 'authenticated tracking stop|' || has_function_privilege(
+  'authenticated', to_regprocedure('public.stop_track(text)'), 'EXECUTE'
+)::text
+union all select 'anonymous tracking stop denied|' || (not has_function_privilege(
+  'anon', to_regprocedure('public.stop_track(text)'), 'EXECUTE'
 ))::text
 union all select 'validated device check|' || coalesce((
   select convalidated::text from pg_constraint

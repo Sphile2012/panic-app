@@ -41,9 +41,19 @@ test('PIN changes require recent Supabase authentication and normalized answers'
   assert.match(change, /Date\.now\(\) \/ 1000 - 300/);
   assert.match(change, /answer\.normalize\('NFKC'\)/);
   assert.match(change, /bcrypt\.compare/);
-  assert.match(change, /rpc\('clear_pin_failures'/);
+  assert.match(change, /failed_attempts: 0/);
+  assert.match(change, /locked_until: null/);
+  assert.doesNotMatch(change, /rpc\('clear_pin_failures'/);
   assert.match(change, /body\.new_pin1 !== body\.confirm_pin1/);
   assert.match(change, /body\.new_pin2 !== body\.confirm_pin2/);
+});
+
+test('PIN setup requires recent authentication and verification reports counter reset failures', () => {
+  assert.match(setup, /payload\.auth_time/);
+  assert.match(setup, /Date\.now\(\) \/ 1000 - 300/);
+  assert.match(setup, /hasRecentAuthentication\(req\.headers\.get\('Authorization'\)\)/);
+  assert.match(verify, /const \{ error: clearError \} = await supabaseAdmin\.rpc\('clear_pin_failures'/);
+  assert.match(verify, /if \(clearError\)[\s\S]*?status: 503[\s\S]*?success: false/);
 });
 
 test('setup validates PIN confirmations and status exposes no credential hashes', () => {

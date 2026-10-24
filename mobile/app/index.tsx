@@ -183,6 +183,16 @@ export default function HomeScreen() {
                 {backendBusy && <ActivityIndicator color={colors.accent} />}
                 <Text style={styles.statusText}>{backendStatus}</Text>
               </View>
+              <Link href="/emergency" asChild>
+                <Pressable style={styles.emergencyButton} accessibilityRole="button">
+                  <Text style={styles.emergencyButtonText}>Emergency SOS</Text>
+                </Pressable>
+              </Link>
+              <Link href="/circle" asChild>
+                <Pressable style={styles.secondaryButton} accessibilityRole="button">
+                  <Text style={styles.secondaryButtonText}>Trusted circle</Text>
+                </Pressable>
+              </Link>
               <Pressable style={styles.secondaryButton} onPress={checkBackend} disabled={backendBusy}>
                 <Text style={styles.secondaryButtonText}>Check connection</Text>
               </Pressable>
@@ -267,7 +277,7 @@ export default function HomeScreen() {
         <View style={styles.infoCard}>
           <Text style={styles.infoTitle}>About this mobile build</Text>
           <Text style={styles.body}>
-            This build provides Supabase account sign-in and Express API verification. Safety plans, trusted contacts, and alert sending are not available here yet. It is not an emergency service.
+            Emergency records and trusted contacts are stored in your account. GPS is foreground-only, and alerts open an SMS composer for you to review. Panic Ring is not an emergency response service.
           </Text>
         </View>
 
@@ -313,6 +323,11 @@ const styles = StyleSheet.create({
     borderWidth: 1, justifyContent: 'center', marginTop: 20, minHeight: 48,
   },
   secondaryButtonText: { color: colors.accent, fontSize: 15, fontWeight: '700' },
+  emergencyButton: {
+    alignItems: 'center', backgroundColor: colors.danger, borderRadius: 12,
+    justifyContent: 'center', marginTop: 20, minHeight: 54,
+  },
+  emergencyButtonText: { color: colors.surface, fontSize: 17, fontWeight: '800' },
   textButton: { alignItems: 'center', marginTop: 18, paddingVertical: 8 },
   textButtonText: { color: colors.accent, fontSize: 14, fontWeight: '600', textAlign: 'center' },
   statusRow: { alignItems: 'center', flexDirection: 'row', gap: 10, marginTop: 18 },

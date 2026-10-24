@@ -291,7 +291,7 @@ export function buildSmsBody(contactName, locationText, locationShared, notes = 
     const notesSection = notes.length
         ? `\n\nSaved notes:\n${notes.map(note => `${note.title}\nCreated: ${formatNoteTimestamp(note.createdAt)}\nLast updated: ${formatNoteTimestamp(note.updatedAt)}\n${note.body}`).join('\n\n')}`
         : '';
-    const footer = `If you cannot reach them: SAPS 10111 | GBV Command Centre 0800 428 428`;
+    const footer = `Please call the police now: SAPS 10111. If you cannot reach them, contact the GBV Command Centre: 0800 428 428.`;
     return `${header}\n\n${loc}${notesSection}\n\n${footer}`;
 }
 export function formatNoteTimestamp(timestamp: number): string {

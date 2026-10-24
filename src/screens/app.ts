@@ -153,18 +153,20 @@ export function renderApp(root) {
       </div>
 
       <div class="disguise-sheet" id="disguise-sheet" aria-hidden="true">
-        <p class="disguise-sheet-title">Choose disguise screen</p>
-        <div class="disguise-sheet-grid">
-          ${DISGUISE_OPTIONS.map(d => `
-            <button
-              class="ap-disguise-card ${appearance.disguise === d.id ? 'ap-disguise-card--active' : ''}"
-              data-disguise="${d.id}">
-              <span class="ap-disguise-icon">${d.preview}</span>
-              <span class="ap-disguise-label">${d.label}</span>
-              ${appearance.disguise === d.id ? '<span class="ap-disguise-check">✓ Active</span>' : ''}
-            </button>
-          `).join('')}
-        </div>
+        <details class="disguise-dropdown" open>
+          <summary class="disguise-sheet-title">Choose disguise screen</summary>
+          <div class="disguise-sheet-grid">
+            ${DISGUISE_OPTIONS.map(d => `
+              <button
+                class="ap-disguise-card ${appearance.disguise === d.id ? 'ap-disguise-card--active' : ''}"
+                data-disguise="${d.id}">
+                <span class="ap-disguise-icon">${d.preview}</span>
+                <span class="ap-disguise-label">${d.label}</span>
+                ${appearance.disguise === d.id ? '<span class="ap-disguise-check">✓ Active</span>' : ''}
+              </button>
+            `).join('')}
+          </div>
+        </details>
         <button class="disguise-sheet-close" id="disguise-close" aria-label="Close">Close</button>
       </div>
 

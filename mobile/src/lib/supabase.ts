@@ -1,11 +1,18 @@
 import 'react-native-url-polyfill/auto';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { secureSessionStorage } from './secure-session-storage';
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL?.trim();
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY?.trim();
 
 let client: SupabaseClient | undefined;
+const volatileStorage = new Map<string, string>();
+const browserSessionStorage = {
+  getItem: async (key: string) => volatileStorage.get(key) ?? null,
+  setItem: async (key: string, value: string) => { volatileStorage.set(key, value); },
+  removeItem: async (key: string) => { volatileStorage.delete(key); },
+};
 
 export function isSupabaseConfigured(): boolean {
   if (!supabaseUrl || !supabaseAnonKey) return false;
@@ -25,10 +32,10 @@ export function getSupabaseClient(): SupabaseClient {
   if (!client) {
     client = createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
-        storage: AsyncStorage,
+        storage: Platform.OS === 'web' ? browserSessionStorage : secureSessionStorage,
         flowType: 'pkce',
         autoRefreshToken: true,
-        persistSession: true,
+        persistSession: Platform.OS !== 'web',
         detectSessionInUrl: false,
       },
     });

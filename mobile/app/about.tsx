@@ -33,18 +33,19 @@ export default function AboutScreen() {
 
       <Section title="What Panic Ring does">
         <Text style={styles.body}>
-          This mobile build provides Supabase account sign-in and verifies the signed-in account through the Express API. Safety plans, trusted contacts, and alert sending are not available here yet.
+          The mobile build provides Supabase account sign-in, a trusted contact list, emergency session records, and foreground-only location updates. An SOS can open an SMS composer for you to review and send.
         </Text>
-        <Bullet>Do not enter or store sensitive safety information in this build.</Bullet>
+        <Bullet>Trusted contacts and emergency location records are stored under your account’s row-level security policies.</Bullet>
         <Bullet>Account sign-in uses Supabase Auth.</Bullet>
         <Bullet>The API verifies account tokens with Supabase Auth.</Bullet>
       </Section>
 
       <Section title="What it does not do">
         <Bullet>Panic Ring is not an emergency response service.</Bullet>
-        <Bullet>It does not dispatch help or monitor your safety.</Bullet>
-        <Bullet>It does not contact anyone without your action.</Bullet>
-        <Bullet>It cannot guarantee message delivery or network access.</Bullet>
+        <Bullet>Location tracking stops when the app leaves the foreground; background tracking is not enabled.</Bullet>
+        <Bullet>SMS is not sent until you confirm it in your messaging app, and delivery is not confirmed.</Bullet>
+        <Bullet>It does not capture photos or dispatch help.</Bullet>
+        <Bullet>Tracking links are bearer links; anyone with a link can view its current location while it is active.</Bullet>
       </Section>
 
       <Section title="Your data">
