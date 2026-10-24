@@ -34,6 +34,8 @@ type AppState = {
 
 function buildInitialState(): AppState {
     const pub = loadPublicSync();
+    // Show welcome screen with signup/login options
+    const initialScreen = 'welcome';
     return {
         screen: 'welcome',
         profile: { ...EMPTY_PROFILE },
@@ -361,6 +363,53 @@ class Store {
             return false;
         }
     }
+    async changePinsWithRecovery(answer1: string, answer2: string, newPin1: string, newPin2: string): Promise<boolean> {
+        if (!/^\d{4}$/.test(newPin1) || !/^\d{4}$/.test(newPin2) || newPin1 === newPin2)
+            return false;
+        try {
+            const pinHash = await hashPin(newPin1);
+            const decoyHash = await hashPin(newPin2);
+            const answers = [answer1, answer2];
+            const vault = await recoverVaultWithAnswers(answers, pinHash, decoyHash, this.state.autoLockMinutes);
+            if (!vault)
+                return false;
+            await savePinHashes(pinHash, decoyHash, this.state.autoLockMinutes, this.state.pinHash);
+            this.state = {
+                ...this.state,
+                pinHash,
+            };
+            this.notify();
+            return true;
+        }
+        catch {
+            return false;
+        }
+    }
+    async recoverPinWithAnswers(answer1: string, answer2: string, newPin1: string, newPin2: string): Promise<boolean> {
+        if (!/^\d{4}$/.test(newPin1) || !/^\d{4}$/.test(newPin2) || newPin1 === newPin2)
+            return false;
+        try {
+            const pinHash = await hashPin(newPin1);
+            const decoyHash = await hashPin(newPin2);
+            const answers = [answer1, answer2];
+            const vault = await recoverVaultWithAnswers(answers, pinHash, decoyHash, this.state.autoLockMinutes);
+            if (!vault)
+                return false;
+            await savePinHashes(pinHash, decoyHash, this.state.autoLockMinutes);
+            this.state = {
+                ...this.state,
+                pinHash,
+                isFirstRun: false,
+                recoveryConfigured: true,
+                pinFailures: 0,
+            };
+            this.notify();
+            return true;
+        }
+        catch {
+            return false;
+        }
+    }
     async factoryReset() {
         if (this.lockTimer)
             clearTimeout(this.lockTimer);
@@ -376,11 +425,13 @@ class Store {
         this.state = {
             ...this.state,
             authEmail: email,
-            ...(identityChanged ? { accountPinUnlocked: false, accountPinQuestionIds: [] } : {}),
+            ...(identityChanged ? { accountPinUnlocked: true, accountPinQuestionIds: [] } : {}),
         };
-        if (email && !this.state.accountPinUnlocked &&
+        if (email && this.state.isFirstRun &&
             (previousEmail !== email || ['welcome', 'login', 'signup', 'verify-email'].includes(this.state.screen))) {
-            this.state = { ...this.state, screen: 'account-pin-check' };
+            this.state = { ...this.state, screen: 'setup-pin' };
+        } else if (email && !this.state.isFirstRun) {
+            this.state = { ...this.state, screen: 'calculator' };
         } else if (!email && previousEmail && ['account-pin-check', 'account-pin-setup', 'account-pin-login'].includes(this.state.screen)) {
             this.state = { ...this.state, screen: buildInitialState().screen };
         }

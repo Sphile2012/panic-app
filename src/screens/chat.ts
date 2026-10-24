@@ -39,7 +39,7 @@ export function renderChat(root: HTMLElement) {
     root.innerHTML = `
     <div class="screen chat-screen">
       <header class="screen-header">
-        <button class="btn-back-small" id="btn-back" aria-label="Back">Back</button>
+        <button class="btn-back-small" id="btn-back" aria-label="Back">←</button>
         <div>
           <h2 class="screen-title">${esc(t('chat.title'))}</h2>
           <p class="chat-sub">${esc(t('chat.sub'))}</p>

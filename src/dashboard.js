@@ -1,4 +1,4 @@
-import { getClient, DB_CONFIGURED, sendEmailAuthOtp, verifyEmailOtp, signOut, getUser, onAuthStateChange, fetchAlertStats, fetchRecentAlerts, } from './db.js';
+import { getClient, DB_CONFIGURED, sendEmailAuthOtp, setAuthenticatedPassword, signInWithPassword, verifyEmailOtp, signOut, getUser, onAuthStateChange, fetchAlertStats, fetchRecentAlerts, } from './db.js';
 import './strings/groupC.js';
 import { loadAppearance, applyAppearance } from './theme.js';
 import { t, getLang, languageBarHtml, bindLanguageBar } from './i18n.js';
@@ -174,43 +174,20 @@ function wireAuthForms() {
     });
     const loginForm = document.getElementById('dash-login-form');
     const liEmailEl = document.getElementById('d-li-email');
+    const liPasswordEl = document.getElementById('d-li-password');
     const liErrEl = document.getElementById('d-li-error');
     const liSubmitBtn = document.getElementById('d-li-submit');
-    if (!loginForm || !liEmailEl || !liErrEl || !liSubmitBtn)
+    const liEmailCodeBtn = document.getElementById('d-li-email-code');
+    if (!loginForm || !liEmailEl || !liPasswordEl || !liErrEl || !liSubmitBtn || !liEmailCodeBtn)
         return;
     let loginEmail = '';
     let loginAwaitingOtp = false;
-    loginForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        if (loginAwaitingOtp) {
-            const code = loginForm.querySelector('#d-li-otp');
-            const verifyButton = loginForm.querySelector('#d-li-submit');
-            verifyButton.disabled = true;
-            const result = await verifyEmailOtp(loginEmail, code.value);
-            verifyButton.disabled = false;
-            liErrEl.style.color = result.error ? '' : 'var(--safe)';
-            if (result.error)
-                liErrEl.textContent = formatAuthError(result.error);
-            return;
-        }
-        liErrEl.textContent = '';
-        const email = resolveIdentifier(liEmailEl.value);
-        if (!email) {
-            liErrEl.textContent = 'Enter a valid email address.';
-            return;
-        }
-        liSubmitBtn.disabled = true;
-        liSubmitBtn.textContent = 'Sending code…';
-        const { error } = await sendEmailAuthOtp(email, 'login');
-        liSubmitBtn.disabled = false;
-        liSubmitBtn.textContent = 'Email me a sign-in code';
-        if (error) {
-            liErrEl.textContent = formatAuthError(error);
-            return;
-        }
+    const addLoginOtpInput = (email) => {
         loginEmail = email;
         loginAwaitingOtp = true;
         liEmailEl.hidden = true;
+        liPasswordEl.hidden = true;
+        liEmailCodeBtn.hidden = true;
         const codeInput = document.createElement('input');
         codeInput.className = 'text-input';
         codeInput.id = 'd-li-otp';
@@ -237,25 +214,81 @@ function wireAuthForms() {
         liErrEl.style.color = 'var(--safe)';
         liErrEl.textContent = 'Enter the verification code sent to your email.';
         codeInput.focus();
+    };
+    liEmailCodeBtn.addEventListener('click', async () => {
+        liErrEl.textContent = '';
+        const email = resolveIdentifier(liEmailEl.value);
+        if (!email) {
+            liErrEl.textContent = 'Enter a valid email address.';
+            return;
+        }
+        liEmailCodeBtn.disabled = true;
+        const { error } = await sendEmailAuthOtp(email, 'login');
+        liEmailCodeBtn.disabled = false;
+        if (error) {
+            liErrEl.textContent = formatAuthError(error);
+            return;
+        }
+        addLoginOtpInput(email);
+    });
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (loginAwaitingOtp) {
+            const code = loginForm.querySelector('#d-li-otp');
+            const verifyButton = loginForm.querySelector('#d-li-submit');
+            verifyButton.disabled = true;
+            const result = await verifyEmailOtp(loginEmail, code.value);
+            verifyButton.disabled = false;
+            liErrEl.style.color = result.error ? '' : 'var(--safe)';
+            if (result.error)
+                liErrEl.textContent = formatAuthError(result.error, 'otp');
+            return;
+        }
+        liErrEl.textContent = '';
+        const email = resolveIdentifier(liEmailEl.value);
+        if (!email) {
+            liErrEl.textContent = 'Enter a valid email address.';
+            return;
+        }
+        if (!liPasswordEl.value) {
+            liErrEl.textContent = 'Enter your password.';
+            return;
+        }
+        liSubmitBtn.disabled = true;
+        const { error } = await signInWithPassword(email, liPasswordEl.value);
+        liSubmitBtn.disabled = false;
+        if (error) {
+            liErrEl.textContent = formatAuthError(error, 'password');
+        }
     });
     const signupForm = document.getElementById('dash-signup-form');
     const suEmailEl = document.getElementById('d-su-email');
+    const suPasswordEl = document.getElementById('d-su-password');
+    const suPasswordConfirmEl = document.getElementById('d-su-password-confirm');
     const suErrEl = document.getElementById('d-su-error');
     const suSubmitBtn = document.getElementById('d-su-submit');
-    if (!signupForm || !suEmailEl || !suErrEl || !suSubmitBtn)
+    if (!signupForm || !suEmailEl || !suPasswordEl || !suPasswordConfirmEl || !suErrEl || !suSubmitBtn)
         return;
     let signupEmail = '';
+    let signupPassword = '';
     let signupAwaitingOtp = false;
+    let signupEmailVerified = false;
     signupForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         if (signupAwaitingOtp) {
             const code = signupForm.querySelector('#d-su-otp');
             suSubmitBtn.disabled = true;
-            const result = await verifyEmailOtp(signupEmail, code.value);
+            const verification = signupEmailVerified ? { error: null } : await verifyEmailOtp(signupEmail, code.value);
+            if (!verification.error)
+                signupEmailVerified = true;
+            const result = verification.error ? verification : await setAuthenticatedPassword(signupPassword);
             suSubmitBtn.disabled = false;
             suErrEl.style.color = result.error ? '' : 'var(--safe)';
-            if (result.error)
-                suErrEl.textContent = formatAuthError(result.error);
+            if (result.error) {
+                suErrEl.textContent = formatAuthError(result.error, 'otp');
+                return;
+            }
+            signupPassword = '';
             return;
         }
         suErrEl.textContent = '';
@@ -263,6 +296,14 @@ function wireAuthForms() {
         const email = resolveIdentifier(suEmailEl.value);
         if (!email) {
             suErrEl.textContent = 'Enter a valid email address.';
+            return;
+        }
+        if (suPasswordEl.value.length < 8) {
+            suErrEl.textContent = 'Use a password with at least 8 characters.';
+            return;
+        }
+        if (suPasswordEl.value !== suPasswordConfirmEl.value) {
+            suErrEl.textContent = 'Passwords do not match.';
             return;
         }
         suSubmitBtn.disabled = true;
@@ -275,8 +316,11 @@ function wireAuthForms() {
             return;
         }
         signupEmail = email;
+        signupPassword = suPasswordEl.value;
         signupAwaitingOtp = true;
         suEmailEl.hidden = true;
+        suPasswordEl.hidden = true;
+        suPasswordConfirmEl.hidden = true;
         const codeInput = document.createElement('input');
         codeInput.className = 'text-input';
         codeInput.id = 'd-su-otp';

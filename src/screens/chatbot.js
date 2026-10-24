@@ -75,6 +75,18 @@ function detectIntent(input, lang) {
         return 'battery';
     if (/(unsafe|danger|afraid|help|scared|safe|ngingezwa ukuphepha|ngingaphephile|sa sireletseha|kotsi|onveilig|gevaar)/.test(lower))
         return 'unsafe';
+    if (/(password|forgot password|reset password|change password|iphasiwedi|phasiwedi|wachtwoord)/.test(lower))
+        return 'password';
+    if (/(pin|forgot pin|change pin|reset pin|i-pin|unlock)/.test(lower))
+        return 'pin';
+    if (/(disguise|calculator|hide|theme|fikisa|sivalo|vermom)/.test(lower))
+        return 'disguise';
+    if (/(contacts|emergency contact|trusted|umuntu|kontak|nommer)/.test(lower))
+        return 'contacts';
+    if (/(signup|sign up|register|create account|bhalisela|registreer)/.test(lower))
+        return 'signup';
+    if (/(login|sign in|account|ukungena|teken in)/.test(lower))
+        return 'login';
     return 'default';
 }
 export function renderChatbot(root) {

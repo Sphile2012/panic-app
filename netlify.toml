@@ -2,10 +2,11 @@
   command = "npm run build:web"
   publish = "dist"
 
- [build.environment]
-   NODE_VERSION = "20"
-   VITE_AUTH_ENABLED = "true"
-   VITE_FRONTEND_URL = "https://panic-ring-app.netlify.app"
+[build.environment]
+  NODE_VERSION = "20"
+  VITE_AUTH_ENABLED = "true"
+  VITE_FRONTEND_URL = "https://panic-ring-app.netlify.app"
+  SECRETS_SCAN_OMIT_PATHS = "netlify.toml"
 
 [[redirects]]
  from = "/api/what3words"

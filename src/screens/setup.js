@@ -158,8 +158,58 @@ export function renderSetupPin(root) {
             return;
         }
         errorEl.textContent = '';
+        // Store PINs temporarily for cloud backup after security questions
+        sessionStorage.setItem('temp_pin1', pin);
+        sessionStorage.setItem('temp_pin2', decoy);
         await store.savePin(pin, decoy);
-        store.navigateTo('recovery-setup');
+        store.navigateTo('setup-disguise');
+    });
+}
+export function renderSetupDisguise(root) {
+    const currentAppearance = loadAppearance();
+    root.innerHTML = `
+    <div class="screen setup-screen">
+      <div class="setup-logo">○</div>
+      <h1 class="setup-title">Choose your disguise</h1>
+      <p class="setup-body">
+        Select how the app should appear when locked. This disguise helps protect your privacy.
+      </p>
+
+      <form class="setup-form" id="setup-disguise-form">
+        <div class="disguise-options">
+          ${DISGUISE_OPTIONS.map(option => `
+            <label class="disguise-option ${currentAppearance.disguise === option.id ? 'disguise-option--selected' : ''}">
+              <input type="radio" name="disguise" value="${option.id}" ${currentAppearance.disguise === option.id ? 'checked' : ''} />
+              <div class="disguise-option-preview">${option.preview}</div>
+              <div class="disguise-option-label">${option.label}</div>
+              <div class="disguise-option-desc">${option.description}</div>
+            </label>
+          `).join('')}
+        </div>
+
+        <button class="btn-primary" type="submit">Continue →</button>
+      </form>
+    </div>
+  `;
+    const form = root.querySelector('#setup-disguise-form');
+    const options = root.querySelectorAll('.disguise-option');
+    // Handle option selection visual feedback
+    options.forEach(option => {
+        option.addEventListener('click', () => {
+            options.forEach(opt => opt.classList.remove('disguise-option--selected'));
+            option.classList.add('disguise-option--selected');
+        });
+    });
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const selected = form.querySelector('input[name="disguise"]:checked');
+        if (selected) {
+            const appearance = loadAppearance();
+            appearance.disguise = selected.value;
+            saveAppearance(appearance);
+            applyAppearance(appearance);
+        }
+        store.navigateTo('setup-profile');
     });
 }
 export function renderSetupProfile(root) {
@@ -278,9 +328,34 @@ export function renderRecoverySetup(root, nextScreen) {
             error.textContent = 'Both security answers are required.';
             return;
         }
+        const submitBtn = form.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Saving...';
         try {
+            // Save security questions locally
             await setRecoveryQuestions(store.getState().pinHash, [questionOne.value, questionTwo.value], [answerOne.value, answerTwo.value]);
             store.markRecoveryConfigured();
+            // Attempt cloud backup if user is authenticated
+            if (DB_CONFIGURED && !existing) {
+                const user = await getUser();
+                if (user) {
+                    const pin1 = sessionStorage.getItem('temp_pin1');
+                    const pin2 = sessionStorage.getItem('temp_pin2');
+                    if (pin1 && pin2) {
+                        const { error: cloudError } = await setupPinsInCloud(pin1, pin2, questionOne.value, answerOne.value, questionTwo.value, answerTwo.value);
+                        if (!cloudError) {
+                            setCloudBackup(true);
+                            console.log('[setup] Cloud backup enabled');
+                        }
+                        else {
+                            console.warn('[setup] Cloud backup failed:', cloudError);
+                        }
+                        // Clear temporary PIN storage
+                        sessionStorage.removeItem('temp_pin1');
+                        sessionStorage.removeItem('temp_pin2');
+                    }
+                }
+            }
             store.navigateTo(nextScreen);
         }
         catch {
@@ -386,7 +461,7 @@ export function renderPinRecovery(root) {
 export function renderSetupContacts(root, notice = '') {
     const { contacts } = store.getState();
     root.innerHTML = `
-    <div class="screen setup-screen">
+    <div class="screen setup-screen setup-contacts-modern">
       <h2 class="setup-title">Add trusted contacts</h2>
       <p class="setup-body">
         Add people who will receive SMS alerts when you activate the panic button. You can add more contacts later from settings.
@@ -409,16 +484,16 @@ export function renderSetupContacts(root, notice = '') {
       <form class="setup-form" id="add-contact-form" autocomplete="off">
         <label class="field-label" for="contact-name">Contact name</label>
         <input
-          class="text-input"
+          class="text-input modern-input"
           id="contact-name"
           type="text"
           placeholder="Full name"
           autocomplete="off"
           required />
 
-        <label class="field-label" for="contact-phone">Phone number</label>
+        <label class="field-label" for="contact-phone">PHONE NUMBER</label>
         <input
-          class="text-input"
+          class="text-input modern-input"
           id="contact-phone"
           type="tel"
           placeholder="+27 82 123 4567"
@@ -473,6 +548,21 @@ export function renderSetupContacts(root, notice = '') {
         }
     });
     const addForm = root.querySelector('#add-contact-form');
+    const photoInput = root.querySelector('#contact-photo');
+    const photoPreview = root.querySelector('#photo-preview');
+    let photoDataUrl;
+    // Handle photo upload preview
+    photoInput?.addEventListener('change', (e) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                photoDataUrl = event.target?.result;
+                photoPreview.innerHTML = `<img src="${photoDataUrl}" alt="Preview" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;" />`;
+            };
+            reader.readAsDataURL(file);
+        }
+    });
     if (addForm) {
         const nameInput = root.querySelector('#contact-name');
         const phoneInput = root.querySelector('#contact-phone');

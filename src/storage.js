@@ -144,6 +144,7 @@ export async function savePinHashes(pinHash, decoyHash, autoLock, oldPinHash) {
     pub.pinHash = pinHash;
     pub.decoyHash = decoyHash;
     pub.autoLock = autoLock;
+    pub.cloudBackup = pub.cloudBackup ?? false;
     savePublic(pub);
     if (vault)
         await saveVault(vault, pinHash);
@@ -153,11 +154,20 @@ export async function savePinHashes(pinHash, decoyHash, autoLock, oldPinHash) {
         return upsertDevice({
             user_id: user.id,
             device_id: getDeviceId(),
-            pin_hash: pinHash,
-            decoy_hash: decoyHash,
             auto_lock: autoLock,
         }).catch(() => { });
     }).catch(() => { });
+}
+export function hasCloudBackup() {
+    const pub = loadPublic();
+    return pub?.cloudBackup === true;
+}
+export function setCloudBackup(enabled) {
+    const pub = loadPublic();
+    if (pub) {
+        pub.cloudBackup = enabled;
+        savePublic(pub);
+    }
 }
 export function saveAutoLock(minutes) {
     const pub = loadPublic();

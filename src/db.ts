@@ -33,7 +33,7 @@ export function getClient() {
     }
     return _client;
 }
-export async function sendEmailAuthOtp(email: string, purpose: 'signup' | 'login' | 'reauth', fullName = '') {
+export async function sendEmailAuthOtp(email: string, purpose: 'signup' | 'login' | 'reauth', fullName = '', phone = '') {
     const verifiedEmail = resolveIdentifier(email);
     if (!verifiedEmail)
         return { error: 'Enter a valid email address.' };
@@ -44,13 +44,49 @@ export async function sendEmailAuthOtp(email: string, purpose: 'signup' | 'login
             email: verifiedEmail,
             options: {
                 shouldCreateUser: purpose === 'signup',
-                ...(fullName ? { data: { full_name: fullName } } : {}),
+                ...(fullName ? { data: { full_name: fullName, phone: phone } } : {}),
             },
         });
         return { error: error?.message ?? null };
     }
     catch {
         return { error: 'Unable to reach the secure account service. Continue in offline mode.' };
+    }
+}
+
+export async function sendPhoneAuthOtp(phone: string, purpose: 'signup' | 'login') {
+    // Normalize phone number (remove spaces, ensure + prefix)
+    const normalizedPhone = phone.replace(/\s/g, '').startsWith('+') ? phone.replace(/\s/g, '') : `+${phone.replace(/\s/g, '')}`;
+    
+    if (!DB_CONFIGURED)
+        return { error: 'Secure account service unavailable. Continue in offline mode.' };
+    try {
+        const { error } = await getClient().auth.signInWithOtp({
+            phone: normalizedPhone,
+            options: {
+                shouldCreateUser: purpose === 'signup',
+            },
+        });
+        return { error: error?.message ?? null };
+    }
+    catch {
+        return { error: 'Unable to reach the secure account service. Continue in offline mode.' };
+    }
+}
+
+export async function verifyPhoneOtp(phone: string, token: string) {
+    const normalizedPhone = phone.replace(/\s/g, '').startsWith('+') ? phone.replace(/\s/g, '') : `+${phone.replace(/\s/g, '')}`;
+    
+    if (!token.trim())
+        return { error: 'Enter the verification code sent to your phone.' };
+    if (!DB_CONFIGURED)
+        return { error: 'Secure account service unavailable. Continue in offline mode.' };
+    try {
+        const { error } = await getClient().auth.verifyOtp({ phone: normalizedPhone, token: token.trim(), type: 'sms' });
+        return { error: error?.message ?? null };
+    }
+    catch {
+        return { error: 'Unable to verify the phone code. Request a new code and try again.' };
     }
 }
 export async function verifyEmailOtp(email: string, token: string) {
@@ -98,6 +134,35 @@ export async function signInWithPassword(email: string, password: string) {
         return { error: 'Unable to sign in. Check your connection and try again.' };
     }
 }
+export async function sendPasswordResetEmail(email: string) {
+    const verifiedEmail = resolveIdentifier(email);
+    if (!verifiedEmail)
+        return { error: 'Enter a valid email address.' };
+    if (!DB_CONFIGURED)
+        return { error: 'Secure account service unavailable. Continue in offline mode.' };
+    try {
+        const { error } = await getClient().auth.resetPasswordForEmail(verifiedEmail, {
+            redirectTo: getFrontendRedirectUrl(FRONTEND_URL, window.location.origin, 'recovery'),
+        });
+        return { error: error?.message ?? null };
+    }
+    catch {
+        return { error: 'Unable to send password reset email. Check your connection and try again.' };
+    }
+}
+export async function updatePassword(newPassword: string) {
+    if (!newPassword || newPassword.length < 8)
+        return { error: 'Password must be at least 8 characters.' };
+    if (!DB_CONFIGURED)
+        return { error: 'Secure account service unavailable. Continue in offline mode.' };
+    try {
+        const { error } = await getClient().auth.updateUser({ password: newPassword });
+        return { error: error?.message ?? null };
+    }
+    catch {
+        return { error: 'Unable to update password. Please try again.' };
+    }
+}
 export async function signInWithGoogle() {
     if (!DB_CONFIGURED)
         return { error: 'Secure account service unavailable. Continue in offline mode.' };
@@ -106,14 +171,36 @@ export async function signInWithGoogle() {
             provider: 'google',
             options: { redirectTo: getFrontendRedirectUrl(FRONTEND_URL, window.location.origin) },
         });
-        if (error && /unsupported provider/i.test(error.message)) {
-            return { error: 'Google sign-in is not enabled yet. Enable the Google provider in Supabase Auth settings.' };
+        if (error) {
+            if (/unsupported provider|not enabled/i.test(error.message)) {
+                return { error: 'Google Sign-In is currently disabled. Please use email/password authentication instead.' };
+            }
+            return { error: error.message };
         }
-        return { error: error?.message ?? null };
+        return { error: null };
+    }
+    catch (err) {
+        console.warn('[auth] Google sign-in error:', err);
+        return { error: 'Google Sign-In is currently unavailable. Please use email/password authentication.' };
+    }
+}
+
+export async function isGoogleAuthEnabled(): Promise<boolean> {
+    if (!DB_CONFIGURED) return false;
+    try {
+        // Try to check if Google provider is available
+        // This is a simple check - if it fails, we know it's not enabled
+        const testResult = await getClient().auth.signInWithOAuth({
+            provider: 'google',
+            options: { 
+                redirectTo: getFrontendRedirectUrl(FRONTEND_URL, window.location.origin),
+                skipBrowserRedirect: true // Don't actually redirect
+            },
+        });
+        return !testResult.error || !/unsupported provider|not enabled/i.test(testResult.error.message || '');
     }
     catch {
-        console.warn('[auth] Google sign-in could not reach the account service.');
-        return { error: 'Unable to start Google sign-in. Check your connection and try again.' };
+        return false;
     }
 }
 export type PinOperationResult = {
@@ -327,5 +414,158 @@ export async function fetchRecentAlerts(limit = 10) {
     }
     catch {
         return [];
+    }
+}
+
+// PIN Authentication Functions
+const EDGE_FUNCTION_URL = '';
+
+export async function setupPinsInCloud(
+    pin1: string,
+    pin2: string,
+    question1_id: string,
+    answer1: string,
+    question2_id: string,
+    answer2: string
+): Promise<{ error: string | null; success: boolean }> {
+    if (!DB_CONFIGURED)
+        return { error: 'Cloud backup not available in offline mode', success: false };
+
+    try {
+        const session = await getSession();
+        if (!session?.access_token) {
+            return { error: 'Authentication required for cloud backup', success: false };
+        }
+
+        const response = await fetch(`${EDGE_FUNCTION_URL}/functions/v1/pin-setup`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${session.access_token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                pin1,
+                pin2,
+                question1_id,
+                question1_answer: answer1,
+                question2_id,
+                question2_answer: answer2,
+            }),
+        });
+
+        const result = await response.json();
+        if (!response.ok) {
+            return { error: result.error || 'Failed to save PINs', success: false };
+        }
+
+        return { error: null, success: true };
+    }
+    catch (error) {
+        console.error('[pin-setup] Error:', error);
+        return { error: 'Unable to connect to cloud backup service', success: false };
+    }
+}
+
+export async function verifyPinsInCloud(
+    pin1: string,
+    pin2: string
+): Promise<{ error: string | null; success: boolean; locked?: boolean; remainingAttempts?: number }> {
+    if (!DB_CONFIGURED)
+        return { error: 'Cloud verification not available', success: false };
+
+    try {
+        const session = await getSession();
+        if (!session?.access_token) {
+            return { error: 'Authentication required', success: false };
+        }
+
+        const response = await fetch(`${EDGE_FUNCTION_URL}/functions/v1/pin-verify`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${session.access_token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ pin1, pin2 }),
+        });
+
+        const result = await response.json();
+        if (!response.ok) {
+            return {
+                error: result.error || 'PIN verification failed',
+                success: false,
+                locked: result.locked,
+                remainingAttempts: result.remainingAttempts,
+            };
+        }
+
+        return { error: null, success: true };
+    }
+    catch (error) {
+        console.error('[pin-verify] Error:', error);
+        return { error: 'Unable to verify PINs', success: false };
+    }
+}
+
+export async function changePinsInCloud(
+    answer1: string,
+    answer2: string,
+    newPin1: string,
+    newPin2: string
+): Promise<{ error: string | null; success: boolean }> {
+    if (!DB_CONFIGURED)
+        return { error: 'Cloud backup not available', success: false };
+
+    try {
+        const session = await getSession();
+        if (!session?.access_token) {
+            return { error: 'Authentication required', success: false };
+        }
+
+        const response = await fetch(`${EDGE_FUNCTION_URL}/functions/v1/pin-change`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${session.access_token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                answer1,
+                answer2,
+                new_pin1: newPin1,
+                new_pin2: newPin2,
+            }),
+        });
+
+        const result = await response.json();
+        if (!response.ok) {
+            return { error: result.error || 'Failed to change PINs', success: false };
+        }
+
+        return { error: null, success: true };
+    }
+    catch (error) {
+        console.error('[pin-change] Error:', error);
+        return { error: 'Unable to change PINs', success: false };
+    }
+}
+
+export async function checkCloudPinsExist(): Promise<boolean> {
+    if (!DB_CONFIGURED)
+        return false;
+
+    try {
+        const user = await getUser();
+        if (!user)
+            return false;
+
+        const { data, error } = await getClient()
+            .from('user_pins')
+            .select('id')
+            .eq('user_id', user.id)
+            .maybeSingle();
+
+        return !error && data !== null;
+    }
+    catch {
+        return false;
     }
 }

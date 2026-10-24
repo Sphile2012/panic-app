@@ -127,6 +127,7 @@ export function renderSetupPin(root: HTMLElement) {
     const decoyInput = root.querySelector('#decoy-input') as HTMLInputElement;
     const decoyConfirm = root.querySelector('#decoy-confirm') as HTMLInputElement;
     const errorEl = root.querySelector('#pin-error') as HTMLElement;
+    
     form.addEventListener('submit', async (e: SubmitEvent) => {
         e.preventDefault();
         const pin = pinInput.value.trim();
@@ -163,6 +164,11 @@ export function renderSetupPin(root: HTMLElement) {
             return;
         }
         errorEl.textContent = '';
+        
+        // Store PINs temporarily for cloud backup after security questions
+        sessionStorage.setItem('temp_pin1', pin);
+        sessionStorage.setItem('temp_pin2', decoy);
+        
         await store.savePin(pin, decoy);
         store.navigateTo('recovery-setup');
     });
@@ -287,13 +293,56 @@ export function renderRecoverySetup(root: HTMLElement, nextScreen: string) {
             error.textContent = 'Both security answers are required.';
             return;
         }
+        
+        const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Saving...';
+        
         try {
+            // Save security questions locally
             await setRecoveryQuestions(store.getState().pinHash, [questionOne.value, questionTwo.value], [answerOne.value, answerTwo.value]);
-          store.markRecoveryConfigured();
+            store.markRecoveryConfigured();
+            
+            // Attempt cloud backup if user is authenticated
+            if (DB_CONFIGURED && !existing) {
+                const user = await getUser();
+                if (user) {
+                    const pin1 = sessionStorage.getItem('temp_pin1');
+                    const pin2 = sessionStorage.getItem('temp_pin2');
+                    
+                    if (pin1 && pin2) {
+                        const { error: cloudError } = await setupPinsInCloud(
+                            pin1,
+                            pin2,
+                            questionOne.value,
+                            answerOne.value,
+                            questionTwo.value,
+                            answerTwo.value
+                        );
+                        
+                        if (!cloudError) {
+                            setCloudBackup(true);
+                            console.log('[setup] Cloud backup enabled');
+                        } else {
+                            console.warn('[setup] Cloud backup failed:', cloudError);
+                        }
+                        
+                        // Clear temporary PIN storage
+                        sessionStorage.removeItem('temp_pin1');
+                        sessionStorage.removeItem('temp_pin2');
+                    }
+                }
+            }
+            
             store.navigateTo(nextScreen);
         }
-        catch {
+        catch (err) {
             error.textContent = 'Security questions could not be saved. Please try again.';
+            console.error('[recovery-setup] Error:', err);
+        }
+        finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = existing ? 'Save security questions' : 'Continue to contacts →';
         }
     });
 }
@@ -388,22 +437,60 @@ export function renderPinRecovery(root: HTMLElement) {
             error.textContent = 'Secret PIN and decoy PIN must be different.';
             return;
         }
-        const recovered = await store.recoverPins(answers.map(answer => answer.value), pin, decoy);
-        if (!recovered)
-            error.textContent = 'Your answers are incorrect. Please check your answers and try again.';
+        
+        const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Verifying...';
+        error.textContent = '';
+        
+        try {
+            // Attempt cloud PIN change if cloud backup is enabled
+            if (hasCloudBackup() && DB_CONFIGURED) {
+                const user = await getUser();
+                if (user) {
+                    const { error: cloudError } = await changePinsInCloud(
+                        answers[0].value,
+                        answers[1].value,
+                        pin,
+                        decoy
+                    );
+                    
+                    if (cloudError) {
+                        error.textContent = cloudError;
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = 'Verify and reset PINs';
+                        return;
+                    }
+                }
+            }
+            
+            // Recover local PINs
+            const recovered = await store.recoverPins(answers.map(answer => answer.value), pin, decoy);
+            if (!recovered) {
+                error.textContent = 'Your answers are incorrect. Please check your answers and try again.';
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Verify and reset PINs';
+            }
+        }
+        catch (err) {
+            error.textContent = 'Failed to reset PINs. Please try again.';
+            console.error('[pin-recovery] Error:', err);
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Verify and reset PINs';
+        }
     });
 }
 
 export function renderSetupContacts(root: HTMLElement, notice = '') {
     const { contacts } = store.getState();
     root.innerHTML = `
-    <div class="screen setup-screen">
+    <div class="screen setup-screen setup-contacts-modern">
       <h2 class="setup-title">Add trusted contacts</h2>
       <p class="setup-body">
         Add people who will receive SMS alerts when you activate the panic button. You can add more contacts later from settings.
       </p>
 
-      <ul class="contact-list" id="setup-contact-list">
+      <ul class="contact-list contact-list-modern" id="setup-contact-list">
         ${contacts.map(c => `
           <li class="contact-item">
             <div class="contact-avatar">${escapeHtml(c.initials)}</div>
@@ -417,19 +504,32 @@ export function renderSetupContacts(root: HTMLElement, notice = '') {
         `).join('')}
       </ul>
 
-      <form class="setup-form" id="add-contact-form" autocomplete="off">
-        <label class="field-label" for="contact-name">Contact name</label>
+      <form class="setup-form setup-form-modern" id="add-contact-form" autocomplete="off">
+        <div class="contact-photo-upload">
+          <input type="file" id="contact-photo" accept="image/*" class="photo-input" />
+          <label for="contact-photo" class="photo-upload-label">
+            <div class="photo-preview" id="photo-preview">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 8v8M8 12h8"/>
+              </svg>
+              <span>Add Photo</span>
+            </div>
+          </label>
+        </div>
+
+        <label class="field-label" for="contact-name">CONTACT NAME</label>
         <input
-          class="text-input"
+          class="text-input modern-input"
           id="contact-name"
           type="text"
           placeholder="Full name"
           autocomplete="off"
           required />
 
-        <label class="field-label" for="contact-phone">Phone number</label>
+        <label class="field-label" for="contact-phone">PHONE NUMBER</label>
         <input
-          class="text-input"
+          class="text-input modern-input"
           id="contact-phone"
           type="tel"
           placeholder="+27 82 123 4567"
@@ -483,6 +583,23 @@ export function renderSetupContacts(root: HTMLElement, notice = '') {
         }
     });
     const addForm = root.querySelector('#add-contact-form') as HTMLFormElement | null;
+    const photoInput = root.querySelector('#contact-photo') as HTMLInputElement;
+    const photoPreview = root.querySelector('#photo-preview') as HTMLElement;
+    let photoDataUrl: string | undefined;
+
+    // Handle photo upload preview
+    photoInput?.addEventListener('change', (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          photoDataUrl = event.target?.result as string;
+          photoPreview.innerHTML = `<img src="${photoDataUrl}" alt="Preview" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;" />`;
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
     if (addForm) {
       const nameInput = root.querySelector('#contact-name') as HTMLInputElement;
       const phoneInput = root.querySelector('#contact-phone') as HTMLInputElement;

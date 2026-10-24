@@ -21,6 +21,12 @@ export function renderSettings(root: HTMLElement) {
       </section>
 
       <section class="settings-section">
+        <h3 class="settings-section-title">Security</h3>
+        <p class="settings-section-body">Change your PINs (requires security questions)</p>
+        <button class="btn-secondary-outline" id="btn-change-pins">Change PINs</button>
+      </section>
+
+      <section class="settings-section">
         <h3 class="settings-section-title">PIN recovery</h3>
         <p class="settings-section-body">${hasRecovery ? 'Recovery questions are set up.' : 'Set recovery questions to restore your encrypted data if you forget your PINs.'}</p>
         <button class="btn-secondary-outline" id="btn-recovery-settings">${hasRecovery ? 'Change recovery questions' : 'Set recovery questions'}</button>
@@ -171,4 +177,195 @@ export function renderSettings(root: HTMLElement) {
         if (confirm('Delete ALL data? This cannot be undone.'))
             await store.factoryReset();
     });
+}
+
+
+// Change PIN screen with security question verification
+export function renderChangePins(root: HTMLElement) {
+  const questionIds = getRecoveryQuestionIds();
+  if (!questionIds || questionIds.length < 2) {
+    root.innerHTML = `
+      <div class="screen setup-screen">
+        <h1 class="setup-title">Change PINs</h1>
+        <p class="setup-body">You must set up security questions first before you can change your PINs.</p>
+        <button class="btn-primary" id="btn-setup-recovery">Set up security questions</button>
+        <button class="btn-secondary-outline" id="btn-back-settings">Back to Settings</button>
+      </div>`;
+    root.querySelector('#btn-setup-recovery')?.addEventListener('click', () => store.navigateTo('recovery-settings'));
+    root.querySelector('#btn-back-settings')?.addEventListener('click', () => store.navigateTo('settings'));
+    return;
+  }
+
+  const questions = questionIds.map(id => PIN_QUESTIONS[id] || id);
+  
+  root.innerHTML = `
+    <div class="screen setup-screen">
+      <h1 class="setup-title">Change PINs</h1>
+      <p class="setup-body">Answer your security questions to change your PINs</p>
+
+      <form class="setup-form" id="change-pins-form" autocomplete="off">
+        <label class="field-label">${questions[0]}</label>
+        <input class="text-input" id="answer-1" type="text" autocomplete="off" required />
+
+        <label class="field-label">${questions[1]}</label>
+        <input class="text-input" id="answer-2" type="text" autocomplete="off" required />
+
+        <label class="field-label" for="new-pin1">New Secret PIN (4 digits)</label>
+        <input class="pin-input" id="new-pin1" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" autocomplete="new-password" required />
+
+        <label class="field-label" for="new-pin1-confirm">Confirm Secret PIN</label>
+        <input class="pin-input" id="new-pin1-confirm" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" autocomplete="new-password" required />
+
+        <label class="field-label" for="new-pin2">New Decoy PIN (4 digits)</label>
+        <input class="pin-input" id="new-pin2" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" autocomplete="new-password" required />
+
+        <label class="field-label" for="new-pin2-confirm">Confirm Decoy PIN</label>
+        <input class="pin-input" id="new-pin2-confirm" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" autocomplete="new-password" required />
+
+        <p class="setup-hint" id="change-pin-error" aria-live="polite"></p>
+
+        <button class="btn-primary" type="submit">Change PINs</button>
+        <button class="btn-secondary-outline" id="btn-cancel" type="button">Cancel</button>
+      </form>
+    </div>`;
+
+  root.querySelector('#btn-cancel')?.addEventListener('click', () => store.navigateTo('settings'));
+
+  const form = root.querySelector('#change-pins-form') as HTMLFormElement;
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const answer1 = (root.querySelector('#answer-1') as HTMLInputElement).value.trim();
+    const answer2 = (root.querySelector('#answer-2') as HTMLInputElement).value.trim();
+    const newPin1 = (root.querySelector('#new-pin1') as HTMLInputElement).value.trim();
+    const newPin1Confirm = (root.querySelector('#new-pin1-confirm') as HTMLInputElement).value.trim();
+    const newPin2 = (root.querySelector('#new-pin2') as HTMLInputElement).value.trim();
+    const newPin2Confirm = (root.querySelector('#new-pin2-confirm') as HTMLInputElement).value.trim();
+    const errorEl = root.querySelector('#change-pin-error') as HTMLElement;
+
+    if (newPin1.length !== 4 || !/^\d{4}$/.test(newPin1)) {
+      errorEl.textContent = 'Secret PIN must be exactly 4 digits.';
+      return;
+    }
+    if (newPin1 !== newPin1Confirm) {
+      errorEl.textContent = 'Secret PINs do not match.';
+      return;
+    }
+    if (newPin2.length !== 4 || !/^\d{4}$/.test(newPin2)) {
+      errorEl.textContent = 'Decoy PIN must be exactly 4 digits.';
+      return;
+    }
+    if (newPin2 !== newPin2Confirm) {
+      errorEl.textContent = 'Decoy PINs do not match.';
+      return;
+    }
+    if (newPin1 === newPin2) {
+      errorEl.textContent = 'Secret PIN and Decoy PIN must be different.';
+      return;
+    }
+
+    // Verify security answers and change PINs
+    const success = await store.changePinsWithRecovery(answer1, answer2, newPin1, newPin2);
+    if (!success) {
+      errorEl.textContent = 'Security answers are incorrect. Please try again.';
+      return;
+    }
+
+    errorEl.style.color = 'var(--safe)';
+    errorEl.textContent = '✓ PINs changed successfully!';
+    setTimeout(() => store.navigateTo('settings'), 1500);
+  });
+}
+
+// PIN Recovery screen (Forgot PIN)
+export function renderPinRecovery(root: HTMLElement) {
+  const questionIds = getRecoveryQuestionIds();
+  if (!questionIds || questionIds.length < 2) {
+    root.innerHTML = `
+      <div class="screen setup-screen">
+        <h1 class="setup-title">PIN Recovery</h1>
+        <p class="setup-body">No security questions found. You cannot recover your PIN without them.</p>
+        <button class="btn-primary" id="btn-back-calc">Back</button>
+      </div>`;
+    root.querySelector('#btn-back-calc')?.addEventListener('click', () => store.navigateTo('calculator'));
+    return;
+  }
+
+  const questions = questionIds.map(id => PIN_QUESTIONS[id] || id);
+  
+  root.innerHTML = `
+    <div class="screen setup-screen">
+      <h1 class="setup-title">Forgot PIN?</h1>
+      <p class="setup-body">Answer your security questions to reset your PINs</p>
+
+      <form class="setup-form" id="pin-recovery-form" autocomplete="off">
+        <label class="field-label">${questions[0]}</label>
+        <input class="text-input" id="recovery-answer-1" type="text" autocomplete="off" required />
+
+        <label class="field-label">${questions[1]}</label>
+        <input class="text-input" id="recovery-answer-2" type="text" autocomplete="off" required />
+
+        <label class="field-label" for="recovery-pin1">New Secret PIN (4 digits)</label>
+        <input class="pin-input" id="recovery-pin1" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" autocomplete="new-password" required />
+
+        <label class="field-label" for="recovery-pin1-confirm">Confirm Secret PIN</label>
+        <input class="pin-input" id="recovery-pin1-confirm" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" autocomplete="new-password" required />
+
+        <label class="field-label" for="recovery-pin2">New Decoy PIN (4 digits)</label>
+        <input class="pin-input" id="recovery-pin2" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" autocomplete="new-password" required />
+
+        <label class="field-label" for="recovery-pin2-confirm">Confirm Decoy PIN</label>
+        <input class="pin-input" id="recovery-pin2-confirm" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" autocomplete="new-password" required />
+
+        <p class="setup-hint" id="recovery-error" aria-live="polite"></p>
+
+        <button class="btn-primary" type="submit">Reset PINs</button>
+        <button class="btn-secondary-outline" id="btn-cancel-recovery" type="button">Cancel</button>
+      </form>
+    </div>`;
+
+  root.querySelector('#btn-cancel-recovery')?.addEventListener('click', () => store.navigateTo('calculator'));
+
+  const form = root.querySelector('#pin-recovery-form') as HTMLFormElement;
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const answer1 = (root.querySelector('#recovery-answer-1') as HTMLInputElement).value.trim();
+    const answer2 = (root.querySelector('#recovery-answer-2') as HTMLInputElement).value.trim();
+    const newPin1 = (root.querySelector('#recovery-pin1') as HTMLInputElement).value.trim();
+    const newPin1Confirm = (root.querySelector('#recovery-pin1-confirm') as HTMLInputElement).value.trim();
+    const newPin2 = (root.querySelector('#recovery-pin2') as HTMLInputElement).value.trim();
+    const newPin2Confirm = (root.querySelector('#recovery-pin2-confirm') as HTMLInputElement).value.trim();
+    const errorEl = root.querySelector('#recovery-error') as HTMLElement;
+
+    if (newPin1.length !== 4 || !/^\d{4}$/.test(newPin1)) {
+      errorEl.textContent = 'Secret PIN must be exactly 4 digits.';
+      return;
+    }
+    if (newPin1 !== newPin1Confirm) {
+      errorEl.textContent = 'Secret PINs do not match.';
+      return;
+    }
+    if (newPin2.length !== 4 || !/^\d{4}$/.test(newPin2)) {
+      errorEl.textContent = 'Decoy PIN must be exactly 4 digits.';
+      return;
+    }
+    if (newPin2 !== newPin2Confirm) {
+      errorEl.textContent = 'Decoy PINs do not match.';
+      return;
+    }
+    if (newPin1 === newPin2) {
+      errorEl.textContent = 'Secret PIN and Decoy PIN must be different.';
+      return;
+    }
+
+    // Verify security answers and reset PINs
+    const success = await store.recoverPinWithAnswers(answer1, answer2, newPin1, newPin2);
+    if (!success) {
+      errorEl.textContent = 'Security answers are incorrect. Please try again.';
+      return;
+    }
+
+    errorEl.style.color = 'var(--safe)';
+    errorEl.textContent = '✓ PINs reset successfully! You can now login.';
+    setTimeout(() => store.navigateTo('calculator'), 2000);
+  });
 }

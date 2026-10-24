@@ -1,7 +1,7 @@
 import './style.css';
 import { PIN_FAILURE_LIMIT, store } from './state.js';
 import { renderCalculator } from './screens/calculator.js';
-import { renderSetupPin, renderSetupProfile, renderSetupContacts, renderRecoverySetup, renderPinRecovery } from './screens/setup.js';
+import { renderSetupPin, renderSetupDisguise, renderSetupProfile, renderSetupContacts, renderRecoverySetup } from './screens/setup.js';
 import { renderApp } from './screens/app.js';
 import { renderContacts } from './screens/contacts.js';
 import { renderLocation } from './screens/location.js';
@@ -14,7 +14,7 @@ import { renderSending, renderSent, updateSendingList } from './screens/sending.
 import { renderNotes, renderNoteEdit } from './screens/notes.js';
 import { renderSafetyPlan } from './screens/safetyPlan.js';
 import { renderSupport } from './screens/support.js';
-import { renderSettings } from './screens/settings.js';
+import { renderSettings, renderChangePins, renderPinRecovery } from './screens/settings.js';
 import { renderAppearance } from './screens/appearance.js';
 import { renderBudget } from './screens/disguise/budget.js';
 import { renderWeather } from './screens/disguise/weather.js';
@@ -89,6 +89,9 @@ function render(screen: string) {
         case 'setup-pin':
             renderSetupPin(appRoot);
             break;
+        case 'setup-disguise':
+            renderSetupDisguise(appRoot);
+            break;
         case 'setup-profile':
             renderSetupProfile(appRoot);
             break;
@@ -100,9 +103,6 @@ function render(screen: string) {
             break;
         case 'recovery-settings':
             renderRecoverySetup(appRoot, 'settings');
-            break;
-        case 'pin-recovery':
-            renderPinRecovery(appRoot);
             break;
         case 'app':
             renderApp(appRoot);
@@ -172,6 +172,12 @@ function render(screen: string) {
             break;
         case 'settings':
             renderSettings(appRoot);
+            break;
+        case 'change-pins':
+            renderChangePins(appRoot);
+            break;
+        case 'pin-recovery':
+            renderPinRecovery(appRoot);
             break;
         case 'appearance':
             renderAppearance(appRoot);

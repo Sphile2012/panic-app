@@ -14,7 +14,7 @@ import { renderSending, renderSent, updateSendingList } from './screens/sending.
 import { renderNotes, renderNoteEdit } from './screens/notes.js';
 import { renderSafetyPlan } from './screens/safetyPlan.js';
 import { renderSupport } from './screens/support.js';
-import { renderSettings } from './screens/settings.js';
+import { renderSettings, renderChangePins, renderPinRecovery } from './screens/settings.js';
 import { renderAppearance } from './screens/appearance.js';
 import { renderBudget } from './screens/disguise/budget.js';
 import { renderWeather } from './screens/disguise/weather.js';
@@ -96,9 +96,6 @@ function render(screen) {
         case 'recovery-settings':
             renderRecoverySetup(appRoot, 'settings');
             break;
-        case 'pin-recovery':
-            renderPinRecovery(appRoot);
-            break;
         case 'app':
             renderApp(appRoot);
             break;
@@ -167,6 +164,12 @@ function render(screen) {
             break;
         case 'settings':
             renderSettings(appRoot);
+            break;
+        case 'change-pins':
+            renderChangePins(appRoot);
+            break;
+        case 'pin-recovery':
+            renderPinRecovery(appRoot);
             break;
         case 'appearance':
             renderAppearance(appRoot);

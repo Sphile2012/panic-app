@@ -31,29 +31,28 @@ export function renderLocation(root) {
         <div class="loc-accuracy-bar">
           <div class="loc-accuracy-fill" id="loc-accuracy-fill"></div>
         </div>
-        <p class="loc-accuracy-text" id="loc-accuracy-text">Acquiring GPS…</p>
-      </div>
+        
+        <button class="location-menu-btn" id="btn-menu-location" aria-label="Menu">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 12h18M3 6h18M3 18h18"/>
+          </svg>
+        </button>
 
-      <div class="loc-address-card" id="loc-address-card" style="display:none">
-        <div class="loc-address-body">
-          <span class="loc-address-line" id="loc-address-line"></span>
-          <span class="loc-accuracy-badge" id="loc-accuracy-badge"></span>
+        <div class="location-accuracy-badge" id="location-accuracy">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+          </svg>
+          <span id="accuracy-text">Acquiring GPS...</span>
         </div>
-        <a class="loc-maps-link" id="loc-maps-link" target="_blank" rel="noopener">
-          Open in Maps
-        </a>
       </div>
 
-      <div class="location-actions" id="location-actions">
-        <button class="btn-location btn-location--share" id="btn-share">
-          Share my location
-        </button>
-        <button class="btn-location btn-location--skip" id="btn-skip">
-          Send without location
-        </button>
-      </div>
-
-      <p class="loc-error" id="loc-error" aria-live="assertive"></p>
+      <div class="location-bottom-sheet">
+        <div class="location-sheet-handle"></div>
+        
+        <h2 class="location-sheet-title">Share your location?</h2>
+        <p class="location-sheet-body">
+          Your contacts will see where you are. Tap share to send GPS coordinates.
+        </p>
 
       <details class="loc-info-details">
         <summary class="loc-info-summary">What location data is sent?</summary>
@@ -76,8 +75,22 @@ export function renderLocation(root) {
             provider.
           </p>
         </div>
-      </details>
 
+        <div class="location-actions-modern">
+          <button class="btn-share-location" id="btn-share">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 8v8M8 12h8"/>
+            </svg>
+            Share my location
+          </button>
+          <button class="btn-skip-location" id="btn-skip">
+            Send without location
+          </button>
+        </div>
+
+        <p class="location-error" id="loc-error" aria-live="assertive"></p>
+      </div>
     </div>
   `;
     const accuracyWrap = root.querySelector('#loc-accuracy-wrap');
@@ -93,6 +106,7 @@ export function renderLocation(root) {
     const errorEl = root.querySelector('#loc-error');
     const shareBtn = root.querySelector('#btn-share');
     const skipBtn = root.querySelector('#btn-skip');
+    const menuBtn = root.querySelector('#btn-menu-location');
     let watchId = null;
     let lastMappedPosition = null;
     function updateMap(lat, lng, accuracy, force = false) {
@@ -114,10 +128,9 @@ export function renderLocation(root) {
     function startWatch() {
         if (!('geolocation' in navigator))
             return;
-        accuracyWrap.style.display = 'block';
+        addressCard.style.display = 'flex';
         watchId = navigator.geolocation.watchPosition(pos => {
             const acc = Math.round(pos.coords.accuracy);
-            const pct = Math.max(10, Math.min(100, Math.round((1 - (acc / 200)) * 100)));
             const label = acc <= 10 ? 'Excellent' : acc <= 30 ? 'Good' : acc <= 100 ? 'Fair' : 'Poor';
             const colour = acc <= 10 ? '#1abf7a' : acc <= 30 ? '#59c93d' : acc <= 100 ? '#e09a19' : '#e0193a';
             accuracyFill.style.width = `${pct}%`;
@@ -149,7 +162,6 @@ export function renderLocation(root) {
         shareBtn.disabled = true;
         skipBtn.disabled = true;
         errorEl.textContent = '';
-        accuracyWrap.style.display = 'block';
         accuracyText.textContent = 'Getting a fresh, accurate GPS fix…';
         const result = await getLocation(12000);
         if (result.ok === true) {
@@ -164,7 +176,6 @@ export function renderLocation(root) {
             store.startSending();
         }
         else {
-            accuracyWrap.style.display = 'none';
             shareBtn.disabled = false;
             skipBtn.disabled = false;
             errorEl.textContent = result.reason;
