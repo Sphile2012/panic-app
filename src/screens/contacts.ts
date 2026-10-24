@@ -13,16 +13,18 @@ function escapeHtml(value: string): string {
 function renderContact(contact: ReturnType<typeof store.getState>['contacts'][number]): string {
   const name = escapeHtml(contact.name);
   const phone = escapeHtml(contact.phone);
+  const relationship = escapeHtml(contact.relationship || 'Other');
   const digits = contact.phone.replace(/\D/g, '');
   const smsPhone = contact.phone.replace(/[^\d+]/g, '');
   const message = encodeURIComponent(`Hi ${contact.name}, I may need your help. Please contact me.`);
 
   return `
-    <li class="contact-item contact-item--manage" data-search="${escapeHtml(`${contact.name} ${contact.phone}`.toLowerCase())}">
+    <li class="contact-item contact-item--manage" data-search="${escapeHtml(`${contact.name} ${contact.phone} ${contact.relationship || 'Other'}`.toLowerCase())}">
       <div class="contact-avatar" aria-hidden="true">${escapeHtml(contact.initials)}</div>
       <div class="contact-info">
         <span class="contact-name">${name}</span>
         <span class="contact-phone">${phone}</span>
+        <span class="contact-relationship">${relationship}</span>
         <div class="contact-manage-actions">
           <button class="contact-edit" data-id="${escapeHtml(contact.id)}" type="button">Edit</button>
           <button class="contact-delete" data-id="${escapeHtml(contact.id)}" type="button">Remove</button>
@@ -40,7 +42,7 @@ function renderContact(contact: ReturnType<typeof store.getState>['contacts'][nu
   `;
 }
 
-export function renderContacts(root: HTMLElement): void {
+export function renderContacts(root: HTMLElement, notice = ''): void {
   const { contacts } = store.getState();
   root.innerHTML = `
     <div class="screen contacts-screen">
@@ -65,6 +67,7 @@ export function renderContacts(root: HTMLElement): void {
           </div>
           <span class="contacts-count">${contacts.length}/5</span>
         </div>
+        <p class="setup-hint" id="contact-action-success" role="status" aria-live="polite">${escapeHtml(notice)}</p>
         <p class="setup-hint" id="contact-action-error" role="alert" aria-live="polite"></p>
         <ul class="contact-list" id="contact-list">
           ${contacts.length === 0
@@ -81,6 +84,12 @@ export function renderContacts(root: HTMLElement): void {
         <input class="text-input" id="c-name" type="text" placeholder="Full name" required />
         <label class="field-label" for="c-phone">Phone</label>
         <input class="text-input" id="c-phone" type="tel" placeholder="+27 82 123 4567" required />
+        <label class="field-label" for="c-relationship">Relationship</label>
+        <select class="text-input" id="c-relationship" required>
+          <option value="" disabled selected>Choose a relationship</option>
+          <option>Family member</option><option>Friend</option><option>Partner</option>
+          <option>Caregiver</option><option>Neighbour</option><option>Colleague</option><option>Other</option>
+        </select>
         <p class="setup-hint" id="c-error" aria-live="polite"></p>
         <div class="form-row">
           <button class="btn-primary" type="submit" id="btn-save">Add</button>
@@ -97,6 +106,7 @@ export function renderContacts(root: HTMLElement): void {
   const editIdEl = root.querySelector<HTMLInputElement>('#edit-id');
   const nameEl = root.querySelector<HTMLInputElement>('#c-name');
   const phoneEl = root.querySelector<HTMLInputElement>('#c-phone');
+  const relationshipEl = root.querySelector<HTMLSelectElement>('#c-relationship');
   const errorEl = root.querySelector<HTMLElement>('#c-error');
   const formTitle = root.querySelector<HTMLElement>('#form-title');
   const saveBtn = root.querySelector<HTMLButtonElement>('#btn-save');
@@ -144,6 +154,7 @@ export function renderContacts(root: HTMLElement): void {
       editIdEl.value = contact.id;
       nameEl.value = contact.name;
       phoneEl.value = contact.phone;
+      relationshipEl.value = contact.relationship || 'Other';
       formTitle.textContent = 'Edit contact';
       saveBtn.textContent = 'Save';
       cancelBtn.style.display = 'inline-flex';
@@ -157,7 +168,7 @@ export function renderContacts(root: HTMLElement): void {
         actionError.textContent = '';
         void store.deleteContact(contact.id).then(saved => {
           if (!saved) throw new Error('Contact could not be removed.');
-          store.navigateTo('contacts');
+          renderContacts(root, 'Contact removed.');
         }).catch(() => {
           deleteBtn.disabled = false;
           actionError.textContent = 'Could not remove this contact. Please try again.';
@@ -180,12 +191,17 @@ export function renderContacts(root: HTMLElement): void {
     event.preventDefault();
     const name = nameEl.value.trim();
     const phone = phoneEl.value.trim();
+    const relationship = relationshipEl.value;
     if (!name) {
       errorEl.textContent = 'Enter a name.';
       return;
     }
     if (!phone) {
       errorEl.textContent = 'Enter a phone number.';
+      return;
+    }
+    if (!relationship) {
+      errorEl.textContent = 'Choose your relationship to this contact.';
       return;
     }
     const digits = phone.replace(/\D/g, '');
@@ -199,13 +215,13 @@ export function renderContacts(root: HTMLElement): void {
     try {
       let saved: boolean;
       if (editIdEl.value) {
-        saved = await store.updateContact(editIdEl.value, name, phone);
+        saved = await store.updateContact(editIdEl.value, name, phone, relationship);
         if (!saved) {
           errorEl.textContent = 'This contact could not be updated. Check the number and try again.';
           return;
         }
       } else {
-        saved = await store.addContact(name, phone);
+        saved = await store.addContact(name, phone, relationship);
         if (!saved) {
           errorEl.textContent = store.getState().contacts.length >= 5
             ? 'You can add up to 5 trusted contacts.'
@@ -213,7 +229,7 @@ export function renderContacts(root: HTMLElement): void {
           return;
         }
       }
-      store.navigateTo('contacts');
+      renderContacts(root, editIdEl.value ? 'Contact successfully updated.' : 'Contact successfully added.');
     } catch {
       errorEl.textContent = 'Could not save this contact on this device. Please try again.';
     } finally {

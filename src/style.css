@@ -331,6 +331,16 @@ html[data-photo-background="true"] .phone-screen > .screen { background: transpa
   color: var(--text);
   word-break: break-all;
 }
+.calc-pin-toggle {
+  padding: 4px 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: .76rem;
+  cursor: pointer;
+}
+.calc-pin-toggle:hover,
+.calc-pin-toggle:focus-visible { color: var(--accent); }
 .calc-login-error {
   align-self: center;
   margin: 0 16px 4px;
@@ -2432,6 +2442,7 @@ html[data-photo-background="true"] .phone-screen > .screen { background: transpa
 .password-wrap .text-input {
   padding-right: 44px;
 }
+.password-wrap .pin-input { padding-right: 52px; }
 .pw-toggle {
   position: absolute;
   right: 12px;
@@ -3014,6 +3025,16 @@ select:focus-visible {
 }
 
 .contacts-screen .contact-phone { color: #807a90; }
+.contact-relationship {
+  display: block;
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: .72rem;
+}
+.setup-hint[role="status"]:not(:empty) {
+  color: var(--safe);
+  font-weight: 600;
+}
 .contacts-screen .contact-manage-actions { gap: 6px; }
 .contacts-screen .contact-manage-actions .contact-edit,
 .contacts-screen .contact-manage-actions .contact-delete {

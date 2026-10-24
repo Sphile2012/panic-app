@@ -1,5 +1,6 @@
-import { EMPTY_PROFILE, loadPublicSync, loadVault, saveVault, savePinHashes, saveAutoLock, clearAll, hashPin, recoverVaultWithAnswers, uid, initials } from './storage.js';
+import { EMPTY_PROFILE, loadPublicSync, loadPinFailures, savePinFailures, loadVault, saveVault, savePinHashes, saveAutoLock, clearAll, hashPin, recoverVaultWithAnswers, uid, initials } from './storage.js';
 import { DB_CONFIGURED, onAuthStateChange, signOut } from './db.js';
+export const PIN_FAILURE_LIMIT = 3;
 export function hasDistinctPinDigits(pin) {
     return /^\d+$/.test(pin) && new Set(pin).size === pin.length;
 }
@@ -25,36 +26,12 @@ function buildInitialState() {
         editingNoteId: null,
         isFirstRun: pub.pin === '',
         recoveryConfigured: pub.recoveryQuestionIds !== null,
-        pinFailures: 0,
+        pinFailures: loadPinFailures(),
         lastActivityAt: Date.now(),
     };
 }
 class Store {
     constructor() {
-        Object.defineProperty(this, "state", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "listeners", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "lockTimer", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "screenHistory", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
         this.state = buildInitialState();
         this.listeners = [];
         this.lockTimer = null;
@@ -83,6 +60,8 @@ class Store {
         }, mins * 60 * 1000);
     }
     navigateTo(screen) {
+        if (this.state.screen === 'pin-recovery' && this.state.pinFailures >= PIN_FAILURE_LIMIT && screen !== 'pin-recovery')
+            return;
         if (screen !== this.state.screen) {
             if (screen === 'app') {
                 this.screenHistory = [];
@@ -98,6 +77,8 @@ class Store {
         this.notify();
     }
     navigateBack() {
+        if (this.state.screen === 'pin-recovery' && this.state.pinFailures >= PIN_FAILURE_LIMIT)
+            return;
         const previousScreen = this.screenHistory.pop()
             ?? (this.state.screen === 'app' ? 'calculator' : 'welcome');
         this.state = { ...this.state, screen: previousScreen };
@@ -119,6 +100,10 @@ class Store {
         this.notify();
     }
     async evaluatePin() {
+        if (this.state.pinFailures >= PIN_FAILURE_LIMIT) {
+            this.navigateTo('pin-recovery');
+            return null;
+        }
         const pin = this.state.pinBuffer;
         this.clearPin();
         const pub = loadPublicSync();
@@ -131,11 +116,12 @@ class Store {
                 screen: 'app',
                 pinHash: hashed,
                 profile: { ...EMPTY_PROFILE, ...(vault.profile ?? {}) },
-                contacts: vault.contacts.map(c => ({ ...c, status: 'pending' })),
+                contacts: vault.contacts.map(c => ({ ...c, relationship: c.relationship || 'Other', status: 'pending' })),
                 notes: vault.notes,
                 safetyPlan: vault.safetyPlan,
                 pinFailures: 0,
             };
+            savePinFailures(0);
             this.touch();
             this.scheduleAutoLock();
             this.notify();
@@ -143,11 +129,17 @@ class Store {
         }
         if (pub.decoyPin !== '' && hashed === pub.decoyPin) {
             this.screenHistory = [];
-            this.state = { ...this.state, screen: 'decoy', pinFailures: 0 };
+            this.state = { ...this.state, screen: 'decoy' };
             this.notify();
             return 'decoy';
         }
-        this.state = { ...this.state, pinFailures: this.state.pinFailures + 1 };
+        const pinFailures = this.state.pinFailures + 1;
+        savePinFailures(pinFailures);
+        this.state = {
+            ...this.state,
+            pinFailures,
+            ...(pinFailures >= PIN_FAILURE_LIMIT ? { screen: 'pin-recovery' } : {}),
+        };
         this.notify();
         return null;
     }
@@ -177,7 +169,7 @@ class Store {
             await saveVault(vault, this.state.pinHash);
         })().catch(console.error);
     }
-    async addContact(name, phone) {
+    async addContact(name, phone, relationship = 'Other') {
         const cleanName = name.trim();
         const cleanPhone = phone.trim();
         const phoneDigits = cleanPhone.replace(/\D/g, '');
@@ -186,7 +178,7 @@ class Store {
         if (this.state.contacts.some(contact => contact.phone.replace(/\D/g, '') === phoneDigits))
             return false;
         const contact = {
-            id: uid(), name: cleanName, phone: cleanPhone,
+            id: uid(), name: cleanName, phone: cleanPhone, relationship,
             initials: initials(cleanName), status: 'pending',
         };
         const updated = [...this.state.contacts, contact];
@@ -196,7 +188,7 @@ class Store {
         this.notify();
         return true;
     }
-    async updateContact(id, name, phone) {
+    async updateContact(id, name, phone, relationship = 'Other') {
         const cleanName = name.trim();
         const cleanPhone = phone.trim();
         const phoneDigits = cleanPhone.replace(/\D/g, '');
@@ -206,7 +198,7 @@ class Store {
             this.state.contacts.some(contact => contact.id !== id && contact.phone.replace(/\D/g, '') === phoneDigits))
             return false;
         const updated = this.state.contacts.map(c => c.id === id
-            ? { ...c, name: cleanName, phone: cleanPhone, initials: initials(cleanName) }
+            ? { ...c, name: cleanName, phone: cleanPhone, relationship, initials: initials(cleanName) }
             : c);
         await this._saveContacts(updated);
         this.state = { ...this.state, contacts: updated };
@@ -319,13 +311,14 @@ class Store {
                 screen: returnTo,
                 pinHash,
                 profile: { ...EMPTY_PROFILE, ...(vault.profile ?? {}) },
-                contacts: vault.contacts.map(c => ({ ...c, status: 'pending' })),
+                contacts: vault.contacts.map(c => ({ ...c, relationship: c.relationship || 'Other', status: 'pending' })),
                 notes: vault.notes,
                 safetyPlan: vault.safetyPlan,
                 isFirstRun: false,
                 recoveryConfigured: true,
                 pinFailures: 0,
             };
+            savePinFailures(0);
             this.touch();
             this.notify();
             return true;
@@ -372,12 +365,13 @@ class Store {
             ...this.state,
             pinHash,
             profile: { ...EMPTY_PROFILE, ...(vault.profile ?? {}) },
-            contacts: vault.contacts.map(contact => ({ ...contact, status: 'pending' })),
+            contacts: vault.contacts.map(contact => ({ ...contact, relationship: contact.relationship || 'Other', status: 'pending' })),
             notes: vault.notes,
             safetyPlan: vault.safetyPlan,
             pinFailures: 0,
             accountPinUnlocked: true,
         };
+        savePinFailures(0);
         this.notify();
         return true;
     }

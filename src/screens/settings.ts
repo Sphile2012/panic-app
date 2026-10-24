@@ -1,6 +1,7 @@
 import { hasDistinctPinDigits, store } from '../state.js';
 import { getRecoveryQuestionIds } from '../storage.js';
 import { RECOVERY_QUESTIONS } from './setup.js';
+import { wirePasswordToggles } from '../formControls.js';
 export function renderSettings(root: HTMLElement) {
   const { autoLockMinutes } = store.getState();
   const recoveryQuestionIds = getRecoveryQuestionIds();
@@ -55,21 +56,21 @@ export function renderSettings(root: HTMLElement) {
         <form class="setup-form" id="change-pin-form" autocomplete="off">
           ${hasRecovery ? `
           <label class="field-label" for="change-answer-one">${recoveryQuestionLabel(recoveryQuestionIds[0])}</label>
-          <input class="text-input" id="change-answer-one" type="password" autocomplete="off" required />
+          <div class="password-wrap"><input class="text-input" id="change-answer-one" type="password" autocomplete="off" required /><button class="pw-toggle" type="button" data-target="change-answer-one" data-description="first security answer" aria-label="Show first security answer">Show</button></div>
           <label class="field-label" for="change-answer-two">${recoveryQuestionLabel(recoveryQuestionIds[1])}</label>
-          <input class="text-input" id="change-answer-two" type="password" autocomplete="off" required />
+          <div class="password-wrap"><input class="text-input" id="change-answer-two" type="password" autocomplete="off" required /><button class="pw-toggle" type="button" data-target="change-answer-two" data-description="second security answer" aria-label="Show second security answer">Show</button></div>
           <label class="field-label" for="new-pin">New secret PIN</label>
-          <input class="pin-input" id="new-pin" type="password" inputmode="numeric"
-            maxlength="4" pattern="[0-9]{4}" placeholder="4 digits" autocomplete="new-password" required />
+          <div class="password-wrap"><input class="pin-input" id="new-pin" type="password" inputmode="numeric"
+            maxlength="4" pattern="[0-9]{4}" placeholder="4 digits" autocomplete="new-password" required /><button class="pw-toggle" type="button" data-target="new-pin" data-description="new secret PIN" aria-label="Show new secret PIN">Show</button></div>
           <label class="field-label" for="new-pin-confirm">Confirm secret PIN</label>
-          <input class="pin-input" id="new-pin-confirm" type="password" inputmode="numeric"
-            maxlength="4" pattern="[0-9]{4}" placeholder="Re-enter 4 digits" autocomplete="new-password" required />
+          <div class="password-wrap"><input class="pin-input" id="new-pin-confirm" type="password" inputmode="numeric"
+            maxlength="4" pattern="[0-9]{4}" placeholder="Re-enter 4 digits" autocomplete="new-password" required /><button class="pw-toggle" type="button" data-target="new-pin-confirm" data-description="secret PIN confirmation" aria-label="Show secret PIN confirmation">Show</button></div>
           <label class="field-label" for="new-decoy">New decoy PIN</label>
-          <input class="pin-input" id="new-decoy" type="password" inputmode="numeric"
-            maxlength="4" pattern="[0-9]{4}" placeholder="4 digits" autocomplete="new-password" required />
+          <div class="password-wrap"><input class="pin-input" id="new-decoy" type="password" inputmode="numeric"
+            maxlength="4" pattern="[0-9]{4}" placeholder="4 digits" autocomplete="new-password" required /><button class="pw-toggle" type="button" data-target="new-decoy" data-description="new decoy PIN" aria-label="Show new decoy PIN">Show</button></div>
           <label class="field-label" for="new-decoy-confirm">Confirm decoy PIN</label>
-          <input class="pin-input" id="new-decoy-confirm" type="password" inputmode="numeric"
-            maxlength="4" pattern="[0-9]{4}" placeholder="Re-enter 4 digits" autocomplete="new-password" required />
+          <div class="password-wrap"><input class="pin-input" id="new-decoy-confirm" type="password" inputmode="numeric"
+            maxlength="4" pattern="[0-9]{4}" placeholder="Re-enter 4 digits" autocomplete="new-password" required /><button class="pw-toggle" type="button" data-target="new-decoy-confirm" data-description="decoy PIN confirmation" aria-label="Show decoy PIN confirmation">Show</button></div>
           ` : '<p class="settings-section-body">Set up security questions before you can change your PINs.</p>'}
           <p class="setup-hint" id="pin-change-error" aria-live="polite"></p>
           ${hasRecovery ? '<button class="btn-secondary-outline" type="submit">Update PINs</button>' : ''}
@@ -100,6 +101,7 @@ export function renderSettings(root: HTMLElement) {
 
     </div>
   `;
+    wirePasswordToggles(root);
     root.querySelector('#btn-back').addEventListener('click', () => store.navigateTo('app'));
     root.querySelector('#btn-about').addEventListener('click', () => store.navigateTo('about'));
     root.querySelector('#btn-terms').addEventListener('click', () => store.navigateTo('terms'));

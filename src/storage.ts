@@ -6,6 +6,7 @@ export type Contact = {
     id: string;
     name: string;
     phone: string;
+    relationship: string;
     initials: string;
     status: 'pending' | 'sending' | 'opened' | 'failed';
 };
@@ -52,7 +53,17 @@ export type RecoveryRecord = {
 
 const KEY_PUBLIC = 'pr_public';
 const KEY_VAULT = 'pr_vault';
+const KEY_PIN_FAILURES = 'pr_pin_failures';
 export const LANGUAGES = LANGS;
+
+export function loadPinFailures(): number {
+    const failures = Number(localStorage.getItem(KEY_PIN_FAILURES) ?? 0);
+    return Number.isInteger(failures) && failures > 0 ? failures : 0;
+}
+
+export function savePinFailures(failures: number): void {
+    localStorage.setItem(KEY_PIN_FAILURES, String(Math.max(0, Math.floor(failures))));
+}
 
 export function getPreferredLanguage(): string {
     const stored = localStorage.getItem('pr_lang');
@@ -90,7 +101,15 @@ export async function loadVault(pinHash: string): Promise<VaultData> {
         if (!b64)
             return { ...EMPTY_VAULT };
         const data = await decryptJson<VaultData>(b64, pinHash);
-        return data ?? { ...EMPTY_VAULT };
+        if (!data)
+            return { ...EMPTY_VAULT };
+        return {
+            ...data,
+            contacts: data.contacts.map(contact => ({
+                ...contact,
+                relationship: contact.relationship || 'Other',
+            })),
+        };
     }
     catch {
         return { ...EMPTY_VAULT };
@@ -224,6 +243,7 @@ export function saveAutoLock(minutes) {
 export function clearAll() {
     localStorage.removeItem(KEY_PUBLIC);
     localStorage.removeItem(KEY_VAULT);
+    localStorage.removeItem(KEY_PIN_FAILURES);
     localStorage.removeItem('pr_device_id');
 }
 export function initials(name) {

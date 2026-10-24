@@ -1,5 +1,5 @@
 import './style.css';
-import { store } from './state.js';
+import { PIN_FAILURE_LIMIT, store } from './state.js';
 import { renderCalculator } from './screens/calculator.js';
 import { renderSetupPin, renderSetupProfile, renderSetupContacts, renderRecoverySetup, renderPinRecovery } from './screens/setup.js';
 import { renderApp } from './screens/app.js';
@@ -199,6 +199,8 @@ function render(screen: string) {
 
 function attachBackButton(screen: string) {
     if (['welcome', 'calculator', 'decoy', 'sending'].includes(screen))
+        return;
+    if (screen === 'pin-recovery' && store.getState().pinFailures >= PIN_FAILURE_LIMIT)
         return;
     const button = document.createElement('button');
     button.className = 'global-back-button';
