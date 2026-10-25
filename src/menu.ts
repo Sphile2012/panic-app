@@ -63,19 +63,11 @@ function sections(): Array<{ title: string; items: Item[] }> {
     ];
 }
 
-function moreItems(): Item[] {
-    return [
-        { screen: 'subscriptions', label: 'Subscriptions' },
-        { screen: 'watch', label: t('menu.watch') },
-        { screen: 'location', label: 'Find My Phone' },
-    ];
-}
-
 export function closeMenu() {
     document.getElementById('side-menu-root')?.remove();
 }
 
-function renderMenu(moreOnly: boolean) {
+function renderMenu() {
     closeMenu();
     const { screen, profile } = store.getState();
     const displayName = escapeHtml(profile.name || 'Your profile');
@@ -101,13 +93,7 @@ function renderMenu(moreOnly: boolean) {
           `).join('')}
         </div>
       </details>`;
-    const menuItems = moreOnly
-        ? `<div class="side-menu-title">More</div>${moreItems().map(i => `
-            <button class="side-menu-item${i.screen === screen ? ' side-menu-item--active' : ''}" data-go="${i.screen}">
-              <span class="side-menu-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[i.screen] ?? ICONS.guide}</svg></span>
-              <span>${i.label}</span>
-            </button>`).join('')}`
-        : sections().map(s => `
+    const menuItems = sections().map(s => `
           <div class="side-menu-title">${s.title}</div>
           ${s.items.map(i => `
             <button class="side-menu-item${i.screen === screen ? ' side-menu-item--active' : ''}" data-go="${i.screen}">
@@ -117,7 +103,7 @@ function renderMenu(moreOnly: boolean) {
         `).join('');
     wrap.innerHTML = `
     <div class="side-menu-backdrop" data-close="1"></div>
-    <aside class="side-menu" role="dialog" aria-label="${moreOnly ? 'More options' : t('menu.open')}">
+    <aside class="side-menu" role="dialog" aria-label="${t('menu.open')}">
       <div class="side-menu-head">
         <button class="side-menu-user" data-go="profile" type="button">
           <span class="side-menu-avatar">${avatar}</span>
@@ -152,14 +138,14 @@ function renderMenu(moreOnly: boolean) {
         if (disguise) {
             appearance.disguise = disguise.dataset['disguise'] ?? appearance.disguise;
             saveAppearance(appearance);
-            renderMenu(moreOnly);
+            renderMenu();
             return;
         }
         if (el.closest('#side-menu-theme-toggle')) {
             appearance.mode = appearance.mode === 'dark' ? 'light' : 'dark';
             saveAppearance(appearance);
             applyAppearance(appearance);
-            renderMenu(moreOnly);
+            renderMenu();
             return;
         }
         if (el.closest('[data-close]')) {
@@ -182,10 +168,6 @@ function renderMenu(moreOnly: boolean) {
         const go = el.closest<HTMLElement>('[data-go]');
         if (go) {
             closeMenu();
-            if (go.dataset['go'] === 'subscriptions') {
-                alert('Subscriptions are not available yet.');
-                return;
-            }
             store.navigateTo(go.dataset['go'] as string);
             return;
         }
@@ -193,9 +175,9 @@ function renderMenu(moreOnly: boolean) {
 }
 
 export function openMenu() {
-    renderMenu(false);
+    renderMenu();
 }
 
 export function openMoreMenu() {
-    renderMenu(true);
+    renderMenu();
 }

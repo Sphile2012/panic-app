@@ -5,8 +5,9 @@ import { test } from 'node:test';
 const menu = await readFile(new URL('../src/menu.js', import.meta.url), 'utf8');
 const app = await readFile(new URL('../src/screens/app.js', import.meta.url), 'utf8');
 const main = await readFile(new URL('../src/main.js', import.meta.url), 'utf8');
+const welcome = await readFile(new URL('../src/screens/emailAuth.js', import.meta.url), 'utf8');
 
-test('hamburger opens the full menu while More opens only subscriptions, smartwatch, and Find My Phone', () => {
+test('hamburger and More open the same full menu without subscriptions, smartwatch, or Find My Phone', () => {
   assert.match(app, /root\.querySelector\('#btn-menu'\)\.addEventListener\('click', openMenu\)/);
   assert.match(app, /root\.querySelector\('#btn-open-menu'\)\.addEventListener\('click', openMoreMenu\)/);
   assert.doesNotMatch(app, /querySelector\('#btn-profile'\)|querySelector\('#btn-disguise'\)/);
@@ -17,20 +18,20 @@ test('hamburger opens the full menu while More opens only subscriptions, smartwa
   assert.match(bottomNav, /id="btn-open-menu"[^>]*>More<\/button>/);
   assert.doesNotMatch(bottomNav, />\s*Home\s*</);
   assert.match(menu, /export function openMoreMenu\(\)/);
-  const moreItems = menu.match(/function moreItems\(\)[\s\S]*?(?=\n(?:export )?function |$)/)?.[0] ?? '';
-  const fullSections = menu.match(/function sections\(\)[\s\S]*?(?=\nfunction moreItems)/)?.[0] ?? '';
-  assert.match(moreItems, /screen: 'subscriptions', label: 'Subscriptions'/);
-  assert.match(moreItems, /screen: 'watch'/);
-  assert.match(moreItems, /screen: 'location', label: 'Find My Phone'/);
-  assert.doesNotMatch(moreItems, /screen: '(?:app|profile|contacts|emergency|live|chat|history|journey|fakecall|safety-plan|records|notes|troubleshoot|companion|settings|guide|about)'/);
-  assert.doesNotMatch(fullSections, /screen: '(?:subscriptions|watch|location)'/);
-  assert.match(fullSections, /screen: 'journey', label: t\('menu\.journey'\)/);
-  assert.match(fullSections, /screen: 'fakecall', label: t\('menu\.fakecall'\)/);
-  assert.match(fullSections, /screen: 'guide', label: t\('menu\.guide'\)/);
-  assert.match(moreItems, /screen: 'watch', label: t\('menu\.watch'\)/);
+  assert.doesNotMatch(menu, /screen: '(?:subscriptions|watch|location)'/);
+  assert.match(menu, /screen: 'journey', label: t\('menu\.journey'\)/);
+  assert.match(menu, /screen: 'fakecall', label: t\('menu\.fakecall'\)/);
+  assert.match(menu, /screen: 'guide', label: t\('menu\.guide'\)/);
   assert.match(menu, /<details class="side-menu-disguise">[\s\S]*?<summary>[\s\S]*?Disguise screen[\s\S]*?DISGUISE_OPTIONS\.map/);
   assert.match(menu, /id="side-menu-theme-toggle"[\s\S]*?Day mode/);
   assert.match(menu, /applyAppearance\(appearance\)/);
+});
+
+test('welcome login uses a local PIN without requiring email or password', () => {
+  const screen = welcome.match(/export function renderWelcome\(root\) \{[\s\S]*?(?=\nexport function renderSignup)/)?.[0] ?? '';
+  assert.match(screen, /store\.navigateTo\(hasPinStored \? 'calculator' : 'setup-pin'\)/);
+  assert.match(screen, /id="splash-panic-message"[^>]*>Please log in to use the app\.<\/p>/);
+  assert.doesNotMatch(screen, /type="email"|type="password"|email\/password/);
   assert.match(main, /case 'location':\s*renderLocation\(appRoot\)/);
   assert.match(main, /case 'watch':\s*renderWatch\(appRoot\)/);
 });

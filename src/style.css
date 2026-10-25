@@ -43,7 +43,7 @@
 
 html, body {
   height: 100%;
-  background: linear-gradient(180deg, #282629 0%, #353236 100%);
+  background: #fff;
   color: var(--text);
   font-family: var(--font);
   display: flex;
@@ -2579,11 +2579,7 @@ html[data-photo-background="true"] .phone-screen > .screen { background: transpa
   overflow-x: hidden;
   overflow-y: auto;
   padding: 0;
-  background:
-    repeating-linear-gradient(90deg, transparent 0 54px, rgba(16,13,31,.22) 55px 57px),
-    repeating-linear-gradient(0deg, rgba(226,205,255,.055) 0 2px, transparent 2px 9px),
-    radial-gradient(ellipse at 50% 0%, #51405f 0%, transparent 48%),
-    linear-gradient(120deg, #302b43 0%, #25293a 54%, #283542 100%);
+  background: #fff;
 }
 
 .splash-scene {
@@ -2602,17 +2598,14 @@ html[data-photo-background="true"] .phone-screen > .screen { background: transpa
   content: "";
   position: absolute;
   inset: 0;
-  background:
-    linear-gradient(90deg, rgba(23,13,9,.34), transparent 7%, transparent 93%, rgba(23,13,9,.34)),
-    repeating-linear-gradient(132deg, transparent 0 20px, rgba(255,230,194,.065) 21px, transparent 22px 46px),
-    linear-gradient(180deg, rgba(255,255,255,.05), rgba(0,0,0,.15));
-  opacity: .9;
+  background: #fff;
+  opacity: 1;
   pointer-events: none;
 }
 .splash-scene::after {
   position: absolute;
   inset: 8px;
-  border: 1px solid rgba(255, 224, 184, .26);
+  border: 1px solid rgba(189, 76, 166, .2);
   border-radius: 22px;
   content: "";
   pointer-events: none;
@@ -2677,11 +2670,13 @@ html[data-photo-background="true"] .phone-screen > .screen { background: transpa
 }
 
 .splash-panic-button {
+  appearance: none;
   position: relative;
   display: grid;
   place-items: center;
   width: 100%;
   aspect-ratio: 1;
+  padding: 0;
   border: 6px solid rgba(23, 23, 23, 0.14);
   border-radius: 999px;
   background: radial-gradient(circle at 35% 28%, #ff5b5b 0%, #d20d17 18%, #b20813 40%, #7d000c 100%);
@@ -2689,7 +2684,11 @@ html[data-photo-background="true"] .phone-screen > .screen { background: transpa
     inset 0 4px 10px rgba(255,255,255,.28),
     inset 0 -10px 20px rgba(0,0,0,.26),
     0 10px 20px rgba(142, 16, 29, .28);
+  color: #fff;
+  cursor: pointer;
+  touch-action: manipulation;
 }
+.splash-panic-button:focus-visible { outline: 3px solid #5145c7; outline-offset: 4px; }
 
 .splash-panic-button::before {
   content: "";
@@ -2773,6 +2772,13 @@ html[data-photo-background="true"] .phone-screen > .screen { background: transpa
   font-size: clamp(.76rem, 3.5vw, .88rem);
   font-weight: 400;
   line-height: 1.45;
+  text-align: center;
+}
+.splash-panic-message {
+  margin: 8px 0 0;
+  color: #9a1840;
+  font-size: .78rem;
+  font-weight: 650;
   text-align: center;
 }
 

@@ -126,16 +126,17 @@ export function renderWelcome(root: HTMLElement) {
         </div>
 
         <div class="splash-card">
-          <div class="splash-button-shell" aria-hidden="true">
-            <div class="splash-panic-button">
+          <div class="splash-button-shell">
+            <button class="splash-panic-button" id="splash-panic-button" type="button" aria-label="Panic button. Log in to use the app.">
               <span>PANIC</span>
-            </div>
+            </button>
           </div>
 
           <div class="splash-content">
             ${languageBarHtml()}
             <h1 class="splash-tagline">${welcomeTitleHtml}</h1>
             <p class="splash-pin-hint">${t('welcome.pinHint')}</p>
+            <p class="splash-panic-message" id="splash-panic-message" role="status" hidden>Please log in to use the app.</p>
             <div class="splash-actions">
               <button class="btn-primary splash-btn" id="splash-login" type="button">${t('welcome.login')}</button>
               <p class="splash-signup-text">${t('welcome.new')} <button class="auth-link-btn" id="splash-signup" type="button">${t('welcome.signup')}</button></p>
@@ -155,6 +156,11 @@ export function renderWelcome(root: HTMLElement) {
     </div>`;
   root.querySelector('#splash-login')?.addEventListener('click', () => {
     store.navigateTo(hasPinStored ? 'calculator' : 'setup-pin');
+  });
+  root.querySelector('#splash-panic-button')?.addEventListener('click', () => {
+    const message = root.querySelector<HTMLElement>('#splash-panic-message');
+    if (message)
+      message.hidden = false;
   });
   bindLanguageBar(root, () => renderWelcome(root));
   root.querySelector('#splash-signup')?.addEventListener('click', () => store.navigateTo('signup'));

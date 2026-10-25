@@ -37,7 +37,7 @@ export function renderApp(root) {
     <div class="screen app-screen">
 
       <header class="app-header">
-        <button class="app-menu-button" id="btn-menu" type="button" aria-label="Open menu">
+        <button class="app-menu-button" id="btn-menu" type="button" aria-label="Open app menu" title="Open app menu">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
         </button>
       </header>
