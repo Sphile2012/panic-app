@@ -4,7 +4,7 @@
  */
 
 import { store } from '../state.js';
-import { getCurrentSession, onSessionChange, getEmergencyMessage, getWhatsAppMessage, completeEmergencySession, cancelEmergencySession, uploadEmergencyPhotos, retryLocationRequest, retryCameraRequest, type EmergencySession } from '../emergencySession.js';
+import { getCurrentSession, onSessionChange, getEmergencyMessage, completeEmergencySession, cancelEmergencySession, uploadEmergencyPhotos, retryLocationRequest, retryCameraRequest, type EmergencySession } from '../emergencySession.js';
 import { smsUri, whatsappUri } from '../storage.js';
 import { isTracking, trackUrl } from '../tracking.js';
 
@@ -128,15 +128,18 @@ export function renderEmergencyStatus(root: HTMLElement) {
         return;
     }
     
-    const message = getEmergencyMessage();
-    const whatsappMsg = getWhatsAppMessage();
-    
     const paint = () => {
         const currentSession = getCurrentSession();
         if (!currentSession) {
             store.navigateTo('app');
             return;
         }
+        const message = getEmergencyMessage();
+        const whatsappMsg = message;
+        const prioritizedContacts = contacts
+            .map((contact, index) => ({ contact, index }))
+            .sort((a, b) => (a.contact.priority ?? a.index + 1) - (b.contact.priority ?? b.index + 1) || a.index - b.index)
+            .map(item => item.contact);
         
         root.innerHTML = `
             <div class="screen emergency-status-screen">
@@ -282,7 +285,7 @@ export function renderEmergencyStatus(root: HTMLElement) {
                         <p class="emergency-no-contacts">No trusted contacts configured</p>
                     ` : `
                         <div class="emergency-contacts-list">
-                            ${contacts.map(contact => `
+                            ${prioritizedContacts.map(contact => `
                                 <div class="emergency-contact-card">
                                     <div class="emergency-contact-info">
                                         ${contact.photo ? 
