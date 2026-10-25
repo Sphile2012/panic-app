@@ -5,6 +5,7 @@ import { test } from 'node:test';
 const locationScreen = await readFile(new URL('../src/screens/location.ts', import.meta.url), 'utf8');
 const locationRuntime = await readFile(new URL('../src/screens/location.js', import.meta.url), 'utf8');
 const alertService = await readFile(new URL('../src/alertService.ts', import.meta.url), 'utf8');
+const storage = await readFile(new URL('../src/storage.ts', import.meta.url), 'utf8');
 const netlifyConfig = await readFile(new URL('../netlify.toml', import.meta.url), 'utf8');
 
 test('location screen shows and refreshes live position only after an explicit user action', () => {
@@ -36,14 +37,24 @@ test('location screen shows and refreshes live position only after an explicit u
     assert.match(source, /getTracks\(\)\.forEach\(track => track\.stop\(\)\)/);
     assert.match(source, /geoError\.POSITION_UNAVAILABLE/);
     assert.match(source, /id="btn-share"/);
+    assert.match(source, /id="btn-share-whatsapp"/);
+    assert.match(source, /id="location-google-maps"/);
+    assert.match(source, /maps\.google\.com\/maps\?q=\$\{lat\.toFixed\(6\)\},\$\{lng\.toFixed\(6\)\}&z=16&output=embed/);
+    assert.match(source, /Open in Google Maps/);
+    assert.doesNotMatch(source, /Current coordinates: \$\{lat\.toFixed/);
     assert.match(source, /shareBtn\.addEventListener\('click'/);
+    assert.match(source, /whatsappBtn\.addEventListener\('click'/);
     assert.match(source, /getLocation\(12000\)/);
     assert.match(source, /result\.coords\.latitude/);
     assert.match(source, /store\.setLocationShared\(true, result\.text\)/);
+    assert.match(source, /buildSmsBody\('your trusted circle', result\.text, true, notes\)/);
+    assert.match(source, /window\.location\.href = whatsappUri\('', message\)/);
     assert.doesNotMatch(source, /loc-address-card|loc-address-line|loc-maps-link/);
   }
 
   assert.match(alertService, /maximumAge:\s*0/);
   assert.match(alertService, /isSecureContext/);
-  assert.match(netlifyConfig, /frame-src 'self' https:\/\/www\.openstreetmap\.org/);
+  assert.match(netlifyConfig, /frame-src 'self' https:\/\/www\.openstreetmap\.org https:\/\/maps\.google\.com https:\/\/www\.google\.com/);
+  assert.match(netlifyConfig, /Permissions-Policy = "geolocation=\(self\), camera=\(self\)/);
+  assert.match(storage, /Please call the police now: SAPS 10111/);
 });

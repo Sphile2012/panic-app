@@ -19,12 +19,14 @@ function renderContact(contact: ReturnType<typeof store.getState>['contacts'][nu
   const message = encodeURIComponent(`Hi ${contact.name}, I may need your help. Please contact me.`);
 
   return `
-    <li class="contact-item contact-item--manage" data-search="${escapeHtml(`${contact.name} ${contact.phone} ${contact.relationship || 'Other'}`.toLowerCase())}">
+    <li class="contact-item contact-item--manage" data-search="${escapeHtml(`${contact.name} ${contact.phone} ${contact.email || ''} ${contact.relationship || 'Other'}`.toLowerCase())}">
       <div class="contact-avatar" aria-hidden="true">${escapeHtml(contact.initials)}</div>
       <div class="contact-info">
         <span class="contact-name">${name}</span>
         <span class="contact-phone">${phone}</span>
         <span class="contact-relationship">${relationship}</span>
+        <span class="contact-relationship">Priority ${contact.priority ?? '—'} · ${contact.notificationChannel === 'whatsapp' ? 'WhatsApp' : 'SMS'}</span>
+        ${contact.email ? `<span class="contact-relationship">${escapeHtml(contact.email)}</span>` : ''}
         <div class="contact-manage-actions">
           <button class="contact-edit" data-id="${escapeHtml(contact.id)}" type="button">Edit</button>
           <button class="contact-delete" data-id="${escapeHtml(contact.id)}" type="button">Remove</button>
@@ -77,36 +79,54 @@ export function renderContacts(root: HTMLElement, notice = ''): void {
         </ul>
       </section>
 
-      <form class="setup-form contacts-form" id="contact-form" autocomplete="off" hidden>
-        <h3 class="form-section-title" id="form-title">Add contact</h3>
-        <input type="hidden" id="edit-id" value="" />
-        <label class="field-label" for="c-name">Name</label>
-        <input class="text-input" id="c-name" type="text" placeholder="Full name" required />
-        <label class="field-label" for="c-phone">Phone</label>
-        <input class="text-input" id="c-phone" type="tel" placeholder="+27 82 123 4567" required />
-        <label class="field-label" for="c-relationship">Relationship</label>
-        <select class="text-input" id="c-relationship" required>
-          <option value="" disabled selected>Choose a relationship</option>
-          <option>Family member</option><option>Friend</option><option>Partner</option>
-          <option>Caregiver</option><option>Neighbour</option><option>Colleague</option><option>Other</option>
-        </select>
-        <p class="setup-hint" id="c-error" aria-live="polite"></p>
-        <div class="form-row">
-          <button class="btn-primary" type="submit" id="btn-save">Add</button>
-          <button class="btn-secondary-outline" type="button" id="btn-cancel-edit">Cancel</button>
-        </div>
-      </form>
+      <div class="contact-modal-backdrop" id="contact-modal" hidden>
+        <section class="contact-modal-panel" role="dialog" aria-modal="true" aria-labelledby="form-title">
+          <button class="contact-modal-close" id="btn-close-contact" type="button" aria-label="Close">×</button>
+          <form class="setup-form contacts-form" id="contact-form" autocomplete="off">
+            <h3 class="form-section-title" id="form-title">Add Contact</h3>
+            <input type="hidden" id="edit-id" value="" />
+            <label class="field-label" for="c-name">Full name *</label>
+            <input class="text-input" id="c-name" type="text" placeholder="Jane Doe" required />
+            <label class="field-label" for="c-phone">Phone number *</label>
+            <input class="text-input" id="c-phone" type="tel" placeholder="+27 82 123 4567" required />
+            <label class="field-label" for="c-email">Email</label>
+            <input class="text-input" id="c-email" type="email" placeholder="jane@email.com" />
+            <label class="field-label" for="c-relationship">Relationship</label>
+            <select class="text-input" id="c-relationship" required>
+              <option value="" disabled selected>Choose a relationship</option>
+              <option>Family member</option><option>Friend</option><option>Partner</option>
+              <option>Caregiver</option><option>Neighbour</option><option>Colleague</option><option>Other</option>
+            </select>
+            <label class="field-label" for="c-priority">Priority order</label>
+            <input class="text-input" id="c-priority" type="number" min="1" max="5" value="${Math.min(contacts.length + 1, 5)}" required />
+            <label class="field-label" for="c-channel">Notification method</label>
+            <select class="text-input" id="c-channel" required>
+              <option value="sms" selected>SMS</option>
+              <option value="whatsapp">WhatsApp</option>
+            </select>
+            <p class="setup-hint" id="c-error" aria-live="polite"></p>
+            <div class="form-row">
+              <button class="btn-primary" type="submit" id="btn-save">Add contact</button>
+              <button class="btn-secondary-outline" type="button" id="btn-cancel-edit">Cancel</button>
+            </div>
+          </form>
+        </section>
+      </div>
     </div>
   `;
 
   root.querySelector('#btn-back')?.addEventListener('click', () => store.navigateTo('app'));
 
   const list = root.querySelector<HTMLUListElement>('#contact-list');
+  const modal = root.querySelector<HTMLElement>('#contact-modal');
   const form = root.querySelector<HTMLFormElement>('#contact-form');
   const editIdEl = root.querySelector<HTMLInputElement>('#edit-id');
   const nameEl = root.querySelector<HTMLInputElement>('#c-name');
   const phoneEl = root.querySelector<HTMLInputElement>('#c-phone');
+  const emailEl = root.querySelector<HTMLInputElement>('#c-email');
   const relationshipEl = root.querySelector<HTMLSelectElement>('#c-relationship');
+  const priorityEl = root.querySelector<HTMLInputElement>('#c-priority');
+  const channelEl = root.querySelector<HTMLSelectElement>('#c-channel');
   const errorEl = root.querySelector<HTMLElement>('#c-error');
   const formTitle = root.querySelector<HTMLElement>('#form-title');
   const saveBtn = root.querySelector<HTMLButtonElement>('#btn-save');
@@ -119,14 +139,29 @@ export function renderContacts(root: HTMLElement, notice = ''): void {
     if (store.getState().contacts.length >= 5) return;
     editIdEl.value = '';
     form.reset();
-    formTitle.textContent = 'Add contact';
-    saveBtn.textContent = 'Add';
+    priorityEl.value = String(Math.min(store.getState().contacts.length + 1, 5));
+    formTitle.textContent = 'Add Contact';
+    saveBtn.textContent = 'Add contact';
     cancelBtn.style.display = 'inline-flex';
-    form.hidden = false;
+    modal.hidden = false;
     errorEl.textContent = '';
     actionError.textContent = '';
-    form.scrollIntoView({ behavior: 'smooth', block: 'start' });
     nameEl.focus({ preventScroll: true });
+  });
+
+  const closeModal = () => {
+    modal.hidden = true;
+    editIdEl.value = '';
+    form.reset();
+    errorEl.textContent = '';
+    actionError.textContent = '';
+  };
+  root.querySelector('#btn-close-contact')?.addEventListener('click', closeModal);
+  modal.addEventListener('click', event => {
+    if (event.target === modal) closeModal();
+  });
+  modal.addEventListener('keydown', event => {
+    if (event.key === 'Escape') closeModal();
   });
 
   search.addEventListener('input', () => {
@@ -150,15 +185,17 @@ export function renderContacts(root: HTMLElement, notice = ''): void {
       if (!contact) return;
       actionError.textContent = '';
       errorEl.textContent = '';
-      form.hidden = false;
+      modal.hidden = false;
       editIdEl.value = contact.id;
       nameEl.value = contact.name;
       phoneEl.value = contact.phone;
+      emailEl.value = contact.email ?? '';
       relationshipEl.value = contact.relationship || 'Other';
-      formTitle.textContent = 'Edit contact';
+      priorityEl.value = String(contact.priority ?? store.getState().contacts.indexOf(contact) + 1);
+      channelEl.value = contact.notificationChannel ?? 'sms';
+      formTitle.textContent = 'Edit Contact';
       saveBtn.textContent = 'Save';
       cancelBtn.style.display = 'inline-flex';
-      form.scrollIntoView({ behavior: 'smooth', block: 'start' });
       nameEl.focus({ preventScroll: true });
     }
     if (deleteBtn) {
@@ -178,13 +215,7 @@ export function renderContacts(root: HTMLElement, notice = ''): void {
   });
 
   cancelBtn.addEventListener('click', () => {
-    editIdEl.value = '';
-    form.reset();
-    formTitle.textContent = 'Add contact';
-    saveBtn.textContent = 'Add';
-    form.hidden = true;
-    errorEl.textContent = '';
-    actionError.textContent = '';
+    closeModal();
   });
 
   form.addEventListener('submit', async event => {
@@ -192,6 +223,9 @@ export function renderContacts(root: HTMLElement, notice = ''): void {
     const name = nameEl.value.trim();
     const phone = phoneEl.value.trim();
     const relationship = relationshipEl.value;
+    const email = emailEl.value.trim();
+    const priority = Number(priorityEl.value);
+    const notificationChannel: 'sms' | 'whatsapp' = channelEl.value === 'whatsapp' ? 'whatsapp' : 'sms';
     if (!name) {
       errorEl.textContent = 'Enter a name.';
       return;
@@ -204,6 +238,14 @@ export function renderContacts(root: HTMLElement, notice = ''): void {
       errorEl.textContent = 'Choose your relationship to this contact.';
       return;
     }
+    if (email && !emailEl.validity.valid) {
+      errorEl.textContent = 'Enter a valid email address or leave it blank.';
+      return;
+    }
+    if (!Number.isInteger(priority) || priority < 1 || priority > 5) {
+      errorEl.textContent = 'Choose a priority order from 1 to 5.';
+      return;
+    }
     const digits = phone.replace(/\D/g, '');
     if (digits.length < 7 || digits.length > 15) {
       errorEl.textContent = 'Enter a valid phone number with 7 to 15 digits.';
@@ -214,14 +256,15 @@ export function renderContacts(root: HTMLElement, notice = ''): void {
     saveBtn.disabled = true;
     try {
       let saved: boolean;
+      const preferences = { email, priority, notificationChannel };
       if (editIdEl.value) {
-        saved = await store.updateContact(editIdEl.value, name, phone, relationship);
+        saved = await store.updateContact(editIdEl.value, name, phone, relationship, preferences);
         if (!saved) {
           errorEl.textContent = 'This contact could not be updated. Check the number and try again.';
           return;
         }
       } else {
-        saved = await store.addContact(name, phone, relationship);
+        saved = await store.addContact(name, phone, relationship, undefined, preferences);
         if (!saved) {
           errorEl.textContent = store.getState().contacts.length >= 5
             ? 'You can add up to 5 trusted contacts.'

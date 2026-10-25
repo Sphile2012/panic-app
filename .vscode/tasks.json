@@ -1,0 +1,29 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Run Panic Ring frontend on port 5180",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"node_modules/vite/bin/vite.js",
+				"--port",
+				"5180",
+				"--strictPort"
+			],
+			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "Inspect Panic Ring pending changes",
+			"type": "shell",
+			"command": "git",
+			"args": [
+				"status",
+				"--short"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		}
+	]
+}

@@ -17,6 +17,8 @@ type AppState = {
     pinBuffer: string;
     pinHash: string;
     authEmail: string | null;
+    isPinUnlocked: boolean;
+    isAuthenticated: boolean;
     accountPinUnlocked: boolean;
     accountPinQuestionIds: string[];
     contacts: Contact[];
@@ -42,6 +44,8 @@ function buildInitialState(): AppState {
         pinBuffer: '',
         pinHash: pub.pin,
         authEmail: null,
+        isPinUnlocked: false,
+        isAuthenticated: false,
         accountPinUnlocked: false,
         accountPinQuestionIds: [],
         contacts: [],
@@ -91,8 +95,14 @@ class Store {
             return;
         this.lockTimer = window.setTimeout(() => {
             const safe = ['calculator', 'decoy', 'setup-pin', 'setup-contacts'];
-            if (!safe.includes(this.state.screen))
+            if (!safe.includes(this.state.screen)) {
+                this.state = {
+                    ...this.state,
+                    isPinUnlocked: false,
+                    isAuthenticated: Boolean(this.state.authEmail),
+                };
                 this.navigateTo(this.state.authEmail ? 'account-pin-login' : 'calculator');
+            }
         }, mins * 60 * 1000);
     }
     navigateTo(screen: string) {
@@ -151,6 +161,8 @@ class Store {
                 ...this.state,
                 screen: 'app',
                 pinHash: hashed,
+                isPinUnlocked: true,
+                isAuthenticated: true,
                 profile: { ...EMPTY_PROFILE, ...(vault.profile ?? {}) },
                 contacts: vault.contacts.map(c => ({ ...c, relationship: c.relationship || 'Other', status: 'pending' as const })),
                 notes: vault.notes,
@@ -184,7 +196,13 @@ class Store {
         const decoyHash = await hashPin(decoyPin);
         const oldHash = this.state.pinHash;
         await savePinHashes(pinHash, decoyHash, this.state.autoLockMinutes, oldHash || undefined);
-        this.state = { ...this.state, pinHash, isFirstRun: false };
+        this.state = {
+            ...this.state,
+            pinHash,
+            isFirstRun: false,
+            isPinUnlocked: true,
+            isAuthenticated: true,
+        };
         this.notify();
     }
     async _saveContacts(contacts: Contact[]) {
@@ -206,7 +224,13 @@ class Store {
         this.touch();
         this.notify();
     }
-    async addContact(name: string, phone: string, relationship = 'Other', photo?: string): Promise<boolean> {
+    async addContact(
+        name: string,
+        phone: string,
+        relationship = 'Other',
+        photo?: string,
+        preferences: Pick<Contact, 'email' | 'priority' | 'notificationChannel'> = {},
+    ): Promise<boolean> {
         const cleanName = name.trim();
         const cleanPhone = phone.trim();
         const phoneDigits = cleanPhone.replace(/\D/g, '');
@@ -216,6 +240,9 @@ class Store {
             return false;
         const contact: Contact = {
             id: uid(), name: cleanName, phone: cleanPhone, relationship, photo,
+            ...preferences,
+            priority: preferences.priority ?? this.state.contacts.length + 1,
+            notificationChannel: preferences.notificationChannel ?? 'sms',
             initials: initials(cleanName), status: 'pending',
         };
         const updated = [...this.state.contacts, contact];
@@ -225,7 +252,13 @@ class Store {
         this.notify();
         return true;
     }
-    async updateContact(id: string, name: string, phone: string, relationship = 'Other'): Promise<boolean> {
+    async updateContact(
+        id: string,
+        name: string,
+        phone: string,
+        relationship = 'Other',
+        preferences: Pick<Contact, 'email' | 'priority' | 'notificationChannel'> = {},
+    ): Promise<boolean> {
         const cleanName = name.trim();
         const cleanPhone = phone.trim();
         const phoneDigits = cleanPhone.replace(/\D/g, '');
@@ -235,7 +268,15 @@ class Store {
             this.state.contacts.some(contact => contact.id !== id && contact.phone.replace(/\D/g, '') === phoneDigits))
             return false;
         const updated = this.state.contacts.map(c => c.id === id
-            ? { ...c, name: cleanName, phone: cleanPhone, relationship, initials: initials(cleanName) }
+            ? {
+                ...c,
+                name: cleanName,
+                phone: cleanPhone,
+                relationship,
+                ...preferences,
+                notificationChannel: preferences.notificationChannel ?? c.notificationChannel ?? 'sms',
+                initials: initials(cleanName),
+            }
             : c);
         await this._saveContacts(updated);
         this.state = { ...this.state, contacts: updated };
@@ -420,20 +461,21 @@ class Store {
         this.state = buildInitialState();
         this.notify();
     }
-    setAuthEmail(email: string | null) {
+    setAuthEmail(email: string | null, isAuthenticated = Boolean(email), restoreSession = false) {
         const previousEmail = this.state.authEmail;
         const identityChanged = previousEmail !== email;
         this.state = {
             ...this.state,
             authEmail: email,
+            isAuthenticated: isAuthenticated || this.state.isPinUnlocked,
             ...(identityChanged ? { accountPinUnlocked: true, accountPinQuestionIds: [] } : {}),
         };
-        if (email && this.state.isFirstRun &&
+        if (!restoreSession && email && this.state.isFirstRun &&
             (previousEmail !== email || ['welcome', 'login', 'signup', 'verify-email'].includes(this.state.screen))) {
             this.state = { ...this.state, screen: 'setup-pin' };
-        } else if (email && !this.state.isFirstRun) {
+        } else if (!restoreSession && email && !this.state.isFirstRun) {
             this.state = { ...this.state, screen: 'calculator' };
-        } else if (!email && previousEmail && ['account-pin-check', 'account-pin-setup', 'account-pin-login'].includes(this.state.screen)) {
+        } else if (!restoreSession && !email && previousEmail && ['account-pin-check', 'account-pin-setup', 'account-pin-login'].includes(this.state.screen)) {
             this.state = { ...this.state, screen: buildInitialState().screen };
         }
         this.notify();
@@ -449,6 +491,8 @@ class Store {
         this.state = {
             ...this.state,
             pinHash,
+            isPinUnlocked: true,
+            isAuthenticated: true,
             profile: { ...EMPTY_PROFILE, ...(vault.profile ?? {}) },
             contacts: vault.contacts.map(contact => ({ ...contact, relationship: contact.relationship || 'Other', status: 'pending' as const })),
             notes: vault.notes,
@@ -461,7 +505,7 @@ class Store {
         return true;
     }
     markAccountPinUnlocked() {
-        this.state = { ...this.state, accountPinUnlocked: true };
+        this.state = { ...this.state, accountPinUnlocked: true, isPinUnlocked: true, isAuthenticated: true };
         this.notify();
     }
     setAccountPinQuestionIds(questionIds: string[]) {
@@ -479,8 +523,8 @@ class Store {
             return;
         }
         try {
-            onAuthStateChange(authUser => {
-                this.setAuthEmail(authUser?.email ?? null);
+            onAuthStateChange((authUser, event) => {
+                this.setAuthEmail(authUser?.email ?? null, Boolean(authUser), event === 'INITIAL_SESSION');
             });
         }
         catch { }

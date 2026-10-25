@@ -17,8 +17,9 @@ const INTERVAL_MS = 10_000;
 const LOW_LEVELS = [0.2];
 
 let timer: number | null = null;
+let tickInProgress = false;
 let last: TrackSnapshot | null = null;
-let error: 'denied' | 'unsupported' | 'unavailable' | 'network' | null = null;
+let error: 'auth' | 'denied' | 'insecure' | 'pending' | 'unsupported' | 'unavailable' | 'network' | null = null;
 let batteryRef: any = null;
 let alertedLevel: number | null = null;
 let lowPct: number | null = null;
@@ -123,16 +124,36 @@ function getPosition(): Promise<GeolocationPosition> {
     });
 }
 
+function isSecureLocationContext(): boolean {
+      if (typeof window.isSecureContext === 'boolean') return window.isSecureContext;
+      const hostname = location.hostname.toLowerCase();
+      return location.protocol === 'https:' || hostname === 'localhost' ||
+          hostname.endsWith('.localhost') || hostname === '127.0.0.1' ||
+          hostname === '[::1]' || hostname === '::1';
+}
+
+function supportsGeolocation(): boolean {
+      return typeof navigator.geolocation?.getCurrentPosition === 'function';
+}
+
 async function tick() {
-    try {
-        const pos = await getPosition();
-        last = {
-            lat: pos.coords.latitude,
-            lng: pos.coords.longitude,
-            accuracy: pos.coords.accuracy,
-            battery: batteryRef ? Math.round(batteryRef.level * 100) : null,
-            charging: batteryRef ? Boolean(batteryRef.charging) : false,
-            at: Date.now(),
+      if (tickInProgress) return;
+      tickInProgress = true;
+      try {
+          const pos = await getPosition();
+          const { latitude, longitude, accuracy } = pos.coords;
+          if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90 ||
+              !Number.isFinite(longitude) || longitude < -180 || longitude > 180 ||
+              !Number.isFinite(accuracy) || accuracy < 0) {
+              throw new Error('The browser returned an invalid location.');
+          }
+          last = {
+              lat: latitude,
+              lng: longitude,
+              accuracy,
+              battery: batteryRef ? Math.round(batteryRef.level * 100) : null,
+              charging: batteryRef ? Boolean(batteryRef.charging) : false,
+              at: Date.now(),
         };
         checkBattery();
         if (DB_CONFIGURED) {
@@ -146,8 +167,9 @@ async function tick() {
                     p_charging: last.charging,
                 });
                 if (syncError || data !== true) {
-                    error = 'network';
+                    error = syncError?.code === '42501' ? 'auth' : 'network';
                     console.warn('[tracking] Location sync failed:', syncError?.code ?? 'not-owner');
+                    if (error === 'auth') stopTracking();
                 }
                 else {
                     error = null;
@@ -163,23 +185,31 @@ async function tick() {
     } catch (e: any) {
         error = e && e.code === 1 ? 'denied' : 'unavailable';
         if (error === 'denied') stopTracking();
+    } finally {
+        tickInProgress = false;
+        emit();
     }
-    emit();
 }
 
 export async function startTracking(): Promise<void> {
     if (timer !== null) return;
-    if (!('geolocation' in navigator)) {
+    if (!isSecureLocationContext()) {
+        error = 'insecure';
+        emit();
+        return;
+    }
+    if (!supportsGeolocation()) {
         error = 'unsupported';
         emit();
         return;
     }
-    error = null;
-    await initBattery();
+    error = 'pending';
     localStorage.setItem(ACTIVE_KEY, '1');
     timer = window.setInterval(tick, INTERVAL_MS);
     emit();
-    await tick();
+    const firstLocationRequest = tick();
+    void initBattery().then(checkBattery);
+    await firstLocationRequest;
 }
 
 export function stopTracking() {

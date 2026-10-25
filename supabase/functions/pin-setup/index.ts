@@ -8,6 +8,23 @@ import * as bcrypt from "https://deno.land/x/bcrypt@v0.4.1/mod.ts"
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+}
+
+function hasRecentAuthentication(authorization: string | null) {
+  const token = authorization?.match(/^Bearer\s+([^\s]+)$/i)?.[1]
+  if (!token)
+    return false
+  try {
+    const encoded = token.split('.')[1]?.replace(/-/g, '+').replace(/_/g, '/')
+    if (!encoded)
+      return false
+    const payload = JSON.parse(atob(encoded))
+    const authenticatedAt = Number(payload.auth_time)
+    return Number.isFinite(authenticatedAt) && authenticatedAt >= Date.now() / 1000 - 300
+  } catch {
+    return false
+  }
 }
 
 interface SetupRequest {
@@ -26,6 +43,12 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
+  if (req.method !== 'POST') {
+    return new Response(
+      JSON.stringify({ error: 'Method not allowed' }),
+      { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+  }
 
   try {
     // Get Supabase client
@@ -40,6 +63,13 @@ serve(async (req) => {
     if (authError || !user) {
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    if (!hasRecentAuthentication(req.headers.get('Authorization'))) {
+      return new Response(
+        JSON.stringify({ error: 'Please reauthenticate before setting up your PINs' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }

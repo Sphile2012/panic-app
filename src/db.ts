@@ -333,8 +333,8 @@ export async function getUser() {
 export function onAuthStateChange(cb) {
     if (!DB_CONFIGURED)
         return () => { };
-    const { data } = getClient().auth.onAuthStateChange((_event, session) => {
-        cb(session?.user ?? null);
+    const { data } = getClient().auth.onAuthStateChange((event, session) => {
+        cb(session?.user ?? null, event);
     });
     return () => data.subscription.unsubscribe();
 }

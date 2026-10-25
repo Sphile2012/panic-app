@@ -13,8 +13,12 @@ const settingsRuntime = await readFile(new URL('../src/screens/settings.js', imp
 const pinSetup = await readFile(new URL('../src/screens/setup.ts', import.meta.url), 'utf8');
 const pinSetupRuntime = await readFile(new URL('../src/screens/setup.js', import.meta.url), 'utf8');
 const appState = await readFile(new URL('../src/state.ts', import.meta.url), 'utf8');
+const appStateRuntime = await readFile(new URL('../src/state.js', import.meta.url), 'utf8');
 const dashboard = await readFile(new URL('../dashboard.html', import.meta.url), 'utf8');
 const mainApp = await readFile(new URL('../src/main.ts', import.meta.url), 'utf8');
+const mainRuntime = await readFile(new URL('../src/main.js', import.meta.url), 'utf8');
+const liveScreen = await readFile(new URL('../src/screens/live.ts', import.meta.url), 'utf8');
+const liveRuntime = await readFile(new URL('../src/screens/live.js', import.meta.url), 'utf8');
 
 test('the app exposes PIN-only access, with no email or password dashboard', () => {
   assert.match(emailAuth, /welcome\.pinHint/);
@@ -57,6 +61,25 @@ test('backend email auth uses verification while PIN changes use local recovery 
   assert.match(settingsRuntime, /store\.recoverPins\(/);
   assert.match(dashboardSource, /sendEmailAuthOtp\(email, 'login'\)/);
   assert.match(dashboardSource, /verifyEmailOtp\(loginEmail, code\.value\)/);
+});
+
+test('restored Supabase sessions initialize the app auth state used by Live Map', () => {
+  for (const source of [mainApp, mainRuntime]) {
+    assert.match(source, /void store\.initAuth\(\)/);
+  }
+  for (const source of [appState, appStateRuntime]) {
+    assert.match(source, /isAuthenticated:\s*false/);
+    assert.match(source, /isPinUnlocked:\s*true/);
+    assert.match(source, /isAuthenticated:\s*isAuthenticated \|\| this\.state\.isPinUnlocked/);
+    assert.match(source, /async savePin\([\s\S]*?isFirstRun: false,[\s\S]*?isPinUnlocked: true,[\s\S]*?isAuthenticated: true/);
+    assert.match(source, /event === 'INITIAL_SESSION'/);
+    assert.match(source, /restoreSession/);
+  }
+  for (const source of [liveScreen, liveRuntime]) {
+    assert.match(source, /let isAuthenticated = store\.getState\(\)\.isAuthenticated/);
+    assert.match(source, /\$\{isAuthenticated\s*\?/);
+    assert.match(source, /state\.isAuthenticated !== isAuthenticated/);
+  }
 });
 
 test('PIN setup and updates require confirmation and reject repeated digits', () => {

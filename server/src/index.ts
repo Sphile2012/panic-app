@@ -1,5 +1,11 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
+import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { createApp } from './app.js';
+
+const appDirectory = new URL('.', import.meta.url);
+dotenv.config({ path: fileURLToPath(new URL('../../.env', appDirectory)) });
+dotenv.config({ path: fileURLToPath(new URL('../.env', appDirectory)) });
 
 const port = Number(process.env.PORT ?? '3000');
 const supabaseUrl = process.env.SUPABASE_URL?.trim();

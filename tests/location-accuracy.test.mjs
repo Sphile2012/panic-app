@@ -22,6 +22,7 @@ test('location sharing requests a fresh GPS fix and labels mapped addresses as a
   assert.match(alertService, /hasValidCoordinates\(lat, lng\)/);
   assert.match(alertService, /isShareableAccuracy\(accuracy\)/);
   assert.match(alertService, /Nearby mapped address \(approximate\)/);
-  assert.match(locationScreen, /Current coordinates/);
+  assert.doesNotMatch(locationScreen, /Current coordinates/);
   assert.match(locationScreen, /GPS accuracy/);
+  assert.match(locationScreen, /Open in Google Maps/);
 });

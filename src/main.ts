@@ -76,6 +76,7 @@ function renderDisguise() {
 
 function render(screen: string) {
     currentScreen = screen;
+    document.documentElement.dataset['screen'] = screen;
     appRoot.scrollTop = 0;
     switch (screen) {
         case 'welcome':
@@ -351,6 +352,7 @@ watchForReconnect(({ locationText, locationShared }) => {
             updateSendingList(appRoot);
     });
 });
+void store.initAuth();
 render(store.getState().screen);
 updateInstallBanner();
 const appearance = loadAppearance();

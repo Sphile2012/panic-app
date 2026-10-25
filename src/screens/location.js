@@ -1,5 +1,6 @@
 import { store } from '../state.js';
 import { getLocation } from '../alertService.js';
+import { buildSmsBody, whatsappUri } from '../storage.js';
 export function renderLocation(root) {
     root.innerHTML = `
     <div class="screen location-screen">
@@ -7,7 +8,7 @@ export function renderLocation(root) {
       <div class="location-icon" aria-hidden="true">GPS</div>
       <h2 class="location-title">Share your location?</h2>
       <p class="location-body">
-      Your SMS app will open either way; review the message and tap Send.
+      Choose SMS or WhatsApp to prepare a location message. Review it and tap Send in that app.
       Sharing your location helps your contacts find you faster. Saved notes are included in the alert message.
       </p>
 
@@ -25,6 +26,7 @@ export function renderLocation(root) {
             <small>Allow location access to find your position.</small>
           </div>
         </div>
+        <a class="location-map-link" id="location-google-maps" target="_blank" rel="noopener noreferrer" hidden>Open in Google Maps</a>
         <p class="location-map-details" id="location-map-details" hidden></p>
       </section>
 
@@ -37,6 +39,9 @@ export function renderLocation(root) {
             <path d="M12 8v8M8 12h8"/>
           </svg>
           Share my location
+        </button>
+        <button class="btn-secondary" id="btn-share-whatsapp" type="button">
+          Share location via WhatsApp
         </button>
         <button class="btn-skip-location" id="btn-skip">
           Send without location
@@ -111,8 +116,8 @@ export function renderLocation(root) {
           </ul>
           <p>
             Tap Show my live location to display and refresh your position while this screen is open. Tap Stop live location to stop access.
-            Share my location sends one current fix in an SMS draft for you to review and send. Live coordinates are not sent to contacts automatically.
-            The map sends coordinates to OpenStreetMap to display your position.
+            Share my location sends one current fix in an SMS draft. Share location via WhatsApp prepares a WhatsApp message with the same current location. Review and send messages yourself; live coordinates are not sent automatically.
+            The map sends coordinates to Google Maps to display your position.
             Your browser will ask for location permission when you tap Show my live location or Share my location. Camera permission is not needed to show a map.
             If device Location is turned off, enable it in device settings; this website cannot turn on that system setting for you.
           </p>
@@ -131,9 +136,11 @@ export function renderLocation(root) {
     const mapFrame = root.querySelector('#location-map');
     const mapPlaceholder = root.querySelector('#location-map-placeholder');
     const mapStatus = root.querySelector('#location-map-status');
+    const googleMapsLink = root.querySelector('#location-google-maps');
     const mapDetails = root.querySelector('#location-map-details');
     const errorEl = root.querySelector('#loc-error');
     const shareBtn = root.querySelector('#btn-share');
+    const whatsappBtn = root.querySelector('#btn-share-whatsapp');
     const skipBtn = root.querySelector('#btn-skip');
     const liveToggle = root.querySelector('#btn-live-toggle');
     const denyLocation = root.querySelector('#btn-deny-location');
@@ -159,20 +166,20 @@ export function renderLocation(root) {
     let photoBlob = null;
     let photoObjectUrl = null;
     function updateMap(lat, lng, accuracy, label) {
-        const delta = 0.006;
         const movedEnough = !lastMapPosition ||
             Math.abs(lastMapPosition.lat - lat) >= 0.0002 ||
             Math.abs(lastMapPosition.lng - lng) >= 0.0002;
         if (movedEnough) {
-            const bounds = `${(lng - delta).toFixed(6)}%2C${(lat - delta).toFixed(6)}%2C${(lng + delta).toFixed(6)}%2C${(lat + delta).toFixed(6)}`;
-            mapFrame.src = `https://www.openstreetmap.org/export/embed.html?bbox=${bounds}&layer=mapnik&marker=${lat.toFixed(6)}%2C${lng.toFixed(6)}`;
+            mapFrame.src = `https://maps.google.com/maps?q=${lat.toFixed(6)},${lng.toFixed(6)}&z=16&output=embed`;
             lastMapPosition = { lat, lng };
         }
+        googleMapsLink.href = `https://www.google.com/maps/search/?api=1&query=${lat.toFixed(6)},${lng.toFixed(6)}`;
+        googleMapsLink.hidden = false;
         mapFrame.title = `Map showing your current location with reported accuracy of approximately ${Math.round(accuracy)} metres`;
         mapFrame.hidden = false;
         mapPlaceholder.hidden = true;
         mapStatus.textContent = `${label} · GPS accuracy ±${Math.round(accuracy)} m`;
-        mapDetails.textContent = `Current coordinates: ${lat.toFixed(6)}, ${lng.toFixed(6)} · Updated ${new Date().toLocaleTimeString()}`;
+        mapDetails.textContent = `GPS accuracy ±${Math.round(accuracy)} m · Updated ${new Date().toLocaleTimeString()}`;
         mapDetails.hidden = false;
     }
     function showLocationError(reason, action) {
@@ -363,6 +370,8 @@ export function renderLocation(root) {
         permissionHelp.hidden = false;
         mapFrame.hidden = true;
         mapFrame.removeAttribute('src');
+        googleMapsLink.hidden = true;
+        googleMapsLink.removeAttribute('href');
         mapPlaceholder.hidden = false;
         mapDetails.hidden = true;
         lastMapPosition = null;
@@ -413,6 +422,39 @@ export function renderLocation(root) {
             shareBtn.disabled = false;
             skipBtn.disabled = false;
             showLocationError(`${result.reason} If device Location is off, turn it on in your device settings before trying again.`, 'share');
+        }
+    });
+    whatsappBtn.addEventListener('click', async () => {
+        if (locationChoice !== 'allowed') {
+            const reason = locationChoice === 'denied'
+                ? 'You denied location for this screen. Tap Allow location before sharing coordinates.'
+                : 'Tap Allow location before sharing your current coordinates.';
+            mapStatus.textContent = reason;
+            errorEl.textContent = reason;
+            permissionHelp.hidden = false;
+            return;
+        }
+        whatsappBtn.disabled = true;
+        errorEl.textContent = '';
+        retryBtn.hidden = true;
+        permissionHelp.hidden = true;
+        mapStatus.textContent = 'Getting your current location for WhatsApp…';
+        try {
+            const result = await getLocation(12000);
+            if (result.ok === false) {
+                showLocationError(`${result.reason} If device Location is off, turn it on in your device settings before trying again.`, 'share');
+                return;
+            }
+            updateMap(result.coords.latitude, result.coords.longitude, result.accuracy, 'Current location');
+            const { notes } = store.getState();
+            const message = buildSmsBody('your trusted circle', result.text, true, notes);
+            store.setLocationShared(true, result.text);
+            window.location.href = whatsappUri('', message);
+            mapStatus.textContent = 'WhatsApp opened with your current location. Choose recipients and tap Send; delivery is not confirmed.';
+        } catch (error) {
+            showLocationError(error instanceof Error ? error.message : 'Could not prepare the WhatsApp location message.', 'share');
+        } finally {
+            whatsappBtn.disabled = false;
         }
     });
     skipBtn.addEventListener('click', () => {

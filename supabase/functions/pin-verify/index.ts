@@ -8,6 +8,7 @@ import * as bcrypt from "https://deno.land/x/bcrypt@v0.4.1/mod.ts"
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
 const MAX_FAILED_ATTEMPTS = 5
@@ -22,6 +23,12 @@ serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
+  }
+  if (req.method !== 'POST') {
+    return new Response(
+      JSON.stringify({ error: 'Method not allowed', success: false }),
+      { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
   }
 
   try {
@@ -104,7 +111,14 @@ serve(async (req) => {
 
     if (pin1Valid && pin2Valid) {
       // Reset failed attempts on successful login
-      await supabaseAdmin.rpc('clear_pin_failures', { p_user_id: user.id })
+      const { error: clearError } = await supabaseAdmin.rpc('clear_pin_failures', { p_user_id: user.id })
+      if (clearError) {
+        console.error('PIN failure counter reset failed:', clearError.code ?? 'unknown')
+        return new Response(
+          JSON.stringify({ error: 'PIN verification is temporarily unavailable', success: false }),
+          { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
 
       return new Response(
         JSON.stringify({ success: true, message: 'PINs verified successfully' }),

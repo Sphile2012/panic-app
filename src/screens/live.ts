@@ -1,7 +1,7 @@
 import '../strings/groupA.js';
 import { store } from '../state.js';
 import { t } from '../i18n.js';
-import { smsUri } from '../storage.js';
+import { smsUri, whatsappUri } from '../storage.js';
 import { DB_CONFIGURED } from '../db.js';
 import {
     startTracking, stopTracking, isTracking, getLast, getError, getLowBattery,
@@ -9,37 +9,108 @@ import {
 } from '../tracking.js';
 
 let unsubscribe: (() => void) | null = null;
+let unsubscribeStore: (() => void) | null = null;
+let mapZoom = 14;
 
 function esc(s: string): string {
     return s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] as string));
 }
 
+function mapEmbedUrl(lat: number, lng: number, zoom: number): string {
+    const span = 0.08 / 2 ** (zoom - 13);
+    const bounds = [
+        Math.max(-180, lng - span),
+        Math.max(-90, lat - span),
+        Math.min(180, lng + span),
+        Math.min(90, lat + span),
+    ].join(',');
+    return `https://www.openstreetmap.org/export/embed.html?bbox=${bounds}&layer=mapnik&marker=${lat},${lng}`;
+}
+
 export function renderLive(root: HTMLElement) {
     if (unsubscribe) unsubscribe();
-    const contacts = store.getState().contacts;
+    if (unsubscribeStore) unsubscribeStore();
+    const { contacts } = store.getState();
+    let isAuthenticated = store.getState().isAuthenticated;
 
     const paint = () => {
         const on = isTracking();
         const last = getLast();
         const err = getError();
         const low = getLowBattery();
-        const link = DB_CONFIGURED ? trackUrl() : mapsUrl(last);
-        const linkBody = t('trk.link.sms', { url: link });
-        const lowBody = t('trk.low.sms', { pct: low ?? '', url: link });
+        const mapUrl = last ? mapsUrl(last) : null;
+        const link = last
+            ? DB_CONFIGURED
+                ? err === null ? trackUrl() : err === 'auth' ? mapUrl : null
+                : mapsUrl(last)
+            : null;
+        const callPolice = 'Please call the police now (SAPS 10111).';
+        const locationMessage = DB_CONFIGURED
+            ? err === 'auth' && mapUrl
+                ? `My latest GPS location is here: ${mapUrl} (one-time location; live updates are unavailable).`
+                : link
+                ? t('trk.link.sms', { url: link })
+                : last
+                    ? 'Live updates are unavailable. Share this last GPS fix instead.'
+                    : 'No GPS fix is available yet; I cannot share a location.'
+            : last
+                ? `My last known location is here: ${link} (this map is not live tracking).`
+                : 'No GPS fix is available yet; I cannot share a location.';
+        const linkBody = `${locationMessage}\n${callPolice}`;
+        const locationShareBody = last
+            ? `My location is here: ${mapUrl}`
+            : 'Please enable location access to share your current location.';
+        const lowBody = `${DB_CONFIGURED && link
+            ? t('trk.low.sms', { pct: low ?? '', url: link ?? '' })
+            : `My battery is low (${low ?? 'unknown'}%). ${locationMessage}`}\n${callPolice}`;
 
         let status = t('trk.off');
-        if (err === 'denied') status = t('trk.denied');
+        if (err === 'pending') status = t('trk.requesting');
+        else if (err === 'insecure') status = t('trk.insecure');
+        else if (err === 'denied') status = t('trk.denied');
+        else if (err === 'auth') status = 'GPS captured; live link sync unavailable';
         else if (err === 'unsupported') status = t('trk.unsupported');
         else if (err === 'unavailable') status = t('trk.unavailable');
         else if (err === 'network') status = t('trk.network');
         else if (on) status = t('trk.live');
 
         root.innerHTML = `
-      <div class="screen">
-        <header class="screen-header">
-          <button class="btn-back-small" id="btn-back" aria-label="${t('common.back')}">${t('common.back')}</button>
-          <h2 class="screen-title">${esc(t('trk.title'))}</h2>
-        </header>
+      <div class="screen live-location-screen">
+        <div class="live-map-content">
+          <button class="live-map-back" id="btn-back" type="button" aria-label="${t('common.back')}">←</button>
+          <header class="live-map-heading">
+            <h1>Live Map</h1>
+            <p>Your location &amp; safe zones</p>
+          </header>
+          <div class="live-map-legend" aria-label="Map legend">
+            <span><i class="live-legend-dot live-legend-dot--you"></i>You</span>
+            <span><i class="live-legend-dot live-legend-dot--alert"></i>Active alert</span>
+            <span><i class="live-legend-dot live-legend-dot--safe"></i>Safe zone</span>
+          </div>
+          <section class="live-map-panel" aria-label="Live location map">
+            ${last
+                ? `<iframe class="live-map-iframe" title="Map showing your live location"
+                    src="${mapEmbedUrl(last.lat, last.lng, mapZoom)}"
+                    loading="lazy" referrerpolicy="no-referrer"></iframe>`
+                : `<div class="live-map-empty" role="status">
+                    <span class="live-map-empty-pin" aria-hidden="true">⌖</span>
+                    <strong>Your location will appear here</strong>
+                    <span>Allow location access to see your position on the map.</span>
+                  </div>`}
+            <div class="live-map-zoom" aria-label="Map zoom controls">
+              <button type="button" id="btn-map-zoom-in" aria-label="Zoom in">+</button>
+              <button type="button" id="btn-map-zoom-out" aria-label="Zoom out">−</button>
+            </div>
+          </section>
+          <div class="live-location-status" role="status" aria-live="polite">
+            <span class="live-dot ${on ? 'live-dot--on' : ''}"></span>
+            <strong>${esc(status)}</strong>
+            ${last ? `<span class="live-map-updated">Accuracy ±${Math.round(last.accuracy)}m</span>` : ''}
+          </div>
+          ${last ? `<div class="live-map-location-meta">
+            <span>Last location update: ${new Date(last.at).toLocaleTimeString()}</span>
+            ${last.battery !== null ? `<span>${esc(t('trk.battery'))}: ${last.battery}%</span>` : ''}
+          </div>` : ''}
         ${low !== null ? `
           <div class="live-banner live-banner--low">
             <strong>${esc(t('trk.low.title'))}</strong>
@@ -47,35 +118,142 @@ export function renderLive(root: HTMLElement) {
             ${contacts.map(c => `<a class="btn-danger live-sms" href="${smsUri(c.phone, lowBody)}">${esc(t('trk.low.send'))}: ${esc(c.name)}</a>`).join('')}
             <button class="btn-secondary" id="btn-dismiss">${esc(t('common.close'))}</button>
           </div>` : ''}
-        <p class="live-intro">${esc(t('trk.body'))}</p>
-        <div class="live-card">
-          <div class="live-row"><span class="live-dot ${on ? 'live-dot--on' : ''}"></span><strong>${esc(status)}</strong></div>
-          ${last ? `
-            <div class="live-row"><span>${esc(t('trk.battery'))}</span><strong>${last.battery ?? '-'}%</strong></div>
-            <div class="live-row"><span>GPS</span><strong>${last.lat.toFixed(5)}, ${last.lng.toFixed(5)}</strong></div>` : ''}
+          <div class="live-map-location-links">
+            ${mapUrl ? `<a class="live-map-external" href="${mapUrl}" target="_blank" rel="noopener noreferrer">Open last GPS fix in Google Maps →</a>` : ''}
+          </div>
+          <section class="live-share-card" aria-label="Share location">
+            <h2>Share your location</h2>
+            ${last ? `
+              <p>Choose SMS or WhatsApp for a trusted contact. Review and send the message in that app.</p>
+              <div class="live-share-contacts">
+                ${contacts.length ? contacts.map((contact, index) => `
+                  <div class="live-share-contact">
+                    <strong>${esc(contact.name)}</strong>
+                    <div>
+                      <a class="btn-secondary" data-share-sms="${index}" href="${smsUri(contact.phone, locationShareBody)}">SMS</a>
+                      <a class="btn-secondary" data-share-whatsapp="${index}" href="${whatsappUri(contact.phone, locationShareBody)}" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+                    </div>
+                  </div>
+                `).join('') : `<p>Add a trusted contact before sharing from here.</p>`}
+              </div>
+              <p class="live-share-feedback" id="live-share-feedback" role="status" aria-live="polite"></p>
+              <textarea class="live-share-copy" id="live-share-copy" aria-label="Location message" readonly hidden></textarea>
+              <button class="btn-secondary" id="live-copy-message" type="button" hidden>Copy location message</button>
+            ` : `
+              <p>Get your current GPS location first, then share it using SMS or WhatsApp.</p>
+              <button class="btn-primary live-location-toggle" id="btn-share-location" type="button">Get location to share</button>
+            `}
+          </section>
+          <button class="live-location-toggle-secondary" id="btn-toggle" type="button" aria-pressed="${on}">
+            ${esc(on ? t('trk.stop') : t('trk.enable'))}
+          </button>
+          ${on ? `
+            <h3 class="live-sub">${esc(t('trk.link'))}</h3>
+            ${DB_CONFIGURED ? '' : `<p class="live-intro">${esc(t('trk.nolink'))}</p>`}
+            ${link ? `<div class="live-links">
+              ${contacts.map((c, index) => `
+                <button class="btn-secondary" type="button" data-live-contact="${index}">${err === 'auth' ? 'Share GPS via SMS' : `SMS: ${esc(c.name)}`}</button>
+                <a class="btn-secondary" data-live-whatsapp="${index}" href="${whatsappUri(c.phone, linkBody)}" target="_blank" rel="noopener noreferrer">${err === 'auth' ? 'Share GPS via WhatsApp' : `WhatsApp: ${esc(c.name)}`}</a>
+              `).join('')}
+            </div>` : `<p class="live-intro">${esc(err === 'network' ? t('trk.network') : err === 'pending' ? t('trk.requesting') : 'Waiting for a GPS fix before sharing a location.')}</p>`}` : ''}
+          ${isAuthenticated
+            ? `<section class="live-map-signin live-map-safe-zones">
+                <p>Your account is signed in. Manage your saved safe zones.</p>
+                <button class="btn-primary" id="btn-manage-safe-zones" type="button">Manage Safe Zones</button>
+              </section>
+              <nav class="live-map-tabs" aria-label="App tabs">
+                <button type="button" data-live-tab="app">Home</button>
+                <button type="button" data-live-tab="profile">Profile</button>
+                <button type="button" data-live-tab="contacts">Circle</button>
+                <button type="button" data-live-tab="emergency">Emergency</button>
+                <button type="button" data-live-tab="history">History</button>
+                <button type="button" data-live-tab="journey">Journey</button>
+                <button type="button" data-live-tab="safety-plan">Safety Plan</button>
+                <button type="button" data-live-tab="records">Records</button>
+                <button type="button" data-live-tab="notes">Notes</button>
+                <button type="button" data-live-tab="troubleshoot">Help</button>
+                <button type="button" data-live-tab="chat">Assistant</button>
+                <button type="button" data-live-tab="settings">Settings</button>
+              </nav>`
+            : `<section class="live-map-signin">
+                <p>Sign in to save and manage your safe zones</p>
+                <button class="btn-primary" id="btn-map-signin" type="button">Sign In</button>
+              </section>`}
         </div>
-        <button class="btn-primary" id="btn-toggle">${esc(on ? t('trk.stop') : t('trk.enable'))}</button>
-        ${on ? `
-          <h3 class="live-sub">${esc(t('trk.link'))}</h3>
-          ${DB_CONFIGURED ? '' : `<p class="live-intro">${esc(t('trk.nolink'))}</p>`}
-          <div class="live-links">
-            ${contacts.map((c, index) => `<button class="btn-secondary" type="button" data-live-contact="${index}">${esc(t('trk.link.share'))}: ${esc(c.name)}</button>`).join('')}
-          </div>` : ''}
       </div>`;
 
         root.querySelector('#btn-back')!.addEventListener('click', () => store.navigateTo('app'));
+        root.querySelector('#btn-map-zoom-in')!.addEventListener('click', () => {
+            mapZoom = Math.min(19, mapZoom + 1);
+            paint();
+        });
+        root.querySelector('#btn-map-zoom-out')!.addEventListener('click', () => {
+            mapZoom = Math.max(3, mapZoom - 1);
+            paint();
+        });
         root.querySelector('#btn-toggle')!.addEventListener('click', () => {
             if (isTracking()) stopTracking();
             else void startTracking();
         });
+        root.querySelector('#btn-share-location')?.addEventListener('click', () => {
+            void startTracking();
+        });
+        root.querySelector('#btn-map-signin')?.addEventListener('click', () => store.navigateTo('welcome'));
+        root.querySelector('#btn-manage-safe-zones')?.addEventListener('click', () => store.navigateTo('safety-plan'));
+        root.querySelectorAll<HTMLButtonElement>('[data-live-tab]').forEach(button => {
+            button.addEventListener('click', () => store.navigateTo(button.dataset.liveTab!));
+        });
         root.querySelectorAll<HTMLButtonElement>('[data-live-contact]').forEach(button => {
             button.addEventListener('click', () => {
                 const contact = contacts[Number(button.dataset.liveContact)];
-                if (contact) window.location.href = smsUri(contact.phone, linkBody);
+                if (contact) {
+                    window.location.href = smsUri(contact.phone, linkBody);
+                    scheduleSmsFallback(linkBody);
+                }
             });
+        });
+        root.querySelectorAll<HTMLAnchorElement>('[data-share-sms]').forEach(link => {
+            link.addEventListener('click', () => scheduleSmsFallback(locationShareBody));
+        });
+        root.querySelector<HTMLButtonElement>('#live-copy-message')?.addEventListener('click', () => {
+            const copyField = root.querySelector<HTMLTextAreaElement>('#live-share-copy');
+            const feedback = root.querySelector<HTMLElement>('#live-share-feedback');
+            if (!copyField) return;
+            copyField.focus();
+            copyField.select();
+            void navigator.clipboard?.writeText(copyField.value)
+                .then(() => {
+                    if (feedback) feedback.textContent = 'Location message copied. Paste it into your SMS app.';
+                })
+                .catch(() => {
+                    if (feedback) feedback.textContent = 'Select and copy the location message, then paste it into your SMS app.';
+                });
         });
         root.querySelector('#btn-dismiss')?.addEventListener('click', () => dismissLowBattery());
     };
+
+    function scheduleSmsFallback(body: string) {
+        const feedback = root.querySelector<HTMLElement>('#live-share-feedback');
+        if (feedback) feedback.textContent = 'Opening your SMS app…';
+        const copyAttempt = navigator.clipboard?.writeText(body).then(() => true, () => false)
+            ?? Promise.resolve(false);
+        window.setTimeout(() => {
+            if (document.hidden || !root.isConnected) return;
+            const copyField = root.querySelector<HTMLTextAreaElement>('#live-share-copy');
+            const copyButton = root.querySelector<HTMLButtonElement>('#live-copy-message');
+            if (!copyField || !copyButton || !feedback) return;
+            void copyAttempt.then(copied => {
+                feedback.textContent = copied
+                    ? 'If no SMS app opened, the location message is copied and ready to paste.'
+                    : 'No SMS app opened. Copy the location message below and paste it into your SMS app.';
+                if (!copied) {
+                    copyField.value = body;
+                    copyField.hidden = false;
+                    copyButton.hidden = false;
+                }
+            });
+        }, 1000);
+    }
 
     paint();
     unsubscribe = onTrackChange(() => {
@@ -85,5 +263,16 @@ export function renderLive(root: HTMLElement) {
             return;
         }
         paint();
+    });
+    unsubscribeStore = store.subscribe(state => {
+        if (!root.isConnected || state.screen !== 'live') {
+            if (unsubscribeStore) unsubscribeStore();
+            unsubscribeStore = null;
+            return;
+        }
+        if (state.isAuthenticated !== isAuthenticated) {
+            isAuthenticated = state.isAuthenticated;
+            paint();
+        }
     });
 }

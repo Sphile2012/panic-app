@@ -10,6 +10,10 @@ const liveTracksBase = await readFile(
   new URL('../supabase/migrations/20261017100000_create_live_tracks_base.sql', import.meta.url),
   'utf8',
 );
+const nativeEmergency = await readFile(
+  new URL('../supabase/migrations/20261024160000_add_native_emergency_core.sql', import.meta.url),
+  'utf8',
+);
 const runner = await readFile(new URL('../scripts/db.mjs', import.meta.url), 'utf8');
 const bootstrap = await readFile(new URL('../supabase/schema.sql', import.meta.url), 'utf8');
 const compose = await readFile(new URL('../docker-compose.yml', import.meta.url), 'utf8');
@@ -76,4 +80,21 @@ test('fresh bootstrap is transactional and Docker uses that same canonical schem
   assert.match(bootstrap, /commit;\s*$/i);
   assert.doesNotMatch(bootstrap, /drop column if exists (pin_hash|decoy_hash)/i);
   assert.ok(compose.includes('./supabase/schema.sql:/docker-entrypoint-initdb.d/99-panic-ring-schema.sql'));
+});
+
+test('native emergency data is owner-protected and live tracking can be revoked', () => {
+  assert.match(nativeEmergency, /create table if not exists public\.trusted_contacts/i);
+  assert.match(nativeEmergency, /phone_number ~ /);
+  assert.match(nativeEmergency, /trusted_contacts_owner[\s\S]*?auth\.uid\(\) = user_id/);
+  assert.match(nativeEmergency, /create table if not exists public\.emergency_sessions/i);
+  assert.match(nativeEmergency, /where status = 'active'/);
+  assert.match(nativeEmergency, /create table if not exists public\.emergency_location_updates/i);
+  assert.match(nativeEmergency, /references public\.emergency_sessions \(id, user_id\) on delete cascade/i);
+  assert.match(nativeEmergency, /emergency_locations_active_insert[\s\S]*?s\.status = 'active'/);
+  assert.match(nativeEmergency, /revoke all on public\.emergency_location_updates from public, anon, authenticated/i);
+  assert.match(nativeEmergency, /delete from public\.live_tracks[\s\S]*?user_id = auth\.uid\(\)/);
+  assert.match(nativeEmergency, /grant execute on function public\.stop_track\(text\) to authenticated/i);
+  assert.match(nativeEmergency, /Migration verification failed: anonymous emergency data access is enabled/);
+  assert.match(runner, /emergency location RLS/);
+  assert.match(runner, /anonymous emergency table access denied/);
 });

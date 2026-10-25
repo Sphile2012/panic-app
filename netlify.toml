@@ -30,6 +30,6 @@
     X-Frame-Options = "DENY"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
-    Permissions-Policy = "geolocation=(self), camera=(self), microphone=()"
+    Permissions-Policy = "geolocation=(self), camera=(self), microphone=(), usb=()"
     Strict-Transport-Security = "max-age=31536000"
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://nominatim.openstreetmap.org https://*.supabase.co wss://*.supabase.co https://api.what3words.com; img-src 'self' data: https:; font-src 'self' data:; manifest-src 'self'; worker-src 'self'; frame-src 'self' https://www.openstreetmap.org; frame-ancestors 'none';"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://nominatim.openstreetmap.org https://*.supabase.co wss://*.supabase.co https://api.what3words.com; img-src 'self' data: https:; font-src 'self' data:; manifest-src 'self'; worker-src 'self'; frame-src 'self' https://www.openstreetmap.org https://maps.google.com https://www.google.com; frame-ancestors 'none';"
