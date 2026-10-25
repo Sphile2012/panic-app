@@ -179,8 +179,8 @@ export default function HomeScreen() {
 
           {/* Main content - PANIC button */}
           <View style={styles.panicContainer}>
-            <Text style={styles.greetingText}>Stay Safe</Text>
-            <Text style={styles.instructionText}>Press button to share your location</Text>
+            <Text style={styles.greetingText}>Panic Ring</Text>
+            <Text style={styles.instructionText}>Press the button below to instantly share your location with trusted contacts</Text>
             
             <Pressable
               style={styles.panicButton}
@@ -191,7 +191,7 @@ export default function HomeScreen() {
               <Text style={styles.panicButtonText}>PANIC</Text>
             </Pressable>
 
-            <Text style={styles.footerText}>Tap to access live location sharing</Text>
+            <Text style={styles.footerText}>Tap to access location sharing and emergency features</Text>
           </View>
 
           {/* Side menu modal */}
@@ -212,18 +212,23 @@ export default function HomeScreen() {
                     onPress={() => setMenuOpen(false)}
                     style={styles.closeButton}
                   >
-                    <Text style={styles.closeButtonText}>✕</Text>
+                    <Text style={styles.closeButtonText}>Close</Text>
                   </Pressable>
                 </View>
 
                 <ScrollView style={styles.menuScroll}>
-                  <Text style={styles.userEmail}>{session.user.email}</Text>
+                  <View style={styles.userEmailContainer}>
+                    <Text style={styles.userEmailLabel}>Account</Text>
+                    <Text style={styles.userEmail}>{session.user.email}</Text>
+                  </View>
 
                   <Pressable 
                     style={styles.menuItem}
                     onPress={() => navigateToFeature('/sos')}
                   >
-                    <Text style={styles.menuIcon}>🆘</Text>
+                    <View style={[styles.iconCircle, styles.iconDanger]}>
+                      <Text style={styles.iconText}>SOS</Text>
+                    </View>
                     <View style={styles.menuTextContainer}>
                       <Text style={styles.menuItemTitle}>SOS Alert</Text>
                       <Text style={styles.menuItemDesc}>Emergency alert system</Text>
@@ -234,7 +239,9 @@ export default function HomeScreen() {
                     style={styles.menuItem}
                     onPress={() => navigateToFeature('/circle')}
                   >
-                    <Text style={styles.menuIcon}>👥</Text>
+                    <View style={[styles.iconCircle, styles.iconPrimary]}>
+                      <Text style={styles.iconText}>TC</Text>
+                    </View>
                     <View style={styles.menuTextContainer}>
                       <Text style={styles.menuItemTitle}>Trusted Circle</Text>
                       <Text style={styles.menuItemDesc}>Manage your contacts</Text>
@@ -245,7 +252,9 @@ export default function HomeScreen() {
                     style={styles.menuItem}
                     onPress={() => navigateToFeature('/live-location')}
                   >
-                    <Text style={styles.menuIcon}>📍</Text>
+                    <View style={[styles.iconCircle, styles.iconSuccess]}>
+                      <Text style={styles.iconText}>GPS</Text>
+                    </View>
                     <View style={styles.menuTextContainer}>
                       <Text style={styles.menuItemTitle}>Live Location</Text>
                       <Text style={styles.menuItemDesc}>Share your location</Text>
@@ -256,7 +265,9 @@ export default function HomeScreen() {
                     style={styles.menuItem}
                     onPress={() => navigateToFeature('/notes')}
                   >
-                    <Text style={styles.menuIcon}>🔒</Text>
+                    <View style={[styles.iconCircle, styles.iconWarning]}>
+                      <Text style={styles.iconText}>NOTE</Text>
+                    </View>
                     <View style={styles.menuTextContainer}>
                       <Text style={styles.menuItemTitle}>Private Notes</Text>
                       <Text style={styles.menuItemDesc}>Secure evidence storage</Text>
@@ -267,7 +278,9 @@ export default function HomeScreen() {
                     style={styles.menuItem}
                     onPress={() => navigateToFeature('/safety-plan')}
                   >
-                    <Text style={styles.menuIcon}>🛡️</Text>
+                    <View style={[styles.iconCircle, styles.iconInfo]}>
+                      <Text style={styles.iconText}>PLAN</Text>
+                    </View>
                     <View style={styles.menuTextContainer}>
                       <Text style={styles.menuItemTitle}>Safety Plan</Text>
                       <Text style={styles.menuItemDesc}>Your safety strategy</Text>
@@ -278,7 +291,9 @@ export default function HomeScreen() {
                     style={styles.menuItem}
                     onPress={() => navigateToFeature('/emergency')}
                   >
-                    <Text style={styles.menuIcon}>🚨</Text>
+                    <View style={[styles.iconCircle, styles.iconDanger]}>
+                      <Text style={styles.iconText}>911</Text>
+                    </View>
                     <View style={styles.menuTextContainer}>
                       <Text style={styles.menuItemTitle}>Emergency Services</Text>
                       <Text style={styles.menuItemDesc}>Quick dial emergency</Text>
@@ -291,7 +306,9 @@ export default function HomeScreen() {
                     style={styles.menuItem}
                     onPress={() => navigateToFeature('/change-password')}
                   >
-                    <Text style={styles.menuIcon}>🔑</Text>
+                    <View style={[styles.iconCircle, styles.iconNeutral]}>
+                      <Text style={styles.iconText}>PWD</Text>
+                    </View>
                     <View style={styles.menuTextContainer}>
                       <Text style={styles.menuItemTitle}>Change Password</Text>
                     </View>
@@ -301,7 +318,9 @@ export default function HomeScreen() {
                     style={styles.menuItem}
                     onPress={() => navigateToFeature('/about')}
                   >
-                    <Text style={styles.menuIcon}>ℹ️</Text>
+                    <View style={[styles.iconCircle, styles.iconNeutral]}>
+                      <Text style={styles.iconText}>INFO</Text>
+                    </View>
                     <View style={styles.menuTextContainer}>
                       <Text style={styles.menuItemTitle}>About</Text>
                     </View>
@@ -311,9 +330,11 @@ export default function HomeScreen() {
                     style={[styles.menuItem, styles.signOutItem]}
                     onPress={signOut}
                   >
-                    <Text style={styles.menuIcon}>🚪</Text>
+                    <View style={[styles.iconCircle, styles.iconLogout]}>
+                      <Text style={styles.iconText}>OUT</Text>
+                    </View>
                     <View style={styles.menuTextContainer}>
-                      <Text style={styles.menuItemTitle}>Sign Out</Text>
+                      <Text style={[styles.menuItemTitle, styles.signOutText]}>Sign Out</Text>
                     </View>
                   </Pressable>
                 </ScrollView>
@@ -489,19 +510,22 @@ const styles = StyleSheet.create({
   },
   
   greetingText: { 
-    fontSize: 32, 
-    fontWeight: '800', 
+    fontSize: 28, 
+    fontWeight: '700', 
     color: colors.text,
-    marginBottom: 10,
+    marginBottom: 12,
     textAlign: 'center',
+    letterSpacing: 0.5,
   },
   
   instructionText: { 
-    fontSize: 16, 
+    fontSize: 15, 
     color: colors.textSecondary,
     marginBottom: 60,
     textAlign: 'center',
-    lineHeight: 24,
+    lineHeight: 22,
+    paddingHorizontal: 20,
+    maxWidth: 400,
   },
   
   panicButton: { 
@@ -573,47 +597,102 @@ const styles = StyleSheet.create({
   },
   
   closeButton: { 
-    width: 36, 
-    height: 36, 
-    justifyContent: 'center', 
-    alignItems: 'center',
-    borderRadius: 18,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
     backgroundColor: colors.surfaceMuted,
   },
   
   closeButtonText: { 
-    fontSize: 24, 
-    color: colors.textSecondary,
-    fontWeight: '300',
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
   },
   
   menuScroll: { 
     paddingHorizontal: 24,
   },
   
-  userEmail: { 
-    fontSize: 14, 
-    color: colors.textSecondary,
+  userEmailContainer: {
     marginTop: 16,
-    marginBottom: 20,
-    paddingHorizontal: 4,
+    marginBottom: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: colors.accentSoft,
+    borderRadius: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: colors.accent,
+  },
+  
+  userEmailLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: colors.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: 4,
+  },
+  
+  userEmail: { 
+    fontSize: 15, 
+    fontWeight: '600',
+    color: colors.text,
   },
   
   menuItem: { 
     flexDirection: 'row', 
     alignItems: 'center',
     paddingVertical: 16,
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
     borderRadius: 12,
-    marginBottom: 8,
+    marginBottom: 12,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  
+  iconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  
+  iconDanger: {
+    backgroundColor: '#FEE2E2',
+  },
+  
+  iconPrimary: {
+    backgroundColor: colors.accentSoft,
+  },
+  
+  iconSuccess: {
+    backgroundColor: colors.successSoft,
+  },
+  
+  iconWarning: {
+    backgroundColor: colors.warningSoft,
+  },
+  
+  iconInfo: {
+    backgroundColor: '#E0E7FF',
+  },
+  
+  iconNeutral: {
     backgroundColor: colors.surfaceMuted,
   },
   
-  menuIcon: { 
-    fontSize: 28,
-    marginRight: 16,
-    width: 36,
-    textAlign: 'center',
+  iconLogout: {
+    backgroundColor: colors.dangerSoft,
+  },
+  
+  iconText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: colors.text,
+    letterSpacing: 0.5,
   },
   
   menuTextContainer: { 
@@ -629,7 +708,8 @@ const styles = StyleSheet.create({
   
   menuItemDesc: { 
     fontSize: 13, 
-    color: colors.textSecondary 
+    color: colors.textSecondary,
+    lineHeight: 18,
   },
   
   menuDivider: { 
@@ -639,9 +719,14 @@ const styles = StyleSheet.create({
   },
   
   signOutItem: { 
+    borderColor: colors.danger,
     backgroundColor: colors.dangerSoft,
     marginTop: 8,
     marginBottom: 20,
+  },
+  
+  signOutText: {
+    color: colors.danger,
   },
 
   // Auth screen (signed out)
