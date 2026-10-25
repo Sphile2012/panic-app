@@ -173,7 +173,7 @@ export default function LiveLocationScreen() {
     if (!location) return;
     
     const mapsLink = getGoogleMapsLink();
-    const message = `🚨 Panic Ring Live Location\n\nI'm sharing my live location with you:\n${mapsLink}\n\nLast updated: ${new Date(location.timestamp).toLocaleString()}`;
+    const message = `PANIC RING LIVE LOCATION\n\nI'm sharing my live location with you:\n${mapsLink}\n\nLast updated: ${new Date(location.timestamp).toLocaleString()}`;
     
     try {
       const whatsappUrl = `whatsapp://send?text=${encodeURIComponent(message)}`;
@@ -193,7 +193,7 @@ export default function LiveLocationScreen() {
     if (!location) return;
 
     const mapsLink = getGoogleMapsLink();
-    const message = `🚨 Panic Ring Live Location\n\nI'm sharing my live location with you:\n${mapsLink}\n\nLast updated: ${new Date(location.timestamp).toLocaleString()}`;
+    const message = `PANIC RING LIVE LOCATION\n\nI'm sharing my live location with you:\n${mapsLink}\n\nLast updated: ${new Date(location.timestamp).toLocaleString()}`;
 
     try {
       const isAvailable = await SMS.isAvailableAsync();
@@ -297,14 +297,14 @@ export default function LiveLocationScreen() {
                   style={styles.whatsappButton}
                   onPress={shareViaWhatsApp}
                 >
-                  <Text style={styles.shareButtonText}>📱 WhatsApp</Text>
+                  <Text style={styles.shareButtonText}>WhatsApp</Text>
                 </Pressable>
 
                 <Pressable
                   style={styles.smsButton}
                   onPress={shareViaSMS}
                 >
-                  <Text style={styles.shareButtonText}>💬 SMS</Text>
+                  <Text style={styles.shareButtonText}>SMS</Text>
                 </Pressable>
               </View>
 
