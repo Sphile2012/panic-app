@@ -186,6 +186,11 @@ export default function HomeScreen() {
               <Pressable style={styles.secondaryButton} onPress={checkBackend} disabled={backendBusy}>
                 <Text style={styles.secondaryButtonText}>Check connection</Text>
               </Pressable>
+              <Link href="/live-location" asChild>
+                <Pressable style={styles.menuButton}>
+                  <Text style={styles.menuButtonText}>📍 Live Location</Text>
+                </Pressable>
+              </Link>
               <Link href="/change-password" style={styles.aboutLink}>Change password</Link>
               <Pressable style={styles.textButton} onPress={signOut}>
                 <Text style={styles.textButtonText}>Sign out</Text>
@@ -313,6 +318,11 @@ const styles = StyleSheet.create({
     borderWidth: 1, justifyContent: 'center', marginTop: 20, minHeight: 48,
   },
   secondaryButtonText: { color: colors.accent, fontSize: 15, fontWeight: '700' },
+  menuButton: {
+    alignItems: 'center', backgroundColor: colors.accentSoft, borderColor: colors.accent,
+    borderRadius: 12, borderWidth: 1, justifyContent: 'center', marginTop: 16, minHeight: 52,
+  },
+  menuButtonText: { color: colors.accent, fontSize: 16, fontWeight: '700' },
   textButton: { alignItems: 'center', marginTop: 18, paddingVertical: 8 },
   textButtonText: { color: colors.accent, fontSize: 14, fontWeight: '600', textAlign: 'center' },
   statusRow: { alignItems: 'center', flexDirection: 'row', gap: 10, marginTop: 18 },
