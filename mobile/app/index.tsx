@@ -170,20 +170,7 @@ export default function HomeScreen() {
             >
               <Text style={styles.panicButtonText}>PANIC</Text>
             </Pressable>
-
-            <Text style={styles.footerText}>Tap to share your location instantly</Text>
           </View>
-
-          <Pressable 
-            style={styles.floatingMenuButton}
-            onPress={() => setMenuOpen(true)}
-            accessibilityLabel="Open menu"
-            accessibilityRole="button"
-          >
-            <View style={styles.hamburgerLine} />
-            <View style={styles.hamburgerLine} />
-            <View style={styles.hamburgerLine} />
-          </Pressable>
 
           <Modal
             animationType="slide"
@@ -327,46 +314,13 @@ const styles = StyleSheet.create({
   
   mainScreen: { 
     flex: 1, 
-    backgroundColor: colors.background 
-  },
-  
-  floatingMenuButton: {
-    position: 'absolute',
-    top: Platform.OS === 'ios' ? 60 : 40,
-    left: 20,
-    width: 50,
-    height: 50,
-    backgroundColor: colors.surface,
-    borderRadius: 25,
-    justifyContent: 'center',
-    alignItems: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 6,
-      },
-    }),
-  },
-  
-  hamburgerLine: { 
-    width: 24, 
-    height: 3, 
-    backgroundColor: colors.accent,
-    marginBottom: 5,
-    borderRadius: 2,
+    backgroundColor: '#FFE4F0',
   },
   
   panicContainer: { 
     flex: 1, 
     justifyContent: 'center', 
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 40,
   },
   
   panicButton: { 
@@ -399,15 +353,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     letterSpacing: 3,
     textTransform: 'uppercase',
-  },
-  
-  footerText: { 
-    fontSize: 14, 
-    color: colors.textSecondary,
-    marginTop: 50,
-    textAlign: 'center',
-    paddingHorizontal: 20,
-    lineHeight: 20,
   },
   
   modalOverlay: { 
