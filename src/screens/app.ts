@@ -40,6 +40,7 @@ export function renderApp(root) {
         <button class="app-menu-button" id="btn-menu" type="button" aria-label="Open menu">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
         </button>
+        <button class="app-menu-button app-more-button" id="btn-open-menu" type="button" aria-label="Open app menu">More</button>
       </header>
 
       <section class="dashboard-alert-card" aria-label="Emergency alert">
@@ -162,6 +163,7 @@ export function renderApp(root) {
         store.navigateTo('profile');
     });
     root.querySelector('#btn-menu').addEventListener('click', openMenu);
+    root.querySelector('#btn-open-menu').addEventListener('click', openMenu);
     root.querySelector('#btn-manage-contacts')?.addEventListener('click', () => {
         store.navigateTo('contacts');
     });

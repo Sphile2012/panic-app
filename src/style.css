@@ -1776,6 +1776,19 @@ html[data-photo-background="true"] .phone-screen > .screen { background: transpa
   cursor: pointer;
 }
 .app-menu-button svg { width: 21px; height: 21px; }
+.app-screen > .app-header {
+  width: 100%;
+  justify-content: space-between;
+}
+.app-more-button {
+  width: auto;
+  min-width: 48px;
+  padding: 0 11px;
+  border-radius: 19px;
+  font: inherit;
+  font-size: .75rem;
+  font-weight: 700;
+}
 .app-header-text { flex: 1; min-width: 0; }
 .app-title { font-size: 1.15rem; }
 .app-subtitle {
