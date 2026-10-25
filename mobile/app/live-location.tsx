@@ -74,7 +74,6 @@ export default function LiveLocationScreen() {
       if (fetchError) throw fetchError;
       setContacts(data || []);
     } catch {
-      // Silently fail - contacts are optional
     }
   };
 
@@ -98,7 +97,6 @@ export default function LiveLocationScreen() {
     try {
       setError('');
       
-      // Get initial location
       const currentLocation = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.High,
       });
@@ -113,10 +111,8 @@ export default function LiveLocationScreen() {
       setLocation(locationData);
       setIsTracking(true);
 
-      // Save to database
       await saveLocationToDatabase(locationData);
 
-      // Start watching location updates every 10 seconds
       const subscription = await Location.watchPositionAsync(
         {
           accuracy: Location.Accuracy.High,

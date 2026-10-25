@@ -103,14 +103,12 @@ export default function SOSScreen() {
     setAlertActive(true);
     setHoldProgress(0);
 
-    // Get location if user wants to share
     let location = null;
     if (shareLocation) {
       location = await getLocation();
       setCurrentLocation(location);
     }
 
-    // Send alerts to contacts
     const statuses: Record<string, DeliveryStatus> = {};
     for (const contact of contacts) {
       statuses[contact.id] = 'sending';
