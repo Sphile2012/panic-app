@@ -64,24 +64,6 @@ export function renderApp(root) {
       <p class="app-activate-hint">Hold for 1.5 seconds · release to cancel</p>
       <div id="dashboard-battery-alert"></div>
 
-      <section class="dashboard-section">
-        <div class="dashboard-section-heading">
-          <h2>Quick access</h2>
-          <span>${contacts.length} trusted ${contacts.length === 1 ? 'contact' : 'contacts'}</span>
-        </div>
-        <div class="dashboard-grid">
-          ${DASHBOARD_CARDS.map(card => `
-            <button class="dashboard-card" type="button" data-dashboard="${card.screen}">
-              <span class="dashboard-card-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${card.icon}</svg>
-              </span>
-              <span class="dashboard-card-label">${card.label}</span>
-              <span class="dashboard-card-detail">${card.detail}</span>
-            </button>
-          `).join('')}
-        </div>
-      </section>
-
       ${contacts.length > 0 ? `
       <section class="dashboard-section">
         <div class="dashboard-section-heading">
