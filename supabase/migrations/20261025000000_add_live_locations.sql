@@ -43,6 +43,7 @@ CREATE TABLE IF NOT EXISTS contacts (
   name TEXT NOT NULL,
   phone TEXT NOT NULL,
   email TEXT,
+  status TEXT DEFAULT 'accepted',
   trusted BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()

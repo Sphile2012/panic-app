@@ -41,7 +41,9 @@
         "ACCESS_COARSE_LOCATION",
         "ACCESS_BACKGROUND_LOCATION",
         "FOREGROUND_SERVICE",
-        "FOREGROUND_SERVICE_LOCATION"
+        "FOREGROUND_SERVICE_LOCATION",
+        "SEND_SMS",
+        "READ_PHONE_STATE"
       ],
       "predictiveBackGestureEnabled": false
     },
