@@ -107,12 +107,6 @@ export function renderApp(root) {
       ` : ''}
 
       <div class="app-quick-bar" aria-label="Display options">
-        <button class="app-quick-btn" id="btn-disguise" title="Change disguise screen"
-          aria-label="Change disguise screen">
-          <span class="app-quick-icon">${currentDisguise?.preview ?? 'Calculator'}</span>
-          <span class="app-quick-label">${currentDisguise?.label ?? 'Calculator'}</span>
-        </button>
-
         <button class="app-quick-btn" id="btn-quick-checkin" title="Check-in timer"
           aria-label="Check-in timer">
           <span class="app-quick-label">Check-in</span>
@@ -150,22 +144,6 @@ export function renderApp(root) {
           <button class="btn-primary" id="checkin-start-btn">Start timer</button>
           <button class="checkin-sheet-close" id="checkin-close">Cancel</button>
         </div>
-      </div>
-
-      <div class="disguise-sheet" id="disguise-sheet" aria-hidden="true">
-        <p class="disguise-sheet-title">Choose disguise screen</p>
-        <div class="disguise-sheet-grid">
-          ${DISGUISE_OPTIONS.map(d => `
-            <button
-              class="ap-disguise-card ${appearance.disguise === d.id ? 'ap-disguise-card--active' : ''}"
-              data-disguise="${d.id}">
-              <span class="ap-disguise-icon">${d.preview}</span>
-              <span class="ap-disguise-label">${d.label}</span>
-              ${appearance.disguise === d.id ? '<span class="ap-disguise-check">✓ Active</span>' : ''}
-            </button>
-          `).join('')}
-        </div>
-        <button class="disguise-sheet-close" id="disguise-close" aria-label="Close">Close</button>
       </div>
 
     </div>
@@ -274,26 +252,6 @@ export function renderApp(root) {
     });
     root.querySelectorAll('[data-bottom-nav]').forEach(button => {
         button.addEventListener('click', () => store.navigateTo((button as HTMLElement).dataset['bottomNav'] ?? 'app'));
-    });
-    const sheet = root.querySelector('#disguise-sheet');
-    root.querySelector('#btn-disguise').addEventListener('click', () => {
-        const open = sheet.getAttribute('aria-hidden') === 'false';
-        sheet.setAttribute('aria-hidden', open ? 'true' : 'false');
-        sheet.classList.toggle('disguise-sheet--open', !open);
-    });
-    root.querySelector('#disguise-close').addEventListener('click', () => {
-        sheet.setAttribute('aria-hidden', 'true');
-        sheet.classList.remove('disguise-sheet--open');
-    });
-    root.querySelectorAll('[data-disguise]').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const ap = loadAppearance();
-            ap.disguise = btn.dataset['disguise'];
-            saveAppearance(ap);
-            sheet.setAttribute('aria-hidden', 'true');
-            sheet.classList.remove('disguise-sheet--open');
-            store.navigateTo('app');
-        });
     });
     const navRoutes = {
         notes: () => store.navigateTo('notes'),
