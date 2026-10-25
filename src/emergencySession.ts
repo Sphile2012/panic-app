@@ -31,6 +31,7 @@ export interface EmergencySession {
 
 let currentSession: EmergencySession | null = null;
 let listeners: Set<(session: EmergencySession) => void> = new Set();
+let emergencyPhotoStartedAt = 0;
 
 function emit() {
     if (currentSession) {
@@ -203,20 +204,18 @@ async function startEmergencyCamera(): Promise<void> {
     updateSession({ cameraStatus: 'capturing' });
     
     try {
-        // Start capturing evidence photos in the background
-        void startEvidenceCapture(3); // Capture 3 photos over time
-        
-        // Mark as completed after a short delay (photos capture in background)
-        setTimeout(async () => {
-            if (currentSession && currentSession.cameraStatus === 'capturing') {
-                const photos = await listPhotos();
-                updateSession({ 
-                    cameraStatus: 'completed',
-                    photoCaptured: photos.length > 0,
-                    photoCount: photos.length 
-                });
-            }
-        }, 8000); // Wait longer for photos to capture
+        emergencyPhotoStartedAt = Date.now();
+        await startEvidenceCapture(3);
+        const photos = (await listPhotos()).filter(photo => photo.at >= emergencyPhotoStartedAt);
+        updateSession({
+            cameraStatus: photos.length > 0 ? 'completed' : 'failed',
+            photoCaptured: photos.length > 0,
+            photoCount: photos.length,
+        });
+        if (photos.length === 0) {
+            currentSession?.errors.push('No emergency photos were captured');
+            emit();
+        }
     } catch (error) {
         updateSession({ cameraStatus: 'failed' });
         currentSession?.errors.push(`Camera error: ${error instanceof Error ? error.message : 'Unknown'}`);
@@ -260,11 +259,13 @@ export async function uploadEmergencyPhotos(): Promise<string[]> {
     updateSession({ uploadStatus: 'uploading' });
     
     try {
-        const photos = await listPhotos();
+        const photos = (await listPhotos())
+            .filter(photo => photo.at >= emergencyPhotoStartedAt)
+            .slice(0, 3);
         const uploadedUrls: string[] = [];
         const client = getClient();
         
-        for (const photo of photos.slice(0, 3)) { // Upload max 3 photos
+        for (const photo of photos) {
             try {
                 const fileName = `${currentSession.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.jpg`;
                 const filePath = `emergency-photos/${fileName}`;
@@ -350,6 +351,7 @@ export async function startEmergencySession(): Promise<EmergencySession> {
         photoUrls: [],
         errors: [],
     };
+    emergencyPhotoStartedAt = 0;
     
     emit();
     
@@ -372,7 +374,7 @@ export async function startEmergencySession(): Promise<EmergencySession> {
 export function getEmergencyMessage(): string {
     if (!currentSession) return 'Emergency alert';
     
-    const { contacts, profile } = store.getState();
+    const { profile, notes } = store.getState();
     const name = profile.name || 'Someone';
     const time = new Date().toLocaleString();
     
@@ -380,7 +382,7 @@ export function getEmergencyMessage(): string {
     message += `${name} needs immediate assistance!\n`;
     message += `Time: ${time}\n\n`;
     
-    if (currentSession.latitude && currentSession.longitude) {
+    if (currentSession.latitude !== null && currentSession.longitude !== null) {
         const googleMapsLink = `https://maps.google.com/?q=${currentSession.latitude},${currentSession.longitude}`;
         message += `LOCATION:\n${currentSession.locationText || 'GPS coordinates'}\n`;
         message += `Map: ${googleMapsLink}\n`;
@@ -402,6 +404,10 @@ export function getEmergencyMessage(): string {
             });
             message += `\n`;
         }
+    }
+
+    if (notes.length > 0) {
+        message += `SAVED NOTES:\n${notes.map(note => `${note.title}\n${note.body}`).join('\n\n')}\n\n`;
     }
     
     message += `⚠️ Please contact immediately or send help!\n`;
@@ -450,4 +456,3 @@ export function cancelEmergencySession(): void {
     currentSession = null;
     listeners.clear();
 }
-
