@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -9,9 +10,10 @@ import {
   Text,
   TextInput,
   View,
+  Dimensions,
 } from 'react-native';
 import type { Session } from '@supabase/supabase-js';
-import { Link } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 import * as Linking from 'expo-linking';
 import { getApiBaseUrl, verifyApiSession } from '../src/lib/backend';
 import { getSupabaseClient, isSupabaseConfigured } from '../src/lib/supabase';
@@ -20,7 +22,10 @@ import { colors } from '../src/lib/theme';
 
 type AuthMode = 'sign-in' | 'sign-up';
 
+const { width, height } = Dimensions.get('window');
+
 export default function HomeScreen() {
+  const router = useRouter();
   const [session, setSession] = useState<Session | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -30,6 +35,7 @@ export default function HomeScreen() {
   const [messageKind, setMessageKind] = useState<'error' | 'info'>('error');
   const [backendStatus, setBackendStatus] = useState('Checking backend connection…');
   const [backendBusy, setBackendBusy] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const configured = isSupabaseConfigured();
 
   useEffect(() => {
@@ -133,28 +139,19 @@ export default function HomeScreen() {
       const { error } = await getSupabaseClient().auth.signOut();
       if (error) throw error;
       setMessage('');
+      setMenuOpen(false);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Could not sign out.');
     }
   }
 
-  async function checkBackend() {
-    setBackendBusy(true);
-    try {
-      const baseUrl = getApiBaseUrl();
-      const response = await fetch(`${baseUrl}/api/health`);
-      const result: unknown = await response.json();
-      if (!response.ok) {
-        const detail = typeof result === 'object' && result !== null && 'error' in result
-          && typeof result.error === 'string' ? result.error : `API returned HTTP ${response.status}.`;
-        throw new Error(detail);
-      }
-      setBackendStatus('API and Supabase are reachable.');
-    } catch (error) {
-      setBackendStatus(error instanceof Error ? error.message : 'Could not reach the API.');
-    } finally {
-      setBackendBusy(false);
-    }
+  function handlePanicPress() {
+    router.push('/live-location');
+  }
+
+  function navigateToFeature(path: string) {
+    setMenuOpen(false);
+    router.push(path as any);
   }
 
   return (
@@ -162,159 +159,492 @@ export default function HomeScreen() {
       style={styles.flex}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
-        <View style={styles.header}>
-          <View style={styles.brandMark} accessibilityLabel="Panic Ring logo">
-            <View style={styles.brandMarkInner} />
+      {session ? (
+        <View style={styles.mainScreen}>
+          {/* Header with hamburger menu */}
+          <View style={styles.topBar}>
+            <Pressable 
+              style={styles.hamburger}
+              onPress={() => setMenuOpen(true)}
+              accessibilityLabel="Open menu"
+              accessibilityRole="button"
+            >
+              <View style={styles.hamburgerLine} />
+              <View style={styles.hamburgerLine} />
+              <View style={styles.hamburgerLine} />
+            </Pressable>
+            <Text style={styles.appTitle}>Panic Ring</Text>
+            <View style={styles.placeholder} />
           </View>
-          <Text style={styles.eyebrow}>A LITTLE MORE PREPARED</Text>
-          <Text style={styles.title}>Panic Ring</Text>
-          <Text style={styles.subtitle}>
-            A privacy-first foundation for personal safety planning.
-          </Text>
-        </View>
 
-        <View style={styles.card}>
-          {session ? (
-            <>
-              <Text style={styles.cardTitle}>You’re signed in</Text>
-              <Text style={styles.body}>{session.user.email ?? 'Your Panic Ring account is ready.'}</Text>
-              <View style={styles.statusRow}>
-                {backendBusy && <ActivityIndicator color={colors.accent} />}
-                <Text style={styles.statusText}>{backendStatus}</Text>
+          {/* Main content - PANIC button */}
+          <View style={styles.panicContainer}>
+            <Text style={styles.greetingText}>Stay Safe</Text>
+            <Text style={styles.instructionText}>Press button to share your location</Text>
+            
+            <Pressable
+              style={styles.panicButton}
+              onPress={handlePanicPress}
+              accessibilityLabel="Panic button - share your location"
+              accessibilityRole="button"
+            >
+              <Text style={styles.panicButtonText}>PANIC</Text>
+            </Pressable>
+
+            <Text style={styles.footerText}>Tap to access live location sharing</Text>
+          </View>
+
+          {/* Side menu modal */}
+          <Modal
+            animationType="slide"
+            transparent={true}
+            visible={menuOpen}
+            onRequestClose={() => setMenuOpen(false)}
+          >
+            <Pressable 
+              style={styles.modalOverlay}
+              onPress={() => setMenuOpen(false)}
+            >
+              <View style={styles.menuContainer} onStartShouldSetResponder={() => true}>
+                <View style={styles.menuHeader}>
+                  <Text style={styles.menuTitle}>Menu</Text>
+                  <Pressable 
+                    onPress={() => setMenuOpen(false)}
+                    style={styles.closeButton}
+                  >
+                    <Text style={styles.closeButtonText}>✕</Text>
+                  </Pressable>
+                </View>
+
+                <ScrollView style={styles.menuScroll}>
+                  <Text style={styles.userEmail}>{session.user.email}</Text>
+
+                  <Pressable 
+                    style={styles.menuItem}
+                    onPress={() => navigateToFeature('/sos')}
+                  >
+                    <Text style={styles.menuIcon}>🆘</Text>
+                    <View style={styles.menuTextContainer}>
+                      <Text style={styles.menuItemTitle}>SOS Alert</Text>
+                      <Text style={styles.menuItemDesc}>Emergency alert system</Text>
+                    </View>
+                  </Pressable>
+
+                  <Pressable 
+                    style={styles.menuItem}
+                    onPress={() => navigateToFeature('/circle')}
+                  >
+                    <Text style={styles.menuIcon}>👥</Text>
+                    <View style={styles.menuTextContainer}>
+                      <Text style={styles.menuItemTitle}>Trusted Circle</Text>
+                      <Text style={styles.menuItemDesc}>Manage your contacts</Text>
+                    </View>
+                  </Pressable>
+
+                  <Pressable 
+                    style={styles.menuItem}
+                    onPress={() => navigateToFeature('/live-location')}
+                  >
+                    <Text style={styles.menuIcon}>📍</Text>
+                    <View style={styles.menuTextContainer}>
+                      <Text style={styles.menuItemTitle}>Live Location</Text>
+                      <Text style={styles.menuItemDesc}>Share your location</Text>
+                    </View>
+                  </Pressable>
+
+                  <Pressable 
+                    style={styles.menuItem}
+                    onPress={() => navigateToFeature('/notes')}
+                  >
+                    <Text style={styles.menuIcon}>🔒</Text>
+                    <View style={styles.menuTextContainer}>
+                      <Text style={styles.menuItemTitle}>Private Notes</Text>
+                      <Text style={styles.menuItemDesc}>Secure evidence storage</Text>
+                    </View>
+                  </Pressable>
+
+                  <Pressable 
+                    style={styles.menuItem}
+                    onPress={() => navigateToFeature('/safety-plan')}
+                  >
+                    <Text style={styles.menuIcon}>🛡️</Text>
+                    <View style={styles.menuTextContainer}>
+                      <Text style={styles.menuItemTitle}>Safety Plan</Text>
+                      <Text style={styles.menuItemDesc}>Your safety strategy</Text>
+                    </View>
+                  </Pressable>
+
+                  <Pressable 
+                    style={styles.menuItem}
+                    onPress={() => navigateToFeature('/emergency')}
+                  >
+                    <Text style={styles.menuIcon}>🚨</Text>
+                    <View style={styles.menuTextContainer}>
+                      <Text style={styles.menuItemTitle}>Emergency Services</Text>
+                      <Text style={styles.menuItemDesc}>Quick dial emergency</Text>
+                    </View>
+                  </Pressable>
+
+                  <View style={styles.menuDivider} />
+
+                  <Pressable 
+                    style={styles.menuItem}
+                    onPress={() => navigateToFeature('/change-password')}
+                  >
+                    <Text style={styles.menuIcon}>🔑</Text>
+                    <View style={styles.menuTextContainer}>
+                      <Text style={styles.menuItemTitle}>Change Password</Text>
+                    </View>
+                  </Pressable>
+
+                  <Pressable 
+                    style={styles.menuItem}
+                    onPress={() => navigateToFeature('/about')}
+                  >
+                    <Text style={styles.menuIcon}>ℹ️</Text>
+                    <View style={styles.menuTextContainer}>
+                      <Text style={styles.menuItemTitle}>About</Text>
+                    </View>
+                  </Pressable>
+
+                  <Pressable 
+                    style={[styles.menuItem, styles.signOutItem]}
+                    onPress={signOut}
+                  >
+                    <Text style={styles.menuIcon}>🚪</Text>
+                    <View style={styles.menuTextContainer}>
+                      <Text style={styles.menuItemTitle}>Sign Out</Text>
+                    </View>
+                  </Pressable>
+                </ScrollView>
               </View>
-              <Pressable style={styles.secondaryButton} onPress={checkBackend} disabled={backendBusy}>
-                <Text style={styles.secondaryButtonText}>Check connection</Text>
-              </Pressable>
-              
-              <View style={styles.menuGrid}>
-                <Link href="/sos" asChild>
-                  <Pressable style={styles.menuButton}>
-                    <Text style={styles.menuButtonText}>🆘 SOS Alert</Text>
-                  </Pressable>
-                </Link>
-                <Link href="/circle" asChild>
-                  <Pressable style={styles.menuButton}>
-                    <Text style={styles.menuButtonText}>👥 Trusted Circle</Text>
-                  </Pressable>
-                </Link>
-                <Link href="/live-location" asChild>
-                  <Pressable style={styles.menuButton}>
-                    <Text style={styles.menuButtonText}>📍 Live Location</Text>
-                  </Pressable>
-                </Link>
-                <Link href="/notes" asChild>
-                  <Pressable style={styles.menuButton}>
-                    <Text style={styles.menuButtonText}>🔒 Private Notes</Text>
-                  </Pressable>
-                </Link>
-                <Link href="/safety-plan" asChild>
-                  <Pressable style={styles.menuButton}>
-                    <Text style={styles.menuButtonText}>🛡️ Safety Plan</Text>
-                  </Pressable>
-                </Link>
-                <Link href="/emergency" asChild>
-                  <Pressable style={styles.menuButton}>
-                    <Text style={styles.menuButtonText}>🚨 Emergency</Text>
-                  </Pressable>
-                </Link>
-              </View>
-              
-              <Link href="/change-password" style={styles.aboutLink}>Change password</Link>
-              <Pressable style={styles.textButton} onPress={signOut}>
-                <Text style={styles.textButtonText}>Sign out</Text>
-              </Pressable>
-            </>
-          ) : (
-            <>
-              <Text style={styles.cardTitle}>
-                {mode === 'sign-in' ? 'Welcome back' : 'Create your account'}
-              </Text>
-              <Text style={styles.body}>
-                {mode === 'sign-in'
-                  ? 'Sign in to connect your Panic Ring account.'
-                  : 'Use your email to create a secure account.'}
-              </Text>
-              {!configured && (
-                <Text style={styles.warning}>
-                  Supabase is not configured. Copy mobile/.env.example to mobile/.env and add your project URL and anon key.
-                </Text>
-              )}
-              <Text style={styles.label}>Email address</Text>
-              <TextInput
-                style={styles.input}
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                autoComplete="email"
-                keyboardType="email-address"
-                placeholder="you@example.com"
-                placeholderTextColor={colors.placeholder}
-                textContentType="emailAddress"
-                accessibilityLabel="Email address"
-              />
-              <Text style={styles.label}>Password</Text>
-              <TextInput
-                style={styles.input}
-                value={password}
-                onChangeText={setPassword}
-                autoCapitalize="none"
-                autoComplete={mode === 'sign-in' ? 'current-password' : 'new-password'}
-                placeholder="At least 8 characters"
-                placeholderTextColor={colors.placeholder}
-                secureTextEntry
-                textContentType={mode === 'sign-in' ? 'password' : 'newPassword'}
-                accessibilityLabel="Password"
-              />
-              {message ? <Text style={[styles.message, messageKind === 'info' && styles.infoMessage]} accessibilityLiveRegion="polite">{message}</Text> : null}
-              <Pressable
-                style={[styles.primaryButton, (!configured || busy) && styles.disabledButton]}
-                onPress={submitAuth}
-                disabled={!configured || busy}
-                accessibilityRole="button"
-              >
-                {busy
-                  ? <ActivityIndicator color={colors.text} />
-                  : <Text style={styles.primaryButtonText}>
-                    {mode === 'sign-in' ? 'Sign in' : 'Create account'}
-                  </Text>}
-              </Pressable>
-              <Pressable
-                style={styles.textButton}
-                onPress={() => {
-                  setMode(mode === 'sign-in' ? 'sign-up' : 'sign-in');
-                  setMessage('');
-                  setMessageKind('error');
-                }}
-              >
-                <Text style={styles.textButtonText}>
-                  {mode === 'sign-in' ? 'New here? Create an account' : 'Already registered? Sign in'}
-                </Text>
-              </Pressable>
-              {mode === 'sign-in' && (
-                <Link href="/forgot-password" style={styles.aboutLink}>Forgot password?</Link>
-              )}
-            </>
-          )}
+            </Pressable>
+          </Modal>
         </View>
+      ) : (
+        <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
+          <View style={styles.header}>
+            <View style={styles.brandMark} accessibilityLabel="Panic Ring logo">
+              <View style={styles.brandMarkInner} />
+            </View>
+            <Text style={styles.eyebrow}>A LITTLE MORE PREPARED</Text>
+            <Text style={styles.title}>Panic Ring</Text>
+            <Text style={styles.subtitle}>
+              A privacy-first foundation for personal safety planning.
+            </Text>
+          </View>
 
-        <View style={styles.infoCard}>
-          <Text style={styles.infoTitle}>About this mobile build</Text>
-          <Text style={styles.body}>
-            This build provides Supabase account sign-in and Express API verification. Safety plans, trusted contacts, and alert sending are not available here yet. It is not an emergency service.
-          </Text>
-        </View>
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>
+              {mode === 'sign-in' ? 'Welcome back' : 'Create your account'}
+            </Text>
+            <Text style={styles.body}>
+              {mode === 'sign-in'
+                ? 'Sign in to connect your Panic Ring account.'
+                : 'Use your email to create a secure account.'}
+            </Text>
+            {!configured && (
+              <Text style={styles.warning}>
+                Supabase is not configured. Copy mobile/.env.example to mobile/.env and add your project URL and anon key.
+              </Text>
+            )}
+            <Text style={styles.label}>Email address</Text>
+            <TextInput
+              style={styles.input}
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              autoComplete="email"
+              keyboardType="email-address"
+              placeholder="you@example.com"
+              placeholderTextColor={colors.placeholder}
+              textContentType="emailAddress"
+              accessibilityLabel="Email address"
+            />
+            <Text style={styles.label}>Password</Text>
+            <TextInput
+              style={styles.input}
+              value={password}
+              onChangeText={setPassword}
+              autoCapitalize="none"
+              autoComplete={mode === 'sign-in' ? 'current-password' : 'new-password'}
+              placeholder="At least 8 characters"
+              placeholderTextColor={colors.placeholder}
+              secureTextEntry
+              textContentType={mode === 'sign-in' ? 'password' : 'newPassword'}
+              accessibilityLabel="Password"
+            />
+            {message ? <Text style={[styles.message, messageKind === 'info' && styles.infoMessage]} accessibilityLiveRegion="polite">{message}</Text> : null}
+            <Pressable
+              style={[styles.primaryButton, (!configured || busy) && styles.disabledButton]}
+              onPress={submitAuth}
+              disabled={!configured || busy}
+              accessibilityRole="button"
+            >
+              {busy
+                ? <ActivityIndicator color={colors.text} />
+                : <Text style={styles.primaryButtonText}>
+                  {mode === 'sign-in' ? 'Sign in' : 'Create account'}
+                </Text>}
+            </Pressable>
+            <Pressable
+              style={styles.textButton}
+              onPress={() => {
+                setMode(mode === 'sign-in' ? 'sign-up' : 'sign-in');
+                setMessage('');
+                setMessageKind('error');
+              }}
+            >
+              <Text style={styles.textButtonText}>
+                {mode === 'sign-in' ? 'New here? Create an account' : 'Already registered? Sign in'}
+              </Text>
+            </Pressable>
+            {mode === 'sign-in' && (
+              <Link href="/forgot-password" style={styles.aboutLink}>Forgot password?</Link>
+            )}
+          </View>
 
-        <Link href="/about" style={styles.aboutLink}>
-          About Panic Ring
-        </Link>
-      </ScrollView>
+          <View style={styles.infoCard}>
+            <Text style={styles.infoTitle}>About this mobile build</Text>
+            <Text style={styles.body}>
+              This build provides full personal safety features including SOS alerts, trusted circle management, live location tracking, private notes, safety planning, and emergency services dialer.
+            </Text>
+          </View>
+
+          <Link href="/about" style={styles.aboutLink}>
+            About Panic Ring
+          </Link>
+        </ScrollView>
+      )}
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.background },
+  
+  // Main screen (signed in)
+  mainScreen: { 
+    flex: 1, 
+    backgroundColor: colors.background 
+  },
+  
+  // Top bar with hamburger
+  topBar: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === 'ios' ? 60 : 40,
+    paddingBottom: 20,
+    backgroundColor: colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 3,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  
+  hamburger: { 
+    padding: 10,
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+  },
+  
+  hamburgerLine: { 
+    width: 24, 
+    height: 3, 
+    backgroundColor: colors.accent,
+    marginBottom: 5,
+    borderRadius: 2,
+  },
+  
+  appTitle: { 
+    fontSize: 20, 
+    fontWeight: '700', 
+    color: colors.text,
+    letterSpacing: 0.5,
+  },
+  
+  placeholder: { 
+    width: 44 
+  },
+  
+  // Panic button container
+  panicContainer: { 
+    flex: 1, 
+    justifyContent: 'center', 
+    alignItems: 'center',
+    paddingHorizontal: 40,
+    paddingBottom: 60,
+  },
+  
+  greetingText: { 
+    fontSize: 32, 
+    fontWeight: '800', 
+    color: colors.text,
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  
+  instructionText: { 
+    fontSize: 16, 
+    color: colors.textSecondary,
+    marginBottom: 60,
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  
+  panicButton: { 
+    width: Math.min(width * 0.65, 280),
+    height: Math.min(width * 0.65, 280),
+    borderRadius: Math.min(width * 0.65, 280) / 2,
+    backgroundColor: '#DC2626',
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#DC2626',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.4,
+        shadowRadius: 16,
+      },
+      android: {
+        elevation: 12,
+      },
+    }),
+  },
+  
+  panicButtonText: { 
+    fontSize: 42, 
+    fontWeight: '900', 
+    color: '#FFFFFF',
+    letterSpacing: 3,
+    textTransform: 'uppercase',
+  },
+  
+  footerText: { 
+    fontSize: 14, 
+    color: colors.textSecondary,
+    marginTop: 40,
+    textAlign: 'center',
+    paddingHorizontal: 20,
+    lineHeight: 20,
+  },
+  
+  // Menu modal
+  modalOverlay: { 
+    flex: 1, 
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  
+  menuContainer: { 
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: height * 0.85,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 20,
+  },
+  
+  menuHeader: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  
+  menuTitle: { 
+    fontSize: 24, 
+    fontWeight: '800', 
+    color: colors.text 
+  },
+  
+  closeButton: { 
+    width: 36, 
+    height: 36, 
+    justifyContent: 'center', 
+    alignItems: 'center',
+    borderRadius: 18,
+    backgroundColor: colors.surfaceMuted,
+  },
+  
+  closeButtonText: { 
+    fontSize: 24, 
+    color: colors.textSecondary,
+    fontWeight: '300',
+  },
+  
+  menuScroll: { 
+    paddingHorizontal: 24,
+  },
+  
+  userEmail: { 
+    fontSize: 14, 
+    color: colors.textSecondary,
+    marginTop: 16,
+    marginBottom: 20,
+    paddingHorizontal: 4,
+  },
+  
+  menuItem: { 
+    flexDirection: 'row', 
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    marginBottom: 8,
+    backgroundColor: colors.surfaceMuted,
+  },
+  
+  menuIcon: { 
+    fontSize: 28,
+    marginRight: 16,
+    width: 36,
+    textAlign: 'center',
+  },
+  
+  menuTextContainer: { 
+    flex: 1 
+  },
+  
+  menuItemTitle: { 
+    fontSize: 16, 
+    fontWeight: '600', 
+    color: colors.text,
+    marginBottom: 2,
+  },
+  
+  menuItemDesc: { 
+    fontSize: 13, 
+    color: colors.textSecondary 
+  },
+  
+  menuDivider: { 
+    height: 1, 
+    backgroundColor: colors.border,
+    marginVertical: 16,
+  },
+  
+  signOutItem: { 
+    backgroundColor: colors.dangerSoft,
+    marginTop: 8,
+    marginBottom: 20,
+  },
+
+  // Auth screen (signed out)
   page: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 52, paddingBottom: 40 },
   header: { alignItems: 'center', marginBottom: 28 },
   brandMark: {
@@ -342,33 +672,8 @@ const styles = StyleSheet.create({
   },
   disabledButton: { opacity: 0.5 },
   primaryButtonText: { color: colors.surface, fontSize: 16, fontWeight: '700' },
-  secondaryButton: {
-    alignItems: 'center', borderColor: colors.accent, borderRadius: 12,
-    borderWidth: 1, justifyContent: 'center', marginTop: 20, minHeight: 48,
-  },
-  secondaryButtonText: { color: colors.accent, fontSize: 15, fontWeight: '700' },
-  menuGrid: { 
-    flexDirection: 'row', 
-    flexWrap: 'wrap', 
-    gap: 12, 
-    marginTop: 20 
-  },
-  menuButton: {
-    alignItems: 'center', 
-    backgroundColor: colors.accentSoft, 
-    borderColor: colors.accent,
-    borderRadius: 12, 
-    borderWidth: 1, 
-    justifyContent: 'center', 
-    minHeight: 80,
-    flex: 1,
-    minWidth: '45%',
-  },
-  menuButtonText: { color: colors.accent, fontSize: 14, fontWeight: '700', textAlign: 'center' },
   textButton: { alignItems: 'center', marginTop: 18, paddingVertical: 8 },
   textButtonText: { color: colors.accent, fontSize: 14, fontWeight: '600', textAlign: 'center' },
-  statusRow: { alignItems: 'center', flexDirection: 'row', gap: 10, marginTop: 18 },
-  statusText: { color: colors.textSecondary, flex: 1, fontSize: 13, lineHeight: 19 },
   infoCard: { backgroundColor: colors.surfaceMuted, borderRadius: 16, marginTop: 18, padding: 18 },
   infoTitle: { color: colors.text, fontSize: 16, fontWeight: '700' },
   aboutLink: { alignSelf: 'center', color: colors.accent, fontSize: 14, fontWeight: '600', marginTop: 26, padding: 8 },
