@@ -14,5 +14,6 @@ export const colors = {
   warningSoft: '#fff4db',
   danger: '#b4234a',
   dangerSoft: '#fff0f2',
+  dangerDark: '#991b3d',
   placeholder: '#9b8791',
 } as const;
