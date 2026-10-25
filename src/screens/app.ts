@@ -1,7 +1,7 @@
 import { store } from '../state.js';
 import { loadAppearance, saveAppearance, DISGUISE_OPTIONS } from '../theme.js';
 import { isCheckinActive, checkinSecondsLeft, startCheckin, cancelCheckin, resumeCheckinIfActive } from '../checkin.js';
-import { openMenu } from '../menu.js';
+import { openMenu, openMoreMenu } from '../menu.js';
 import { smsUri } from '../storage.js';
 import { dismissLowBattery, getLowBattery, onTrackChange, startBatteryMonitoring } from '../tracking.js';
 import { startEmergencySession } from '../emergencySession.js';
@@ -37,10 +37,9 @@ export function renderApp(root) {
     <div class="screen app-screen">
 
       <header class="app-header">
-        <button class="app-menu-button" id="btn-menu" type="button" aria-label="Open menu">
+        <button class="app-menu-button" id="btn-menu" type="button" aria-label="Open app menu" title="Open app menu">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
         </button>
-        <button class="app-menu-button app-more-button" id="btn-open-menu" type="button" aria-label="Open app menu">More</button>
       </header>
 
       <section class="dashboard-alert-card" aria-label="Emergency alert">
@@ -51,6 +50,12 @@ export function renderApp(root) {
       </section>
 
       <div id="dashboard-battery-alert"></div>
+
+      <nav class="app-bottom-nav" aria-label="Main navigation">
+        <button class="app-bottom-nav-btn" data-bottom-nav="contacts" type="button">Circle</button>
+        <button class="app-bottom-nav-btn" data-bottom-nav="profile" type="button">Profile</button>
+        <button class="app-bottom-nav-btn" id="btn-open-menu" type="button">More</button>
+      </nav>
 
       <div class="checkin-bar" id="checkin-bar" style="display:none">
         <div class="checkin-bar-inner">
@@ -159,11 +164,8 @@ export function renderApp(root) {
             cancelHold();
     });
     holdBtn.addEventListener('blur', cancelHold);
-    root.querySelector('#btn-profile').addEventListener('click', () => {
-        store.navigateTo('profile');
-    });
     root.querySelector('#btn-menu').addEventListener('click', openMenu);
-    root.querySelector('#btn-open-menu').addEventListener('click', openMenu);
+    root.querySelector('#btn-open-menu').addEventListener('click', openMoreMenu);
     root.querySelector('#btn-manage-contacts')?.addEventListener('click', () => {
         store.navigateTo('contacts');
     });
@@ -218,7 +220,6 @@ export function renderApp(root) {
         checkinCountdown.textContent = fmtSecs(checkinSecondsLeft());
         resumeCheckinIfActive(onTick, onExpire);
     }
-    root.querySelector('#btn-disguise').addEventListener('click', () => { });
     root.querySelectorAll('.checkin-preset').forEach(btn => {
         btn.addEventListener('click', () => {
             selectedMins = Number(btn.dataset['mins']);

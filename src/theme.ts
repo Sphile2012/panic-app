@@ -94,19 +94,20 @@ export function loadAppearance() {
         const raw = localStorage.getItem(STORAGE_KEY);
         if (!raw)
             return { ...DEFAULT };
-        return { ...DEFAULT, ...JSON.parse(raw), mode: 'light' };
+        const saved = JSON.parse(raw);
+        return { ...DEFAULT, ...saved, mode: saved.mode === 'dark' ? 'dark' : 'light' };
     }
     catch {
         return { ...DEFAULT };
     }
 }
 export function saveAppearance(a) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...a, mode: 'light' }));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...a, mode: a.mode === 'dark' ? 'dark' : 'light' }));
 }
 
 export function applyAppearance(a) {
     const html = document.documentElement;
-    html.setAttribute('data-theme', 'light');
+    html.setAttribute('data-theme', a.mode === 'dark' ? 'dark' : 'light');
     html.setAttribute('data-accent', a.accentId);
     const accent = ACCENT_COLOURS.find(c => c.id === a.accentId) ?? ACCENT_COLOURS[0];
     html.style.setProperty('--accent', accent.hex);
