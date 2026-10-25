@@ -79,7 +79,7 @@ export function renderApp(root) {
       </section>
 
       ${contacts.length > 0 ? `
-      <section class="dashboard-section">
+      <section class="dashboard-section dashboard-trusted-circle">
         <div class="dashboard-section-heading">
           <h2>Your trusted circle</h2>
           <button class="dashboard-section-link" id="btn-manage-contacts">Manage →</button>
@@ -104,9 +104,10 @@ export function renderApp(root) {
 
       <div class="app-quick-bar" aria-label="Display options">
         <button class="app-quick-btn" id="btn-disguise" title="Change disguise screen"
-          aria-label="Change disguise screen">
-          <span class="app-quick-icon">${currentDisguise?.preview ?? 'Calculator'}</span>
+          aria-label="Change disguise screen" aria-expanded="false">
+          <img class="app-quick-icon" src="/favicon.svg" alt="" />
           <span class="app-quick-label">${currentDisguise?.label ?? 'Calculator'}</span>
+          <svg class="app-quick-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="m4 6 4 4 4-4"/></svg>
         </button>
 
         <button class="app-quick-btn" id="btn-quick-checkin" title="Check-in timer"
@@ -148,9 +149,13 @@ export function renderApp(root) {
         </div>
       </div>
 
-      <div class="disguise-sheet" id="disguise-sheet" aria-hidden="true">
+      <button class="disguise-backdrop" id="disguise-backdrop" type="button" aria-label="Close disguise menu" hidden></button>
+      <div class="disguise-sheet" id="disguise-sheet" aria-hidden="true" inert>
         <details class="disguise-dropdown" open>
-          <summary class="disguise-sheet-title">Choose disguise screen</summary>
+          <summary class="disguise-sheet-title">
+            <span><img src="/favicon.svg" alt="" />Choose disguise screen</span>
+            <span class="disguise-sheet-current">${currentDisguise?.label ?? 'Calculator'}</span>
+          </summary>
           <div class="disguise-sheet-grid">
             ${DISGUISE_OPTIONS.map(d => `
               <button
@@ -269,22 +274,28 @@ export function renderApp(root) {
         button.addEventListener('click', () => store.navigateTo(button.dataset['bottomNav'] ?? 'app'));
     });
     const sheet = root.querySelector('#disguise-sheet');
+    const disguiseBackdrop = root.querySelector('#disguise-backdrop');
+    const disguiseButton = root.querySelector('#btn-disguise');
+    const setDisguiseOpen = (open) => {
+        sheet.setAttribute('aria-hidden', String(!open));
+        sheet.classList.toggle('disguise-sheet--open', open);
+        sheet.inert = !open;
+        disguiseBackdrop.hidden = !open;
+        disguiseButton.setAttribute('aria-expanded', String(open));
+        root.querySelector('.dashboard-trusted-circle')?.classList.toggle('dashboard-trusted-circle--hidden', open);
+    };
     root.querySelector('#btn-disguise').addEventListener('click', () => {
         const open = sheet.getAttribute('aria-hidden') === 'false';
-        sheet.setAttribute('aria-hidden', open ? 'true' : 'false');
-        sheet.classList.toggle('disguise-sheet--open', !open);
+        setDisguiseOpen(!open);
     });
-    root.querySelector('#disguise-close').addEventListener('click', () => {
-        sheet.setAttribute('aria-hidden', 'true');
-        sheet.classList.remove('disguise-sheet--open');
-    });
+    disguiseBackdrop.addEventListener('click', () => setDisguiseOpen(false));
+    root.querySelector('#disguise-close').addEventListener('click', () => setDisguiseOpen(false));
     root.querySelectorAll('[data-disguise]').forEach(btn => {
         btn.addEventListener('click', () => {
             const ap = loadAppearance();
             ap.disguise = btn.dataset['disguise'];
             saveAppearance(ap);
-            sheet.setAttribute('aria-hidden', 'true');
-            sheet.classList.remove('disguise-sheet--open');
+            setDisguiseOpen(false);
             store.navigateTo('app');
         });
     });
@@ -319,7 +330,6 @@ export function renderApp(root) {
         checkinCountdown.textContent = fmtSecs(checkinSecondsLeft());
         resumeCheckinIfActive(onTick, onExpire);
     }
-    root.querySelector('#btn-disguise').addEventListener('click', () => { });
     root.querySelectorAll('.checkin-preset').forEach(btn => {
         btn.addEventListener('click', () => {
             selectedMins = Number(btn.dataset['mins']);

@@ -33,6 +33,6 @@ test('live location requests GPS immediately and reports browser security limita
     assert.match(source, /t\('trk\.requesting'\)/);
     assert.match(source, /t\('trk\.insecure'\)/);
     assert.match(source, /err === 'auth'/);
-    assert.match(source, /store\.navigateTo\('login'\)/);
+    assert.match(source, /store\.navigateTo\('welcome'\)/);
   }
 });

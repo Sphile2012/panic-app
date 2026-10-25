@@ -1,5 +1,5 @@
 import { store } from '../state.js';
-import { buildSmsBody, telUri, whatsappUri } from '../storage.js';
+import { buildSmsBody, smsUri, telUri, whatsappUri } from '../storage.js';
 export function renderSending(root) {
     const { contacts } = store.getState();
     root.innerHTML = `
@@ -10,7 +10,7 @@ export function renderSending(root) {
       </div>
       <h2 class="sending-title">Preparing your alerts…</h2>
       <p class="sending-sub" id="sending-sub">
-        Your SMS app will open for each contact. Review the message and tap Send, then return here.
+        Your selected SMS or WhatsApp app will open for each contact. Review the message and tap Send, then return here.
       </p>
       <ul class="sending-list" id="sending-list">
         ${contacts.map(sendingRow).join('')}
@@ -29,13 +29,13 @@ export function renderSent(root) {
     const opened = contacts.filter(c => c.status === 'opened').length;
     const failed = contacts.filter(c => c.status === 'failed').length;
     const summaryLine = failed > 0
-        ? `${opened} SMS composers opened · ${failed} could not be prepared`
-        : `${opened} SMS composer${opened !== 1 ? 's' : ''} opened; tap Send in your Messages app`;
+        ? `${opened} message app${opened !== 1 ? 's' : ''} opened · ${failed} could not be prepared`
+        : `${opened} message app${opened !== 1 ? 's' : ''} opened; review and tap Send`;
     root.innerHTML = `
     <div class="screen sent-screen">
 
       <div class="sent-hero" aria-hidden="true">${failed > 0 ? '!' : 'OK'}</div>
-      <h2 class="sent-title">SMS alert prepared</h2>
+      <h2 class="sent-title">Alert prepared</h2>
       <p class="sent-summary">${summaryLine}</p>
 
       ${failed > 0 ? `
@@ -46,7 +46,13 @@ export function renderSent(root) {
       ` : ''}
 
       <ul class="sending-list">
-        ${contacts.map(contact => sentRow(contact, whatsappUri(contact.phone, buildSmsBody(contact.name, alertLocation, locationShared, notes)))).join('')}
+        ${contacts.map(contact => {
+        const body = buildSmsBody(contact.name, alertLocation, locationShared, notes);
+        const fallbackLink = contact.notificationChannel === 'whatsapp'
+            ? smsUri(contact.phone, body)
+            : whatsappUri(contact.phone, body);
+        return sentRow(contact, fallbackLink);
+    }).join('')}
       </ul>
 
       ${locationShared ? `
@@ -96,11 +102,11 @@ function sendingRow(c) {
         <span class="contact-name">${c.name}</span>
         <span class="contact-phone">${c.phone}</span>
       </div>
-      <span class="sending-status">${deliveryIcon(c.status)}</span>
+      <span class="sending-status">${deliveryIcon(c.status, c.notificationChannel)}</span>
     </li>
   `;
 }
-function sentRow(c, whatsappLink) {
+function sentRow(c, fallbackLink) {
     const callLink = c.status === 'failed'
         ? `<a class="sent-call-link" href="${telUri(c.phone)}">Call ${c.name}</a>`
         : '';
@@ -111,17 +117,17 @@ function sentRow(c, whatsappLink) {
         <span class="contact-name">${c.name}</span>
         <span class="contact-phone">${c.phone}</span>
         ${callLink}
-        <a class="sent-whatsapp-fallback" href="${whatsappLink}" target="_blank" rel="noopener noreferrer">WhatsApp backup</a>
+        <a class="sent-whatsapp-fallback" href="${fallbackLink}" target="_blank" rel="noopener noreferrer">${c.notificationChannel === 'whatsapp' ? 'SMS backup' : 'WhatsApp backup'}</a>
       </div>
       <span class="sending-status">${deliveryIcon(c.status)}</span>
     </li>
   `;
 }
-function deliveryIcon(status) {
+function deliveryIcon(status, notificationChannel = 'sms') {
     switch (status) {
         case 'pending': return '–';
         case 'sending': return '<span class="spinner"></span>';
-        case 'opened': return 'SMS opened';
+        case 'opened': return notificationChannel === 'whatsapp' ? 'WhatsApp opened' : 'SMS opened';
         case 'failed': return 'Failed';
     }
 }

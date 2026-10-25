@@ -1,5 +1,5 @@
 import { store } from './state.js';
-import { buildSmsBody, smsUri } from './storage.js';
+import { buildSmsBody, smsUri, whatsappUri } from './storage.js';
 import { insertAlertLog, getDeviceId, getUser } from './db.js';
 import { hasValidCoordinates, isShareableAccuracy } from './locationConfig.mjs';
 async function nominatimFetch(lat, lng, zoom) {
@@ -139,11 +139,17 @@ export async function runAlertSequence(locationText, locationShared, onStep) {
         store.navigateTo('sent');
         return;
     }
+    const prioritizedContacts = contacts
+        .map((contact, index) => ({ contact, index }))
+        .sort((a, b) => (a.contact.priority ?? a.index + 1) - (b.contact.priority ?? b.index + 1) || a.index - b.index)
+        .map(item => item.contact);
     let opened = 0;
-    for (let i = 0; i < contacts.length; i++) {
-        const contact = contacts[i];
+    for (let i = 0; i < prioritizedContacts.length; i++) {
+        const contact = prioritizedContacts[i];
         const body = buildSmsBody(contact.name, locationText, locationShared, notes);
-        window.location.href = smsUri(contact.phone, body);
+        window.location.href = contact.notificationChannel === 'whatsapp'
+            ? whatsappUri(contact.phone, body)
+            : smsUri(contact.phone, body);
         await waitForReturn();
         store.updateContactStatus(contact.id, 'opened');
         opened++;

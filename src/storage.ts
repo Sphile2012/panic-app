@@ -6,7 +6,10 @@ export type Contact = {
     id: string;
     name: string;
     phone: string;
+    email?: string;
     relationship?: string;
+    priority?: number;
+    notificationChannel?: 'sms' | 'whatsapp';
     photo?: string;
     initials: string;
     status: 'pending' | 'sending' | 'opened' | 'failed';

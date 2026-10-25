@@ -65,6 +65,16 @@ test('setup validates PIN confirmations and status exposes no credential hashes'
   assert.match(status, /Cache-Control': 'no-store'/);
 });
 
+test('PIN Edge Functions restrict methods and advertise CORS methods', () => {
+  for (const source of [setup, change, verify]) {
+    assert.match(source, /'Access-Control-Allow-Methods': 'POST, OPTIONS'/);
+    assert.match(source, /if \(req\.method !== 'POST'\)/);
+    assert.match(source, /status: 405/);
+  }
+  assert.match(status, /'Access-Control-Allow-Methods': 'GET, OPTIONS'/);
+  assert.match(status, /if \(request\.method !== 'GET'\)/);
+});
+
 test('security answers may be shorter than eight characters but cannot be blank', () => {
   for (const source of [setup, accountPinScreen, recoveryScreen, recoveryStorage]) {
     assert.doesNotMatch(source, /answer[^\n]*length\s*<\s*8|length\s*<\s*8[^\n]*answer/i);
