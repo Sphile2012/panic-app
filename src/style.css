@@ -1829,12 +1829,16 @@ html[data-photo-background="true"] .phone-screen > .screen { background: transpa
   line-height: 1.5; 
 }
 .dashboard-alert-card .btn-hold {
-  width: 112px;
-  height: 112px;
+  width: min(40vw, 200px);
+  height: min(40vw, 200px);
+  min-width: 120px;
+  min-height: 120px;
+  max-width: 280px;
+  max-height: 280px;
   flex: 0 0 auto;
   border: 5px solid #a40c17;
   background: radial-gradient(circle at 35% 28%, #ff394c 0%, #ed071f 48%, #a90015 74%, #6d000e 100%);
-  font-size: 1rem;
+  font-size: clamp(0.9rem, 3vw, 1.2rem);
   letter-spacing: .06em;
   box-shadow: 0 0 0 4px #f52237, 0 0 0 8px rgba(164, 12, 23, .45), inset 0 0 18px rgba(56, 0, 6, .75), 0 10px 24px rgba(148, 20, 51, .35);
   transition: all .2s ease;
