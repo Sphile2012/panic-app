@@ -4,7 +4,24 @@ import { test } from 'node:test';
 
 const liveScreen = await readFile(new URL('../src/screens/live.ts', import.meta.url), 'utf8');
 const liveRuntime = await readFile(new URL('../src/screens/live.js', import.meta.url), 'utf8');
+const appScreen = await readFile(new URL('../src/screens/app.ts', import.meta.url), 'utf8');
+const appRuntime = await readFile(new URL('../src/screens/app.js', import.meta.url), 'utf8');
 const tracking = await readFile(new URL('../src/tracking.ts', import.meta.url), 'utf8');
+
+test('app menu button opens the full side menu and preserves the More action', () => {
+  for (const source of [appScreen, appRuntime]) {
+    assert.match(source, /aria-label="Open app menu"/);
+    assert.match(source, /title="Open app menu"/);
+    assert.match(source, /<path d="M5 7h14M5 12h14M5 17h14"\/>/);
+    assert.match(source, /root\.querySelector\('#btn-menu'\)\.addEventListener\('click', openMenu\)/);
+    assert.match(source, /id="btn-open-menu"[^>]*>More<\/button>/);
+    assert.match(source, /root\.querySelector\('#btn-open-menu'\)\.addEventListener\('click', openMenu\)/);
+    assert.match(source, /Your Safety<br><em>Matters<\/em>/);
+    assert.match(source, /id="btn-hold"/);
+    assert.doesNotMatch(source, /store\.navigateTo\('live'\);\s*void startTracking\(\)/);
+    assert.doesNotMatch(source, /Quick access|dashboard-grid|dashboard-trusted-circle|data-dashboard/);
+  }
+});
 
 test('live location button requests location and does not start camera capture', () => {
   for (const source of [liveScreen, liveRuntime]) {

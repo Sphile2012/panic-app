@@ -71,6 +71,7 @@ test('restored Supabase sessions initialize the app auth state used by Live Map'
     assert.match(source, /isAuthenticated:\s*false/);
     assert.match(source, /isPinUnlocked:\s*true/);
     assert.match(source, /isAuthenticated:\s*isAuthenticated \|\| this\.state\.isPinUnlocked/);
+    assert.match(source, /async savePin\([\s\S]*?isFirstRun: false,[\s\S]*?isPinUnlocked: true,[\s\S]*?isAuthenticated: true/);
     assert.match(source, /event === 'INITIAL_SESSION'/);
     assert.match(source, /restoreSession/);
   }

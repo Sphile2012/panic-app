@@ -111,11 +111,18 @@ function showPhoneCodeForm(form: HTMLFormElement, phone: string, purpose: 'signu
 
 export function renderWelcome(root: HTMLElement) {
   const hasPinStored = Boolean(store.getState().pinHash);
+  const welcomeTitle = t('welcome.title');
+  const welcomeTitleHtml = welcomeTitle === 'Your Safety Matters'
+    ? 'Your Safety<br><em>Matters</em>'
+    : escapeSignupValue(welcomeTitle);
   root.innerHTML = `
     <div class="screen splash-screen">
       <div class="splash-scene">
-        <div class="splash-mini-device" aria-hidden="true">
-          <div class="splash-mini-device__screen"></div>
+        <div class="splash-alert-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
+            <path d="M10 21h4" />
+          </svg>
         </div>
 
         <div class="splash-card">
@@ -127,7 +134,7 @@ export function renderWelcome(root: HTMLElement) {
 
           <div class="splash-content">
             ${languageBarHtml()}
-            <h1 class="splash-tagline">${t('welcome.title')}</h1>
+            <h1 class="splash-tagline">${welcomeTitleHtml}</h1>
             <p class="splash-pin-hint">${t('welcome.pinHint')}</p>
             <div class="splash-actions">
               <button class="btn-primary splash-btn" id="splash-login" type="button">${t('welcome.login')}</button>
@@ -142,12 +149,6 @@ export function renderWelcome(root: HTMLElement) {
               </button>
               <p class="splash-install-message" id="splash-install-message" role="status" hidden></p>
             </div>
-          </div>
-        </div>
-
-        <div class="splash-map-panel" aria-hidden="true">
-          <div class="splash-map-panel__inner">
-            <div class="splash-map-panel__badge">Panic Ring</div>
           </div>
         </div>
       </div>

@@ -39,6 +39,8 @@ The mobile app requires a development build for native configuration changes; Ex
 
 The app keeps its PIN-protected profile, contacts, notes, and safety plan in the device's encrypted local vault. It does not use email or Google sign-in in the main app flow.
 
+The unlocked home screen keeps the decorated safety greeting, emergency PANIC button, location-sharing shortcut, and navigation. Feature cards and the trusted-contact preview are available from the menu instead of the home screen.
+
 ## Emergency alerts
 
 - Hold the red **PANIC** button for 1.5 seconds to begin an alert.
@@ -48,6 +50,7 @@ The app keeps its PIN-protected profile, contacts, notes, and safety plan in the
 - On browsers that expose battery status, an in-app warning appears at 20% while Panic Ring is open. It offers an SMS draft per trusted contact; the user must review and tap Send.
 - A discreet **WhatsApp backup** link opens WhatsApp with the same prepared text. The user still needs to review and send it.
 - The **Live location** screen shows a readable on/off status without exposing raw coordinates. While tracking is active, each trusted contact can receive the live link through an SMS draft or a WhatsApp draft. The location screen also offers separate one-time SMS and WhatsApp location drafts.
+- The rounded two-line button at the top of the dashboard opens Live location and requests browser location permission. After a GPS fix, choose a trusted contact to open an SMS or WhatsApp draft; review and send it there. Use **More** in the bottom navigation for the app menu.
 
 ### Current platform limitations
 

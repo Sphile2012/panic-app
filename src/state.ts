@@ -196,7 +196,13 @@ class Store {
         const decoyHash = await hashPin(decoyPin);
         const oldHash = this.state.pinHash;
         await savePinHashes(pinHash, decoyHash, this.state.autoLockMinutes, oldHash || undefined);
-        this.state = { ...this.state, pinHash, isFirstRun: false };
+        this.state = {
+            ...this.state,
+            pinHash,
+            isFirstRun: false,
+            isPinUnlocked: true,
+            isAuthenticated: true,
+        };
         this.notify();
     }
     async _saveContacts(contacts: Contact[]) {

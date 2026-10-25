@@ -13,6 +13,7 @@ const ICONS: Record<string, string> = {
     journey: '<path d="M21 3L3 10l7 3 3 7z"/>',
     fakecall: '<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/>',
     watch: '<rect x="7" y="6" width="10" height="12" rx="3"/><path d="M9 6l1-3h4l1 3M9 18l1 3h4l1-3"/>',
+    location: '<rect x="7" y="2.5" width="10" height="19" rx="2"/><path d="M10 5h4M11 18h2"/>',
     profile: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/>',
     settings: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>',
     guide: '<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5"/>',
@@ -44,8 +45,12 @@ function sections(): Array<{ title: string; items: Item[] }> {
             { screen: 'chat', label: 'Safety assistant' },
         ] },
         { title: t('menu.safety'), items: [
-            { screen: 'safety-plan', label: 'Safety plan' },
             { screen: 'history', label: t('menu.history') },
+            { screen: 'journey', label: t('menu.journey') },
+            { screen: 'location', label: 'Find My Phone' },
+            { screen: 'fakecall', label: t('menu.fakecall') },
+            { screen: 'watch', label: t('menu.watch') },
+            { screen: 'safety-plan', label: 'Safety plan' },
             { screen: 'records', label: 'Records' },
             { screen: 'notes', label: 'Notes' },
             { screen: 'troubleshoot', label: 'Troubleshooting' },
@@ -53,6 +58,7 @@ function sections(): Array<{ title: string; items: Item[] }> {
         { title: t('menu.account'), items: [
             { screen: 'companion', label: 'Safety companion' },
             { screen: 'settings', label: t('menu.settings') },
+            { screen: 'guide', label: t('menu.guide') },
             { screen: 'about', label: 'About Panic Ring' },
         ] },
     ];

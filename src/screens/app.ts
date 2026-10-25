@@ -3,7 +3,7 @@ import { loadAppearance, saveAppearance, DISGUISE_OPTIONS } from '../theme.js';
 import { isCheckinActive, checkinSecondsLeft, startCheckin, cancelCheckin, resumeCheckinIfActive } from '../checkin.js';
 import { openMenu } from '../menu.js';
 import { smsUri } from '../storage.js';
-import { dismissLowBattery, getLowBattery, onTrackChange, startBatteryMonitoring } from '../tracking.js';
+import { dismissLowBattery, getLowBattery, onTrackChange, startBatteryMonitoring, startTracking } from '../tracking.js';
 import { startEmergencySession } from '../emergencySession.js';
 
 function escapeHtml(value: string): string {
@@ -12,99 +12,32 @@ function escapeHtml(value: string): string {
     }[character] ?? character));
 }
 
-const DASHBOARD_CARDS = [
-    { screen: 'emergency', icon: '<path d="M12 3v18M3 12h18"/>', label: 'Emergency dialer', detail: 'Call help directly' },
-    { screen: 'contacts', icon: '<circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.5"/><path d="M17 14c2.5 0 4 1.8 4 4"/>', label: 'Trusted contacts', detail: 'Manage your circle' },
-    { screen: 'live', icon: '<path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1116 0z"/><circle cx="12" cy="10" r="2.5"/>', label: 'Live location', detail: 'Share your location' },
-    { screen: 'safety-plan', icon: '<path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11z"/><path d="M9 12l2 2 4-4"/>', label: 'Safety plan', detail: 'Your plan, ready' },
-    { screen: 'history', icon: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 8v5l3 2"/>', label: 'Alert history', detail: 'Review past alerts' },
-    { screen: 'notes', icon: '<path d="M5 3h14v18H5z"/><path d="M8 8h8M8 12h8M8 16h5"/>', label: 'Private notes', detail: 'Keep key details' },
-    { screen: 'chat', icon: '<path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8A8.5 8.5 0 0 1 8.7 3.9a8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8z"/>', label: 'Safety assistant', detail: 'Get step-by-step guidance' },
-    { screen: 'checkin', icon: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', label: 'Check-in timer', detail: 'Set a safe arrival time' },
-    { screen: 'troubleshoot', icon: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 4 2c-1 .7-1.5 1.1-1.5 2.5M12 17h.01"/>', label: 'Troubleshooting', detail: 'Fix common issues' },
-];
-
 export function renderApp(root) {
-    const { contacts, authEmail, profile } = store.getState();
+    const { contacts } = store.getState();
     const appearance = loadAppearance();
-    const displayName = profile.name || authEmail?.split('@')[0] || 'Your safety dashboard';
-    const avatarLetter = displayName[0]?.toUpperCase() ?? '?';
-    const avatar = profile.photo
-        ? `<img src="${profile.photo}" alt="" />`
-        : escapeHtml(avatarLetter);
     const currentDisguise = DISGUISE_OPTIONS.find(d => d.id === appearance.disguise);
     root.innerHTML = `
     <div class="screen app-screen">
 
       <header class="app-header">
-        <button class="app-menu-button" id="btn-menu" type="button" aria-label="Open menu">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
-        </button>
-        <div class="app-header-text">
-          <h1 class="app-title">Dashboard</h1>
-          <p class="app-subtitle">Welcome, ${escapeHtml(displayName)}</p>
-        </div>
-        <button class="app-avatar" id="btn-profile" aria-label="Open profile"
-          title="${escapeHtml(authEmail ?? 'Profile')}">
-          ${avatar}
+        <button class="app-menu-button" id="btn-menu" type="button" aria-label="Open app menu" title="Open app menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h14"/></svg>
         </button>
       </header>
 
       <section class="dashboard-alert-card" aria-label="Emergency alert">
         <div class="dashboard-alert-copy">
-          <span class="dashboard-eyebrow">PANIC RING</span>
-          <h2>Your safety comes first</h2>
-          <p>Hold the button to alert your trusted circle.</p>
+          <h2>Your Safety<br><em>Matters</em></h2>
+          <span class="app-title-underline" aria-hidden="true"></span>
         </div>
-        <button class="btn-hold" id="btn-hold" aria-label="Hold the PANIC button to send an alert" title="Hold for 1.5 seconds to send">
-          <span class="btn-hold-label">PANIC</span>
-          <div class="btn-hold-ring"></div>
-        </button>
+        <div class="app-panic-shell">
+          <button class="btn-hold" id="btn-hold" aria-label="Hold the PANIC button to send an alert" title="Hold for 1.5 seconds to send">
+            <span class="btn-hold-label">PANIC</span>
+            <div class="btn-hold-ring"></div>
+          </button>
+        </div>
       </section>
-      <p class="app-activate-hint">Hold for 1.5 seconds · release to cancel</p>
       <div id="dashboard-battery-alert"></div>
-
-      <section class="dashboard-section">
-        <div class="dashboard-section-heading">
-          <h2>Quick access</h2>
-          <span>${contacts.length} trusted ${contacts.length === 1 ? 'contact' : 'contacts'}</span>
-        </div>
-        <div class="dashboard-grid">
-          ${DASHBOARD_CARDS.map(card => `
-            <button class="dashboard-card" type="button" data-dashboard="${card.screen}">
-              <span class="dashboard-card-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${card.icon}</svg>
-              </span>
-              <span class="dashboard-card-label">${card.label}</span>
-              <span class="dashboard-card-detail">${card.detail}</span>
-            </button>
-          `).join('')}
-        </div>
-      </section>
-
-      ${contacts.length > 0 ? `
-      <section class="dashboard-section dashboard-trusted-circle">
-        <div class="dashboard-section-heading">
-          <h2>Your trusted circle</h2>
-          <button class="dashboard-section-link" id="btn-manage-contacts">Manage →</button>
-        </div>
-        <ul class="dashboard-contacts-list">
-          ${contacts.slice(0, 4).map(c => `
-            <li class="dashboard-contact-item">
-              <div class="dashboard-contact-avatar-wrapper">
-                ${c.photo ? `<img src="${c.photo}" alt="${c.name}" class="dashboard-contact-avatar-img" />` : `<div class="dashboard-contact-avatar">${c.initials}</div>`}
-              </div>
-              <div class="dashboard-contact-info">
-                <span class="dashboard-contact-name">${escapeHtml(c.name)}</span>
-                ${c.relationship ? `<span class="dashboard-contact-relationship">${escapeHtml(c.relationship)}</span>` : ''}
-                <span class="dashboard-contact-phone">${escapeHtml(c.phone)}</span>
-              </div>
-            </li>
-          `).join('')}
-        </ul>
-        ${contacts.length > 4 ? `<p class="dashboard-contacts-more">+${contacts.length - 4} more contact${contacts.length - 4 > 1 ? 's' : ''}</p>` : ''}
-      </section>
-      ` : ''}
 
       <div class="app-quick-bar" aria-label="Display options">
         <button class="app-quick-btn" id="btn-disguise" title="Change disguise screen"
@@ -121,9 +54,10 @@ export function renderApp(root) {
       </div>
 
       <nav class="app-bottom-nav" aria-label="Main navigation">
-        <button class="app-bottom-nav-btn" data-bottom-nav="contacts" type="button">Trusted circle</button>
+        <button class="app-bottom-nav-btn" data-bottom-nav="contacts" type="button">Circle</button>
         <button class="app-bottom-nav-btn app-bottom-nav-btn--active" data-bottom-nav="app" type="button">Home</button>
         <button class="app-bottom-nav-btn" data-bottom-nav="profile" type="button">Profile</button>
+        <button class="app-bottom-nav-btn" id="btn-open-menu" type="button">More</button>
       </nav>
 
       <div class="checkin-bar" id="checkin-bar" style="display:none">
@@ -255,13 +189,8 @@ export function renderApp(root) {
             cancelHold();
     });
     holdBtn.addEventListener('blur', cancelHold);
-    root.querySelector('#btn-profile').addEventListener('click', () => {
-        store.navigateTo('profile');
-    });
     root.querySelector('#btn-menu').addEventListener('click', openMenu);
-    root.querySelector('#btn-manage-contacts')?.addEventListener('click', () => {
-        store.navigateTo('contacts');
-    });
+    root.querySelector('#btn-open-menu').addEventListener('click', openMenu);
     const checkinSheet: HTMLElement = root.querySelector('#checkin-sheet');
     const checkinBackdrop: HTMLButtonElement = root.querySelector('#checkin-backdrop');
     const setCheckinOpen = (open: boolean) => {
@@ -270,15 +199,6 @@ export function renderApp(root) {
         checkinBackdrop.hidden = !open;
     };
     checkinBackdrop.addEventListener('click', () => setCheckinOpen(false));
-    root.querySelectorAll('[data-dashboard]').forEach(button => {
-        button.addEventListener('click', () => {
-            const screen = (button as HTMLElement).dataset['dashboard'];
-            if (screen === 'checkin') {
-                setCheckinOpen(true);
-            }
-            else if (screen) store.navigateTo(screen);
-        });
-    });
     root.querySelectorAll('[data-bottom-nav]').forEach(button => {
         button.addEventListener('click', () => store.navigateTo((button as HTMLElement).dataset['bottomNav'] ?? 'app'));
     });
@@ -291,7 +211,6 @@ export function renderApp(root) {
         sheet.inert = !open;
         disguiseBackdrop.hidden = !open;
         disguiseButton.setAttribute('aria-expanded', String(open));
-        root.querySelector('.dashboard-trusted-circle')?.classList.toggle('dashboard-trusted-circle--hidden', open);
     };
     root.querySelector('#btn-disguise').addEventListener('click', () => {
         const open = sheet.getAttribute('aria-hidden') === 'false';
