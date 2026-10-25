@@ -119,7 +119,6 @@ export default function NotesScreen() {
       </View>
 
       <View style={styles.infoCard}>
-        <Text style={styles.infoIcon}>🔒</Text>
         <Text style={styles.infoTitle}>Secure Evidence Storage</Text>
         <Text style={styles.infoBody}>
           Document incidents privately. Your notes are encrypted and stored securely. Only you can

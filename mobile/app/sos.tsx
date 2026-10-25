@@ -222,7 +222,7 @@ export default function SOSScreen() {
 
           {currentLocation && (
             <View style={styles.locationCard}>
-              <Text style={styles.locationTitle}>📍 Location Shared</Text>
+              <Text style={styles.locationTitle}>Location Shared</Text>
               <Text style={styles.locationCoords}>
                 {currentLocation.latitude.toFixed(6)}, {currentLocation.longitude.toFixed(6)}
               </Text>
@@ -246,7 +246,6 @@ export default function SOSScreen() {
       ) : (
         <>
           <View style={styles.infoCard}>
-            <Text style={styles.infoIcon}>🆘</Text>
             <Text style={styles.infoTitle}>Silent SOS Alert</Text>
             <Text style={styles.infoBody}>
               Hold the button below to activate. Your trusted contacts will receive an alert with
@@ -261,7 +260,7 @@ export default function SOSScreen() {
               onPress={() => setShareLocation(!shareLocation)}
             >
               <View style={styles.toggleInfo}>
-                <Text style={styles.toggleLabel}>📍 Share my location</Text>
+                <Text style={styles.toggleLabel}>Share my location</Text>
                 <Text style={styles.toggleDescription}>
                   Include your current location in the alert
                 </Text>

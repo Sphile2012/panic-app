@@ -20,12 +20,12 @@ type SafetyPlanItem = {
 };
 
 const CATEGORIES = [
-  { key: 'trusted_people', label: 'Trusted People', icon: '👥', placeholder: 'Who can I contact if I feel unsafe?' },
-  { key: 'safe_places', label: 'Safe Places', icon: '🏠', placeholder: 'Where can I go if I need to leave quickly?' },
-  { key: 'emergency_numbers', label: 'Emergency Numbers', icon: '📞', placeholder: 'Important numbers to remember' },
-  { key: 'important_documents', label: 'Important Documents', icon: '📄', placeholder: 'What documents should I keep safe?' },
-  { key: 'transport', label: 'Transport Options', icon: '🚗', placeholder: 'How can I leave safely?' },
-  { key: 'things_to_remember', label: 'Things to Remember', icon: '💡', placeholder: 'Other important information' },
+  { key: 'trusted_people', label: 'Trusted People', icon: 'TC', placeholder: 'Who can I contact if I feel unsafe?' },
+  { key: 'safe_places', label: 'Safe Places', icon: 'SP', placeholder: 'Where can I go if I need to leave quickly?' },
+  { key: 'emergency_numbers', label: 'Emergency Numbers', icon: 'EN', placeholder: 'Important numbers to remember' },
+  { key: 'important_documents', label: 'Important Documents', icon: 'ID', placeholder: 'What documents should I keep safe?' },
+  { key: 'transport', label: 'Transport Options', icon: 'TR', placeholder: 'How can I leave safely?' },
+  { key: 'things_to_remember', label: 'Things to Remember', icon: 'TM', placeholder: 'Other important information' },
 ];
 
 export default function SafetyPlanScreen() {
@@ -108,7 +108,6 @@ export default function SafetyPlanScreen() {
       </View>
 
       <View style={styles.infoCard}>
-        <Text style={styles.infoIcon}>🛡️</Text>
         <Text style={styles.infoTitle}>Plan for Your Safety</Text>
         <Text style={styles.infoBody}>
           Prepare before an emergency. Write down trusted people, safe places, and important

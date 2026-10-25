@@ -382,11 +382,11 @@ export function getEmergencyMessage(): string {
     
     if (currentSession.latitude && currentSession.longitude) {
         const googleMapsLink = `https://maps.google.com/?q=${currentSession.latitude},${currentSession.longitude}`;
-        message += `📍 LOCATION:\n${currentSession.locationText || 'GPS coordinates'}\n`;
+        message += `LOCATION:\n${currentSession.locationText || 'GPS coordinates'}\n`;
         message += `Map: ${googleMapsLink}\n`;
         message += `Accuracy: ±${Math.round(currentSession.accuracy || 0)}m\n\n`;
     } else {
-        message += `📍 Location: Not available\n\n`;
+        message += `Location: Not available\n\n`;
     }
     
     if (isTracking() && DB_CONFIGURED) {

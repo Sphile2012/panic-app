@@ -161,21 +161,6 @@ export default function HomeScreen() {
     >
       {session ? (
         <View style={styles.mainScreen}>
-          <View style={styles.topBar}>
-            <Pressable 
-              style={styles.hamburger}
-              onPress={() => setMenuOpen(true)}
-              accessibilityLabel="Open menu"
-              accessibilityRole="button"
-            >
-              <View style={styles.hamburgerLine} />
-              <View style={styles.hamburgerLine} />
-              <View style={styles.hamburgerLine} />
-            </Pressable>
-            <Text style={styles.appTitle}>Panic Ring</Text>
-            <View style={styles.placeholder} />
-          </View>
-
           <View style={styles.panicContainer}>
             <Pressable
               style={styles.panicButton}
@@ -188,6 +173,17 @@ export default function HomeScreen() {
 
             <Text style={styles.footerText}>Tap to share your location instantly</Text>
           </View>
+
+          <Pressable 
+            style={styles.floatingMenuButton}
+            onPress={() => setMenuOpen(true)}
+            accessibilityLabel="Open menu"
+            accessibilityRole="button"
+          >
+            <View style={styles.hamburgerLine} />
+            <View style={styles.hamburgerLine} />
+            <View style={styles.hamburgerLine} />
+          </Pressable>
 
           <Modal
             animationType="slide"
@@ -334,34 +330,27 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background 
   },
   
-  topBar: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'ios' ? 60 : 40,
-    paddingBottom: 20,
+  floatingMenuButton: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 60 : 40,
+    left: 20,
+    width: 50,
+    height: 50,
     backgroundColor: colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
     ...Platform.select({
       ios: {
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 3,
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
       },
       android: {
-        elevation: 4,
+        elevation: 6,
       },
     }),
-  },
-  
-  hamburger: { 
-    padding: 10,
-    width: 44,
-    height: 44,
-    justifyContent: 'center',
   },
   
   hamburgerLine: { 
@@ -372,28 +361,22 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   
-  appTitle: { 
-    fontSize: 20, 
-    fontWeight: '700', 
-    color: colors.text,
-    letterSpacing: 0.5,
-  },
-  
-  placeholder: { 
-    width: 44 
-  },
-  
   panicContainer: { 
     flex: 1, 
     justifyContent: 'center', 
     alignItems: 'center',
-    paddingHorizontal: 40,
+    paddingHorizontal: 20,
+    paddingVertical: 40,
   },
   
   panicButton: { 
-    width: Math.min(width * 0.65, 280),
-    height: Math.min(width * 0.65, 280),
-    borderRadius: Math.min(width * 0.65, 280) / 2,
+    width: Math.min(width * 0.7, 320),
+    height: Math.min(width * 0.7, 320),
+    maxWidth: 320,
+    maxHeight: 320,
+    minWidth: 200,
+    minHeight: 200,
+    borderRadius: Math.min(width * 0.7, 320) / 2,
     backgroundColor: '#DC2626',
     justifyContent: 'center',
     alignItems: 'center',
@@ -411,7 +394,7 @@ const styles = StyleSheet.create({
   },
   
   panicButtonText: { 
-    fontSize: 42, 
+    fontSize: Math.min(width * 0.12, 48), 
     fontWeight: '900', 
     color: '#FFFFFF',
     letterSpacing: 3,

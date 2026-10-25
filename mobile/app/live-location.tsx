@@ -233,7 +233,6 @@ export default function LiveLocationScreen() {
         </View>
       ) : permissionStatus === 'denied' ? (
         <View style={styles.card}>
-          <Text style={styles.warningIcon}>🔒</Text>
           <Text style={styles.cardTitle}>Location Permission Required</Text>
           <Text style={styles.body}>
             Panic Ring needs access to your location to enable live tracking for emergency situations.
@@ -275,7 +274,7 @@ export default function LiveLocationScreen() {
                   style={styles.mapButton}
                   onPress={() => Linking.openURL(getGoogleMapsLink())}
                 >
-                  <Text style={styles.mapButtonText}>📍 View on Google Maps</Text>
+                  <Text style={styles.mapButtonText}>View on Google Maps</Text>
                 </Pressable>
               </View>
             ) : null}

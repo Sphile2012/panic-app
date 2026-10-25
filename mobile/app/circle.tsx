@@ -125,7 +125,6 @@ export default function CircleScreen() {
       </View>
 
       <View style={styles.infoCard}>
-        <Text style={styles.infoIcon}>🛡️</Text>
         <Text style={styles.infoTitle}>Your trusted contacts</Text>
         <Text style={styles.infoBody}>
           These people will receive alerts when you activate SOS. Choose people you trust who can
@@ -142,7 +141,6 @@ export default function CircleScreen() {
           <View style={styles.contactsList}>
             {contacts.length === 0 ? (
               <View style={styles.emptyState}>
-                <Text style={styles.emptyIcon}>👥</Text>
                 <Text style={styles.emptyText}>No trusted contacts yet</Text>
                 <Text style={styles.emptySubtext}>Add someone who can help in an emergency</Text>
               </View>
