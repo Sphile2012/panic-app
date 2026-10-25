@@ -161,7 +161,6 @@ export default function HomeScreen() {
     >
       {session ? (
         <View style={styles.mainScreen}>
-          {/* Header with hamburger menu */}
           <View style={styles.topBar}>
             <Pressable 
               style={styles.hamburger}
@@ -177,7 +176,6 @@ export default function HomeScreen() {
             <View style={styles.placeholder} />
           </View>
 
-          {/* Main content - PANIC button */}
           <View style={styles.panicContainer}>
             <Pressable
               style={styles.panicButton}
@@ -191,7 +189,6 @@ export default function HomeScreen() {
             <Text style={styles.footerText}>Tap to share your location instantly</Text>
           </View>
 
-          {/* Side menu modal */}
           <Modal
             animationType="slide"
             transparent={true}
@@ -332,13 +329,11 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.background },
   
-  // Main screen (signed in)
   mainScreen: { 
     flex: 1, 
     backgroundColor: colors.background 
   },
   
-  // Top bar with hamburger
   topBar: { 
     flexDirection: 'row', 
     alignItems: 'center', 
@@ -388,7 +383,6 @@ const styles = StyleSheet.create({
     width: 44 
   },
   
-  // Panic button container
   panicContainer: { 
     flex: 1, 
     justifyContent: 'center', 
@@ -433,7 +427,6 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   
-  // Menu modal
   modalOverlay: { 
     flex: 1, 
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -572,7 +565,6 @@ const styles = StyleSheet.create({
     color: colors.danger,
   },
 
-  // Auth screen (signed out)
   page: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 52, paddingBottom: 40 },
   header: { alignItems: 'center', marginBottom: 28 },
   brandMark: {
