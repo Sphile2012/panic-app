@@ -179,9 +179,6 @@ export default function HomeScreen() {
 
           {/* Main content - PANIC button */}
           <View style={styles.panicContainer}>
-            <Text style={styles.greetingText}>Panic Ring</Text>
-            <Text style={styles.instructionText}>Press the button below to instantly share your location with trusted contacts</Text>
-            
             <Pressable
               style={styles.panicButton}
               onPress={handlePanicPress}
@@ -191,7 +188,7 @@ export default function HomeScreen() {
               <Text style={styles.panicButtonText}>PANIC</Text>
             </Pressable>
 
-            <Text style={styles.footerText}>Tap to access location sharing and emergency features</Text>
+            <Text style={styles.footerText}>Tap to share your location instantly</Text>
           </View>
 
           {/* Side menu modal */}
@@ -217,11 +214,6 @@ export default function HomeScreen() {
                 </View>
 
                 <ScrollView style={styles.menuScroll}>
-                  <View style={styles.userEmailContainer}>
-                    <Text style={styles.userEmailLabel}>Account</Text>
-                    <Text style={styles.userEmail}>{session.user.email}</Text>
-                  </View>
-
                   <Pressable 
                     style={styles.menuItem}
                     onPress={() => navigateToFeature('/sos')}
@@ -506,26 +498,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center', 
     alignItems: 'center',
     paddingHorizontal: 40,
-    paddingBottom: 60,
-  },
-  
-  greetingText: { 
-    fontSize: 28, 
-    fontWeight: '700', 
-    color: colors.text,
-    marginBottom: 12,
-    textAlign: 'center',
-    letterSpacing: 0.5,
-  },
-  
-  instructionText: { 
-    fontSize: 15, 
-    color: colors.textSecondary,
-    marginBottom: 60,
-    textAlign: 'center',
-    lineHeight: 22,
-    paddingHorizontal: 20,
-    maxWidth: 400,
   },
   
   panicButton: { 
@@ -559,7 +531,7 @@ const styles = StyleSheet.create({
   footerText: { 
     fontSize: 14, 
     color: colors.textSecondary,
-    marginTop: 40,
+    marginTop: 50,
     textAlign: 'center',
     paddingHorizontal: 20,
     lineHeight: 20,
@@ -611,32 +583,7 @@ const styles = StyleSheet.create({
   
   menuScroll: { 
     paddingHorizontal: 24,
-  },
-  
-  userEmailContainer: {
-    marginTop: 16,
-    marginBottom: 24,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: colors.accentSoft,
-    borderRadius: 12,
-    borderLeftWidth: 4,
-    borderLeftColor: colors.accent,
-  },
-  
-  userEmailLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: colors.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginBottom: 4,
-  },
-  
-  userEmail: { 
-    fontSize: 15, 
-    fontWeight: '600',
-    color: colors.text,
+    paddingTop: 20,
   },
   
   menuItem: { 
