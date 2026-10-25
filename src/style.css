@@ -20,6 +20,12 @@
   --font:        'Segoe UI', system-ui, -apple-system, sans-serif;
 }
 
+.app-screen::before,
+.app-screen::after {
+  content: none;
+  display: none;
+}
+
 [data-theme="dark"] {
   --bg:          #0f0f13;
   --surface:     #1a1a22;
@@ -2144,6 +2150,50 @@ html[data-photo-background="true"] .phone-screen > .screen { background: transpa
 }
 .side-menu-signout:hover { background: #fdeaf0; color: #8f1e46; }
 .side-menu-version { padding: 8px 10px 0; color: #89839a; font-size: .66rem; text-align: center; }
+.side-menu-disguise {
+  margin: 12px 4px 4px;
+  border: 1px solid #e8e4ef;
+  border-radius: 12px;
+  background: #fff;
+}
+.side-menu-disguise summary {
+  min-height: 44px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: #373147;
+  font-size: .78rem;
+  font-weight: 650;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.side-menu-disguise summary small { color: #81769d; font-size: .7rem; font-weight: 500; }
+.side-menu-disguise-options { padding: 0 6px 6px; }
+.side-menu-disguise-options .side-menu-item { min-height: 40px; }
+.side-menu-theme { justify-content: space-between; }
+[data-theme="dark"] .side-menu {
+  background: var(--surface);
+}
+[data-theme="dark"] .side-menu-body {
+  background: var(--bg);
+}
+[data-theme="dark"] .side-menu-item,
+[data-theme="dark"] .side-menu-disguise summary {
+  color: var(--text);
+}
+[data-theme="dark"] .side-menu-disguise {
+  border-color: var(--border);
+  background: var(--surface);
+}
+[data-theme="dark"] .side-menu-disguise summary small,
+[data-theme="dark"] .side-menu-version {
+  color: var(--text-muted);
+}
+[data-theme="dark"] .side-menu-foot {
+  border-color: var(--border);
+}
 
 @media (max-width: 360px) {
   .side-menu { width: min(320px, 92vw); }

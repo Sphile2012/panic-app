@@ -1,7 +1,7 @@
 import { store } from '../state.js';
 import { loadAppearance, saveAppearance, DISGUISE_OPTIONS } from '../theme.js';
 import { isCheckinActive, checkinSecondsLeft, startCheckin, cancelCheckin, resumeCheckinIfActive } from '../checkin.js';
-import { openMenu } from '../menu.js';
+import { openMenu, openMoreMenu } from '../menu.js';
 import { smsUri } from '../storage.js';
 import { dismissLowBattery, getLowBattery, onTrackChange, startBatteryMonitoring } from '../tracking.js';
 function escapeHtml(value) {
@@ -36,7 +36,6 @@ export function renderApp(root) {
         <button class="app-menu-button" id="btn-menu" type="button" aria-label="Open menu">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
         </button>
-        <button class="app-menu-button app-more-button" id="btn-open-menu" type="button" aria-label="Open app menu">More</button>
       </header>
 
       <section class="dashboard-alert-card" aria-label="Emergency alert">
@@ -47,7 +46,11 @@ export function renderApp(root) {
       </section>
 
       <div id="dashboard-battery-alert"></div>
+
+      <nav class="app-bottom-nav" aria-label="Main navigation">
+        <button class="app-bottom-nav-btn" data-bottom-nav="contacts" type="button">Circle</button>
         <button class="app-bottom-nav-btn" data-bottom-nav="profile" type="button">Profile</button>
+        <button class="app-bottom-nav-btn" id="btn-open-menu" type="button">More</button>
       </nav>
 
       <div class="checkin-bar" id="checkin-bar" style="display:none">
@@ -75,22 +78,6 @@ export function renderApp(root) {
           <button class="btn-primary" id="checkin-start-btn">Start timer</button>
           <button class="checkin-sheet-close" id="checkin-close">Cancel</button>
         </div>
-      </div>
-
-      <div class="disguise-sheet" id="disguise-sheet" aria-hidden="true">
-        <p class="disguise-sheet-title">Choose disguise screen</p>
-        <div class="disguise-sheet-grid">
-          ${DISGUISE_OPTIONS.map(d => `
-            <button
-              class="ap-disguise-card ${appearance.disguise === d.id ? 'ap-disguise-card--active' : ''}"
-              data-disguise="${d.id}">
-              <span class="ap-disguise-icon">${d.preview}</span>
-              <span class="ap-disguise-label">${d.label}</span>
-              ${appearance.disguise === d.id ? '<span class="ap-disguise-check">✓ Active</span>' : ''}
-            </button>
-          `).join('')}
-        </div>
-        <button class="disguise-sheet-close" id="disguise-close" aria-label="Close">Close</button>
       </div>
 
     </div>
@@ -167,11 +154,8 @@ export function renderApp(root) {
             cancelHold();
     });
     holdBtn.addEventListener('blur', cancelHold);
-    root.querySelector('#btn-profile').addEventListener('click', () => {
-        store.navigateTo('profile');
-    });
     root.querySelector('#btn-menu').addEventListener('click', openMenu);
-    root.querySelector('#btn-open-menu').addEventListener('click', openMenu);
+    root.querySelector('#btn-open-menu').addEventListener('click', openMoreMenu);
     root.querySelector('#btn-manage-contacts')?.addEventListener('click', () => {
         store.navigateTo('contacts');
     });
@@ -195,26 +179,6 @@ export function renderApp(root) {
     });
     root.querySelectorAll('[data-bottom-nav]').forEach(button => {
         button.addEventListener('click', () => store.navigateTo(button.dataset['bottomNav'] ?? 'app'));
-    });
-    const sheet = root.querySelector('#disguise-sheet');
-    root.querySelector('#btn-disguise').addEventListener('click', () => {
-        const open = sheet.getAttribute('aria-hidden') === 'false';
-        sheet.setAttribute('aria-hidden', open ? 'true' : 'false');
-        sheet.classList.toggle('disguise-sheet--open', !open);
-    });
-    root.querySelector('#disguise-close').addEventListener('click', () => {
-        sheet.setAttribute('aria-hidden', 'true');
-        sheet.classList.remove('disguise-sheet--open');
-    });
-    root.querySelectorAll('[data-disguise]').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const ap = loadAppearance();
-            ap.disguise = btn.dataset['disguise'];
-            saveAppearance(ap);
-            sheet.setAttribute('aria-hidden', 'true');
-            sheet.classList.remove('disguise-sheet--open');
-            store.navigateTo('app');
-        });
     });
     const navRoutes = {
         notes: () => store.navigateTo('notes'),
@@ -247,7 +211,6 @@ export function renderApp(root) {
         checkinCountdown.textContent = fmtSecs(checkinSecondsLeft());
         resumeCheckinIfActive(onTick, onExpire);
     }
-    root.querySelector('#btn-disguise').addEventListener('click', () => { });
     root.querySelectorAll('.checkin-preset').forEach(btn => {
         btn.addEventListener('click', () => {
             selectedMins = Number(btn.dataset['mins']);

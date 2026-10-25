@@ -1,5 +1,6 @@
 import { store } from './state.js';
 import { t } from './i18n.js';
+import { applyAppearance, DISGUISE_OPTIONS, loadAppearance, saveAppearance } from './theme.js';
 import './strings/core.js';
 const ICONS = {
     app: '<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/>',
@@ -42,9 +43,7 @@ function sections() {
         { title: t('menu.safety'), items: [
                 { screen: 'history', label: t('menu.history') },
                 { screen: 'journey', label: t('menu.journey') },
-                { screen: 'location', label: 'Find My Phone' },
                 { screen: 'fakecall', label: t('menu.fakecall') },
-                { screen: 'watch', label: t('menu.watch') },
                 { screen: 'safety-plan', label: 'Safety plan' },
                 { screen: 'records', label: 'Records' },
                 { screen: 'notes', label: 'Notes' },
@@ -58,22 +57,59 @@ function sections() {
             ] },
     ];
 }
+function moreItems() {
+    return [
+        { screen: 'subscriptions', label: 'Subscriptions' },
+        { screen: 'watch', label: t('menu.watch') },
+        { screen: 'location', label: 'Find My Phone' },
+    ];
+}
 export function closeMenu() {
     document.getElementById('side-menu-root')?.remove();
 }
-export function openMenu() {
+function renderMenu(moreOnly) {
     closeMenu();
     const { screen, profile } = store.getState();
     const displayName = escapeHtml(profile.name || 'Your profile');
+    const appearance = loadAppearance();
     const avatar = profile.photo
         ? `<img src="${escapeHtml(profile.photo)}" alt="" />`
         : `<span>${displayName[0]?.toUpperCase() ?? '?'}</span>`;
     const wrap = document.createElement('div');
     wrap.id = 'side-menu-root';
     wrap.className = 'side-menu-root';
+    const disguiseMenu = `
+      <details class="side-menu-disguise">
+        <summary>
+          <span>Disguise screen</span>
+          <small>${DISGUISE_OPTIONS.find(option => option.id === appearance.disguise)?.label ?? 'Calculator'}</small>
+        </summary>
+        <div class="side-menu-disguise-options">
+          ${DISGUISE_OPTIONS.map(option => `
+            <button class="side-menu-item" data-disguise="${option.id}" type="button" ${appearance.disguise === option.id ? 'aria-pressed="true"' : ''}>
+              <span>${option.label}</span>
+              ${appearance.disguise === option.id ? '<span aria-hidden="true">✓</span>' : ''}
+            </button>
+          `).join('')}
+        </div>
+      </details>`;
+    const menuItems = moreOnly
+        ? `<div class="side-menu-title">More</div>${moreItems().map(i => `
+            <button class="side-menu-item${i.screen === screen ? ' side-menu-item--active' : ''}" data-go="${i.screen}">
+              <span class="side-menu-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[i.screen] ?? ICONS.guide}</svg></span>
+              <span>${i.label}</span>
+            </button>`).join('')}`
+        : sections().map(s => `
+          <div class="side-menu-title">${s.title}</div>
+          ${s.items.map(i => `
+            <button class="side-menu-item${i.screen === screen ? ' side-menu-item--active' : ''}" data-go="${i.screen}">
+              <span class="side-menu-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[i.screen] ?? ICONS.guide}</svg></span>
+              <span>${i.label}</span>
+            </button>`).join('')}
+        `).join('');
     wrap.innerHTML = `
     <div class="side-menu-backdrop" data-close="1"></div>
-    <aside class="side-menu" role="dialog" aria-label="${t('menu.open')}">
+    <aside class="side-menu" role="dialog" aria-label="${moreOnly ? 'More options' : t('menu.open')}">
       <div class="side-menu-head">
         <button class="side-menu-user" data-go="profile" type="button">
           <span class="side-menu-avatar">${avatar}</span>
@@ -85,16 +121,14 @@ export function openMenu() {
         <button class="side-menu-close" data-close="1" aria-label="${t('common.close')}">${t('common.close')}</button>
       </div>
       <nav class="side-menu-body">
-        ${sections().map(s => `
-          <div class="side-menu-title">${s.title}</div>
-          ${s.items.map(i => `
-            <button class="side-menu-item${i.screen === screen ? ' side-menu-item--active' : ''}" data-go="${i.screen}">
-              <span class="side-menu-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[i.screen] ?? ICONS.guide}</svg></span>
-              <span>${i.label}</span>
-            </button>`).join('')}
-        `).join('')}
+        ${menuItems}
+        ${disguiseMenu}
       </nav>
       <div class="side-menu-foot">
+        <button class="side-menu-item side-menu-theme" id="side-menu-theme-toggle" type="button" role="switch" aria-checked="${appearance.mode === 'dark'}">
+          <span>${appearance.mode === 'dark' ? 'Dark mode' : 'Day mode'}</span>
+          <span>${appearance.mode === 'dark' ? 'On' : 'Off'}</span>
+        </button>
         <button class="side-menu-item side-menu-signout" id="side-menu-signout" type="button">
           <span class="side-menu-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS.signout}</svg></span>
           <span>Sign out</span>
@@ -105,6 +139,20 @@ export function openMenu() {
     document.body.appendChild(wrap);
     wrap.addEventListener('click', async (e) => {
         const el = e.target;
+        const disguise = el.closest('[data-disguise]');
+        if (disguise) {
+            appearance.disguise = disguise.dataset['disguise'] ?? appearance.disguise;
+            saveAppearance(appearance);
+            renderMenu(moreOnly);
+            return;
+        }
+        if (el.closest('#side-menu-theme-toggle')) {
+            appearance.mode = appearance.mode === 'dark' ? 'light' : 'dark';
+            saveAppearance(appearance);
+            applyAppearance(appearance);
+            renderMenu(moreOnly);
+            return;
+        }
         if (el.closest('[data-close]')) {
             closeMenu();
             return;
@@ -125,8 +173,18 @@ export function openMenu() {
         const go = el.closest('[data-go]');
         if (go) {
             closeMenu();
+            if (go.dataset['go'] === 'subscriptions') {
+                alert('Subscriptions are not available yet.');
+                return;
+            }
             store.navigateTo(go.dataset['go']);
             return;
         }
     });
+}
+export function openMenu() {
+    renderMenu(false);
+}
+export function openMoreMenu() {
+    renderMenu(true);
 }
