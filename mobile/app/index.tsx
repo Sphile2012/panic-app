@@ -161,6 +161,17 @@ export default function HomeScreen() {
     >
       {session ? (
         <View style={styles.mainScreen}>
+          <Pressable
+            style={styles.hamburgerButton}
+            onPress={() => setMenuOpen(true)}
+            accessibilityLabel="Open menu"
+            accessibilityRole="button"
+          >
+            <View style={styles.hamburgerLine} />
+            <View style={styles.hamburgerLine} />
+            <View style={styles.hamburgerLine} />
+          </Pressable>
+
           <View style={styles.panicContainer}>
             <Pressable
               style={styles.panicButton}
@@ -194,6 +205,132 @@ export default function HomeScreen() {
                 </View>
 
                 <ScrollView style={styles.menuScroll}>
+                  <Text style={styles.sectionTitle}>MAIN</Text>
+                  
+                  <Pressable 
+                    style={[styles.menuItem, styles.activeMenuItem]}
+                    onPress={() => setMenuOpen(false)}
+                  >
+                    <View style={[styles.iconCircle, styles.iconHome]}>
+                      <Text style={styles.iconText}>HOME</Text>
+                    </View>
+                    <View style={styles.menuTextContainer}>
+                      <Text style={styles.menuItemTitle}>Home</Text>
+                    </View>
+                  </Pressable>
+
+                  <Pressable 
+                    style={styles.menuItem}
+                    onPress={() => navigateToFeature('/live-location')}
+                  >
+                    <View style={[styles.iconCircle, styles.iconMap]}>
+                      <Text style={styles.iconText}>MAP</Text>
+                    </View>
+                    <View style={styles.menuTextContainer}>
+                      <Text style={styles.menuItemTitle}>Live Map</Text>
+                    </View>
+                  </Pressable>
+
+                  <Pressable 
+                    style={styles.menuItem}
+                    onPress={() => navigateToFeature('/circle')}
+                  >
+                    <View style={[styles.iconCircle, styles.iconContacts]}>
+                      <Text style={styles.iconText}>CONT</Text>
+                    </View>
+                    <View style={styles.menuTextContainer}>
+                      <Text style={styles.menuItemTitle}>Contacts</Text>
+                    </View>
+                  </Pressable>
+
+                  <Text style={styles.sectionTitle}>SAFETY</Text>
+
+                  <Pressable 
+                    style={styles.menuItem}
+                    onPress={() => navigateToFeature('/sos')}
+                  >
+                    <View style={[styles.iconCircle, styles.iconAlert]}>
+                      <Text style={styles.iconText}>HIST</Text>
+                    </View>
+                    <View style={styles.menuTextContainer}>
+                      <Text style={styles.menuItemTitle}>Alert History</Text>
+                    </View>
+                  </Pressable>
+
+                  <Pressable 
+                    style={styles.menuItem}
+                    onPress={() => navigateToFeature('/safety-plan')}
+                  >
+                    <View style={[styles.iconCircle, styles.iconJourney]}>
+                      <Text style={styles.iconText}>JOUR</Text>
+                    </View>
+                    <View style={styles.menuTextContainer}>
+                      <Text style={styles.menuItemTitle}>Journey</Text>
+                    </View>
+                  </Pressable>
+
+                  <Pressable 
+                    style={styles.menuItem}
+                    onPress={() => navigateToFeature('/emergency')}
+                  >
+                    <View style={[styles.iconCircle, styles.iconFakeCall]}>
+                      <Text style={styles.iconText}>CALL</Text>
+                    </View>
+                    <View style={styles.menuTextContainer}>
+                      <Text style={styles.menuItemTitle}>Fake Call</Text>
+                    </View>
+                  </Pressable>
+
+                  <Text style={styles.sectionTitle}>ACCOUNT</Text>
+
+                  <Pressable 
+                    style={styles.menuItem}
+                    onPress={() => navigateToFeature('/change-password')}
+                  >
+                    <View style={[styles.iconCircle, styles.iconSettings]}>
+                      <Text style={styles.iconText}>SET</Text>
+                    </View>
+                    <View style={styles.menuTextContainer}>
+                      <Text style={styles.menuItemTitle}>Settings</Text>
+                    </View>
+                  </Pressable>
+
+                  <Pressable 
+                    style={styles.menuItem}
+                    onPress={() => navigateToFeature('/about')}
+                  >
+                    <View style={[styles.iconCircle, styles.iconGuide]}>
+                      <Text style={styles.iconText}>GUIDE</Text>
+                    </View>
+                    <View style={styles.menuTextContainer}>
+                      <Text style={styles.menuItemTitle}>User Guide</Text>
+                    </View>
+                  </Pressable>
+
+                  <Pressable 
+                    style={styles.menuItem}
+                    onPress={() => navigateToFeature('/about')}
+                  >
+                    <View style={[styles.iconCircle, styles.iconFaq]}>
+                      <Text style={styles.iconText}>FAQ</Text>
+                    </View>
+                    <View style={styles.menuTextContainer}>
+                      <Text style={styles.menuItemTitle}>FAQ</Text>
+                    </View>
+                  </Pressable>
+
+                  <Pressable 
+                    style={styles.menuItem}
+                    onPress={() => navigateToFeature('/about')}
+                  >
+                    <View style={[styles.iconCircle, styles.iconFeedback]}>
+                      <Text style={styles.iconText}>FEED</Text>
+                    </View>
+                    <View style={styles.menuTextContainer}>
+                      <Text style={styles.menuItemTitle}>Feedback</Text>
+                    </View>
+                  </Pressable>
+
                   <Pressable 
                     style={[styles.menuItem, styles.signOutItem]}
                     onPress={signOut}
@@ -316,6 +453,38 @@ const styles = StyleSheet.create({
     flex: 1, 
     backgroundColor: '#FFE4F0',
   },
+
+  hamburgerButton: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 50 : 20,
+    left: 20,
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 22,
+    zIndex: 10,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+
+  hamburgerLine: {
+    width: 20,
+    height: 2,
+    backgroundColor: '#DC2626',
+    marginVertical: 2,
+    borderRadius: 1,
+  },
   
   panicContainer: { 
     flex: 1, 
@@ -402,6 +571,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 20,
   },
+
+  sectionTitle: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.textSecondary,
+    letterSpacing: 1,
+    marginTop: 20,
+    marginBottom: 12,
+    marginLeft: 4,
+  },
   
   menuItem: { 
     flexDirection: 'row', 
@@ -414,6 +593,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
+
+  activeMenuItem: {
+    backgroundColor: '#FEE2E2',
+    borderColor: '#DC2626',
+  },
   
   iconCircle: {
     width: 48,
@@ -422,6 +606,46 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
+  },
+
+  iconHome: {
+    backgroundColor: '#FEE2E2',
+  },
+
+  iconMap: {
+    backgroundColor: '#E0E7FF',
+  },
+
+  iconContacts: {
+    backgroundColor: '#E0E7FF',
+  },
+
+  iconAlert: {
+    backgroundColor: '#E0E7FF',
+  },
+
+  iconJourney: {
+    backgroundColor: '#E0E7FF',
+  },
+
+  iconFakeCall: {
+    backgroundColor: '#E0E7FF',
+  },
+
+  iconSettings: {
+    backgroundColor: '#E0E7FF',
+  },
+
+  iconGuide: {
+    backgroundColor: '#E0E7FF',
+  },
+
+  iconFaq: {
+    backgroundColor: '#E0E7FF',
+  },
+
+  iconFeedback: {
+    backgroundColor: '#E0E7FF',
   },
   
   iconDanger: {
