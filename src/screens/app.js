@@ -36,88 +36,16 @@ export function renderApp(root) {
         <button class="app-menu-button" id="btn-menu" type="button" aria-label="Open menu">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
         </button>
-        <div class="app-header-text">
-          <h1 class="app-title">Dashboard</h1>
-          <p class="app-subtitle">Welcome, ${escapeHtml(displayName)}</p>
-        </div>
-        <button class="app-avatar" id="btn-profile" aria-label="Open profile"
-          title="${escapeHtml(authEmail ?? 'Profile')}">
-          ${avatar}
-        </button>
       </header>
 
       <section class="dashboard-alert-card" aria-label="Emergency alert">
-        <div class="dashboard-alert-copy">
-          <span class="dashboard-eyebrow">PANIC RING</span>
-          <h2>Your safety comes first</h2>
-          <p>Hold the button to alert your trusted circle.</p>
-        </div>
         <button class="btn-hold" id="btn-hold" aria-label="Hold the PANIC button to send an alert" title="Hold for 1.5 seconds to send">
           <span class="btn-hold-label">PANIC</span>
           <div class="btn-hold-ring"></div>
         </button>
       </section>
-      <p class="app-activate-hint">Hold for 1.5 seconds · release to cancel</p>
+
       <div id="dashboard-battery-alert"></div>
-
-      <section class="dashboard-section">
-        <div class="dashboard-section-heading">
-          <h2>Quick access</h2>
-          <span>${contacts.length} trusted ${contacts.length === 1 ? 'contact' : 'contacts'}</span>
-        </div>
-        <div class="dashboard-grid">
-          ${DASHBOARD_CARDS.map(card => `
-            <button class="dashboard-card" type="button" data-dashboard="${card.screen}">
-              <span class="dashboard-card-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${card.icon}</svg>
-              </span>
-              <span class="dashboard-card-label">${card.label}</span>
-              <span class="dashboard-card-detail">${card.detail}</span>
-            </button>
-          `).join('')}
-        </div>
-      </section>
-
-      ${contacts.length > 0 ? `
-      <section class="dashboard-section">
-        <div class="dashboard-section-heading">
-          <h2>Your trusted circle</h2>
-          <button class="dashboard-section-link" id="btn-manage-contacts">Manage →</button>
-        </div>
-        <ul class="dashboard-contacts-list">
-          ${contacts.slice(0, 4).map(c => `
-            <li class="dashboard-contact-item">
-              <div class="dashboard-contact-avatar-wrapper">
-                ${c.photo ? `<img src="${c.photo}" alt="${c.name}" class="dashboard-contact-avatar-img" />` : `<div class="dashboard-contact-avatar">${c.initials}</div>`}
-              </div>
-              <div class="dashboard-contact-info">
-                <span class="dashboard-contact-name">${escapeHtml(c.name)}</span>
-                ${c.relationship ? `<span class="dashboard-contact-relationship">${escapeHtml(c.relationship)}</span>` : ''}
-                <span class="dashboard-contact-phone">${escapeHtml(c.phone)}</span>
-              </div>
-            </li>
-          `).join('')}
-        </ul>
-        ${contacts.length > 4 ? `<p class="dashboard-contacts-more">+${contacts.length - 4} more contact${contacts.length - 4 > 1 ? 's' : ''}</p>` : ''}
-      </section>
-      ` : ''}
-
-      <div class="app-quick-bar" aria-label="Display options">
-        <button class="app-quick-btn" id="btn-disguise" title="Change disguise screen"
-          aria-label="Change disguise screen">
-          <span class="app-quick-icon">${currentDisguise?.preview ?? 'Calculator'}</span>
-          <span class="app-quick-label">${currentDisguise?.label ?? 'Calculator'}</span>
-        </button>
-
-        <button class="app-quick-btn" id="btn-quick-checkin" title="Check-in timer"
-          aria-label="Check-in timer">
-          <span class="app-quick-label">Check-in</span>
-        </button>
-      </div>
-
-      <nav class="app-bottom-nav" aria-label="Main navigation">
-        <button class="app-bottom-nav-btn" data-bottom-nav="contacts" type="button">Trusted circle</button>
-        <button class="app-bottom-nav-btn app-bottom-nav-btn--active" data-bottom-nav="app" type="button">Home</button>
         <button class="app-bottom-nav-btn" data-bottom-nav="profile" type="button">Profile</button>
       </nav>
 
