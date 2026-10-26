@@ -13,7 +13,7 @@ import {
 import { Link, router } from 'expo-router';
 import * as Location from 'expo-location';
 import { getSupabaseClient } from '../src/lib/supabase';
-import { colors } from '../src/lib/theme';
+import { colors, spacing, borderRadius, shadows, typography } from '../src/lib/theme';
 
 type Contact = {
   id: string;
@@ -182,7 +182,7 @@ export default function SOSScreen() {
       ) : alertActive ? (
         <>
           <View style={styles.alertActiveCard}>
-            <Text style={styles.alertLabel}>SOS</Text>
+            <Text style={styles.alertIcon}>!</Text>
             <Text style={styles.alertTitle}>Alert Activated</Text>
             <Text style={styles.alertBody}>
               Sending alerts to your trusted contacts...
@@ -299,6 +299,7 @@ export default function SOSScreen() {
               <View style={styles.contactsList}>
                 {contacts.map((contact) => (
                   <View key={contact.id} style={styles.contactPreviewItem}>
+                    <Text style={styles.contactPreviewIcon}>C</Text>
                     <Text style={styles.contactPreviewName}>{contact.name}</Text>
                   </View>
                 ))}
@@ -308,7 +309,7 @@ export default function SOSScreen() {
 
           <View style={styles.disclaimerCard}>
             <Text style={styles.disclaimerText}>
-              This alert opens your SMS app. You must tap Send in the messaging app. Panic Ring
+              WARNING: This alert opens your SMS app. You must tap Send in the messaging app. Panic Ring
               does not send messages automatically.
             </Text>
           </View>
@@ -320,37 +321,37 @@ export default function SOSScreen() {
 
 const styles = StyleSheet.create({
   screen: { backgroundColor: colors.background, flex: 1 },
-  content: { paddingBottom: 44, paddingHorizontal: 22, paddingTop: 48 },
-  header: { marginBottom: 24 },
-  back: { alignSelf: 'flex-start', paddingVertical: 10, paddingRight: 16, marginBottom: 12 },
-  backText: { color: colors.accent, fontSize: 16, fontWeight: '600' },
-  title: { color: colors.text, fontSize: 30, fontWeight: '800' },
-  loadingContainer: { paddingVertical: 40, alignItems: 'center' },
+  content: { paddingBottom: spacing['5xl'], paddingHorizontal: spacing.xl, paddingTop: spacing['4xl'] },
+  header: { marginBottom: spacing.xl },
+  back: { alignSelf: 'flex-start', paddingVertical: spacing.sm, paddingRight: spacing.base, marginBottom: spacing.md },
+  backText: { color: colors.primary, fontSize: typography.fontSize.base, fontWeight: typography.fontWeight.semibold },
+  title: { color: colors.text, fontSize: typography.fontSize['4xl'], fontWeight: typography.fontWeight.black },
+  loadingContainer: { paddingVertical: spacing['3xl'], alignItems: 'center' },
   infoCard: {
-    backgroundColor: colors.dangerSoft,
+    backgroundColor: colors.dangerLight,
     borderColor: colors.danger,
     borderWidth: 1,
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 24,
-    alignItems: 'center',
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.xl,
+    ...shadows.sm,
   },
-  infoIcon: { fontSize: 40, marginBottom: 12 },
-  infoTitle: { color: colors.text, fontSize: 20, fontWeight: '700', marginBottom: 8, textAlign: 'center' },
-  infoBody: { color: colors.textSecondary, fontSize: 14, lineHeight: 21, textAlign: 'center' },
+  infoTitle: { color: colors.text, fontSize: typography.fontSize.xl, fontWeight: typography.fontWeight.bold, marginBottom: spacing.sm, textAlign: 'center' },
+  infoBody: { color: colors.textSecondary, fontSize: typography.fontSize.sm, lineHeight: typography.lineHeight.relaxed * typography.fontSize.sm, textAlign: 'center' },
   settingsCard: {
     backgroundColor: colors.surface,
     borderColor: colors.border,
     borderWidth: 1,
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 24,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.xl,
+    ...shadows.base,
   },
-  settingsTitle: { color: colors.text, fontSize: 18, fontWeight: '700', marginBottom: 16 },
+  settingsTitle: { color: colors.text, fontSize: typography.fontSize.lg, fontWeight: typography.fontWeight.bold, marginBottom: spacing.base },
   toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  toggleInfo: { flex: 1, marginRight: 16 },
-  toggleLabel: { color: colors.text, fontSize: 16, fontWeight: '600', marginBottom: 4 },
-  toggleDescription: { color: colors.textSecondary, fontSize: 13 },
+  toggleInfo: { flex: 1, marginRight: spacing.base },
+  toggleLabel: { color: colors.text, fontSize: typography.fontSize.base, fontWeight: typography.fontWeight.semibold, marginBottom: 4 },
+  toggleDescription: { color: colors.textSecondary, fontSize: typography.fontSize.sm },
   toggle: {
     width: 50,
     height: 28,
@@ -359,7 +360,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 2,
   },
-  toggleActive: { backgroundColor: colors.accent },
+  toggleActive: { backgroundColor: colors.primary },
   toggleThumb: {
     width: 24,
     height: 24,
@@ -367,7 +368,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   toggleThumbActive: { alignSelf: 'flex-end' },
-  sosContainer: { alignItems: 'center', marginVertical: 32 },
+  sosContainer: { alignItems: 'center', marginVertical: spacing['2xl'] },
   sosButton: {
     width: 200,
     height: 200,
@@ -376,7 +377,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
-    marginBottom: 16,
+    marginBottom: spacing.base,
+    ...shadows.xl,
   },
   sosButtonActive: { opacity: 0.9 },
   sosProgress: {
@@ -387,73 +389,78 @@ const styles = StyleSheet.create({
     backgroundColor: colors.dangerDark,
   },
   sosText: {
-    color: colors.surface,
-    fontSize: 24,
-    fontWeight: '800',
+    color: colors.textInverse,
+    fontSize: typography.fontSize['3xl'],
+    fontWeight: typography.fontWeight.black,
     textAlign: 'center',
     zIndex: 1,
   },
-  sosHint: { color: colors.textSecondary, fontSize: 14, textAlign: 'center' },
+  sosHint: { color: colors.textSecondary, fontSize: typography.fontSize.sm, textAlign: 'center' },
   contactsPreview: {
     backgroundColor: colors.surface,
     borderColor: colors.border,
     borderWidth: 1,
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.base,
+    ...shadows.base,
   },
-  contactsTitle: { color: colors.text, fontSize: 16, fontWeight: '700', marginBottom: 16 },
-  noContacts: { alignItems: 'center', paddingVertical: 20 },
-  noContactsText: { color: colors.textSecondary, fontSize: 14, marginBottom: 16 },
+  contactsTitle: { color: colors.text, fontSize: typography.fontSize.base, fontWeight: typography.fontWeight.bold, marginBottom: spacing.base },
+  noContacts: { alignItems: 'center', paddingVertical: spacing.lg },
+  noContactsText: { color: colors.textSecondary, fontSize: typography.fontSize.sm, marginBottom: spacing.base },
   addContactButton: {
-    backgroundColor: colors.accent,
-    borderRadius: 10,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.base,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    ...shadows.sm,
   },
-  addContactButtonText: { color: colors.surface, fontSize: 14, fontWeight: '700' },
-  contactsList: { gap: 8 },
-  contactPreviewItem: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8 },
-  contactPreviewName: { color: colors.text, fontSize: 15, fontWeight: '600' },
+  addContactButtonText: { color: colors.textInverse, fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.bold },
+  contactsList: { gap: spacing.sm },
+  contactPreviewItem: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.sm },
+  contactPreviewIcon: { fontSize: typography.fontSize.xl },
+  contactPreviewName: { color: colors.text, fontSize: typography.fontSize.base, fontWeight: typography.fontWeight.semibold },
   disclaimerCard: {
     backgroundColor: colors.warningSoft,
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: borderRadius.md,
+    padding: spacing.base,
   },
-  disclaimerText: { color: colors.textSecondary, fontSize: 13, lineHeight: 20 },
+  disclaimerText: { color: colors.textSecondary, fontSize: typography.fontSize.sm, lineHeight: typography.lineHeight.normal * typography.fontSize.sm },
   alertActiveCard: {
-    backgroundColor: colors.dangerSoft,
+    backgroundColor: colors.dangerLight,
     borderColor: colors.danger,
     borderWidth: 2,
-    borderRadius: 16,
-    padding: 24,
-    marginBottom: 24,
+    borderRadius: borderRadius.lg,
+    padding: spacing.xl,
+    marginBottom: spacing.xl,
     alignItems: 'center',
+    ...shadows.base,
   },
-  alertLabel: { color: colors.danger, fontSize: 42, fontWeight: '900', marginBottom: 16 },
-  alertTitle: { color: colors.danger, fontSize: 24, fontWeight: '800', marginBottom: 8 },
-  alertBody: { color: colors.text, fontSize: 16, textAlign: 'center' },
+  alertIcon: { fontSize: 64, marginBottom: spacing.base },
+  alertTitle: { color: colors.danger, fontSize: typography.fontSize['3xl'], fontWeight: typography.fontWeight.black, marginBottom: spacing.sm },
+  alertBody: { color: colors.text, fontSize: typography.fontSize.base, textAlign: 'center' },
   statusCard: {
     backgroundColor: colors.surface,
     borderColor: colors.border,
     borderWidth: 1,
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.base,
+    ...shadows.base,
   },
-  statusTitle: { color: colors.text, fontSize: 18, fontWeight: '700', marginBottom: 16 },
+  statusTitle: { color: colors.text, fontSize: typography.fontSize.lg, fontWeight: typography.fontWeight.bold, marginBottom: spacing.base },
   statusRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 12,
+    paddingVertical: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  statusName: { color: colors.text, fontSize: 15, fontWeight: '600' },
+  statusName: { color: colors.text, fontSize: typography.fontSize.base, fontWeight: typography.fontWeight.semibold },
   statusBadge: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  statusIcon: { fontSize: 16 },
-  statusText: { fontSize: 13, fontWeight: '600' },
+  statusIcon: { fontSize: typography.fontSize.base },
+  statusText: { fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.semibold },
   statusSending: { color: colors.warning },
   statusDelivered: { color: colors.success },
   statusFailed: { color: colors.danger },
@@ -461,26 +468,28 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderColor: colors.border,
     borderWidth: 1,
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.base,
+    ...shadows.base,
   },
-  locationTitle: { color: colors.text, fontSize: 16, fontWeight: '700', marginBottom: 8 },
-  locationCoords: { color: colors.textSecondary, fontSize: 14, marginBottom: 12 },
+  locationTitle: { color: colors.text, fontSize: typography.fontSize.base, fontWeight: typography.fontWeight.bold, marginBottom: spacing.sm },
+  locationCoords: { color: colors.textSecondary, fontSize: typography.fontSize.sm, marginBottom: spacing.md },
   mapButton: {
-    backgroundColor: colors.accent,
-    borderRadius: 10,
-    padding: 12,
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.base,
+    padding: spacing.md,
     alignItems: 'center',
+    ...shadows.sm,
   },
-  mapButtonText: { color: colors.surface, fontSize: 14, fontWeight: '700' },
+  mapButtonText: { color: colors.textInverse, fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.bold },
   cancelButton: {
     backgroundColor: colors.surface,
     borderColor: colors.danger,
     borderWidth: 2,
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: borderRadius.md,
+    padding: spacing.base,
     alignItems: 'center',
   },
-  cancelButtonText: { color: colors.danger, fontSize: 16, fontWeight: '700' },
+  cancelButtonText: { color: colors.danger, fontSize: typography.fontSize.base, fontWeight: typography.fontWeight.bold },
 });

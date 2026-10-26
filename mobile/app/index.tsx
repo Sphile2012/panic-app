@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Image,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -11,6 +12,7 @@ import {
   TextInput,
   View,
   Dimensions,
+  Animated,
 } from 'react-native';
 import type { Session } from '@supabase/supabase-js';
 import { Link, useRouter } from 'expo-router';
@@ -18,7 +20,7 @@ import * as Linking from 'expo-linking';
 import { getApiBaseUrl, verifyApiSession } from '../src/lib/backend';
 import { getSupabaseClient, isSupabaseConfigured } from '../src/lib/supabase';
 import { formatAuthError, SIGNUP_CONFIRMATION_MESSAGE } from '../src/lib/auth-messages';
-import { colors } from '../src/lib/theme';
+import { colors, spacing, borderRadius, shadows, typography } from '../src/lib/theme';
 
 type AuthMode = 'sign-in' | 'sign-up';
 
@@ -161,6 +163,10 @@ export default function HomeScreen() {
     >
       {session ? (
         <View style={styles.mainScreen}>
+          {/* Navy gradient header */}
+          <View style={styles.headerGradient} />
+
+          {/* Hamburger Menu Button */}
           <Pressable
             style={styles.hamburgerButton}
             onPress={() => setMenuOpen(true)}
@@ -172,16 +178,89 @@ export default function HomeScreen() {
             <View style={styles.hamburgerLine} />
           </Pressable>
 
-          <View style={styles.panicContainer}>
-            <Pressable
-              style={styles.panicButton}
-              onPress={handlePanicPress}
-              accessibilityLabel="Panic button - share your location"
-              accessibilityRole="button"
-            >
-              <Text style={styles.panicButtonText}>PANIC</Text>
-            </Pressable>
-          </View>
+          <ScrollView
+            style={styles.scrollContainer}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* App Logo and Branding */}
+            <View style={styles.brandingSection}>
+              <View style={styles.logoContainer}>
+                <Image
+                  source={require('../assets/icon.png')}
+                  style={styles.logo}
+                  resizeMode="contain"
+                />
+              </View>
+              <Text style={styles.appName}>PANIC RING</Text>
+              <Text style={styles.tagline}>Your Safety, Always Protected</Text>
+            </View>
+
+            {/* Emergency SOS Button - Main Feature */}
+            <View style={styles.sosSection}>
+              <Text style={styles.sosLabel}>Emergency SOS</Text>
+              <Pressable
+                style={styles.sosButton}
+                onPress={handlePanicPress}
+                accessibilityLabel="Emergency SOS button"
+                accessibilityRole="button"
+                accessibilityHint="Tap to activate emergency alert and share location"
+              >
+                <View style={styles.sosButtonInner}>
+                  <View style={styles.sosButtonPulse} />
+                  <Text style={styles.sosButtonText}>SOS</Text>
+                  <Text style={styles.sosButtonSubtext}>TAP TO ALERT</Text>
+                </View>
+              </Pressable>
+              <Text style={styles.sosHint}>Immediately alerts your trusted contacts</Text>
+            </View>
+
+            {/* Quick Actions */}
+            <View style={styles.quickActionsSection}>
+              <Text style={styles.sectionTitle}>QUICK ACCESS</Text>
+              <View style={styles.quickActionsGrid}>
+                <Pressable
+                  style={styles.quickActionCard}
+                  onPress={() => navigateToFeature('/live-location')}
+                >
+                  <View style={[styles.quickActionIcon, styles.iconBlue]}>
+                    <Text style={styles.quickActionIconText}>MAP</Text>
+                  </View>
+                  <Text style={styles.quickActionTitle}>Live Location</Text>
+                </Pressable>
+
+                <Pressable
+                  style={styles.quickActionCard}
+                  onPress={() => navigateToFeature('/circle')}
+                >
+                  <View style={[styles.quickActionIcon, styles.iconGreen]}>
+                    <Text style={styles.quickActionIconText}>CIRCLE</Text>
+                  </View>
+                  <Text style={styles.quickActionTitle}>Trusted Contacts</Text>
+                </Pressable>
+
+                <Pressable
+                  style={styles.quickActionCard}
+                  onPress={() => navigateToFeature('/notes')}
+                >
+                  <View style={[styles.quickActionIcon, styles.iconPurple]}>
+                    <Text style={styles.quickActionIconText}>NOTES</Text>
+                  </View>
+                  <Text style={styles.quickActionTitle}>Private Notes</Text>
+                </Pressable>
+
+                <Pressable
+                  style={styles.quickActionCard}
+                  onPress={() => navigateToFeature('/emergency')}
+                >
+                  <View style={[styles.quickActionIcon, styles.iconOrange]}>
+                    <Text style={styles.quickActionIconText}>CALL</Text>
+                  </View>
+                  <Text style={styles.quickActionTitle}>Emergency Services</Text>
+                </Pressable>
+              </View>
+            </View>
+          </ScrollView>
 
           <Modal
             animationType="slide"
@@ -189,14 +268,14 @@ export default function HomeScreen() {
             visible={menuOpen}
             onRequestClose={() => setMenuOpen(false)}
           >
-            <Pressable 
+            <Pressable
               style={styles.modalOverlay}
               onPress={() => setMenuOpen(false)}
             >
               <View style={styles.menuContainer} onStartShouldSetResponder={() => true}>
                 <View style={styles.menuHeader}>
                   <Text style={styles.menuTitle}>Menu</Text>
-                  <Pressable 
+                  <Pressable
                     onPress={() => setMenuOpen(false)}
                     style={styles.closeButton}
                   >
@@ -206,8 +285,8 @@ export default function HomeScreen() {
 
                 <ScrollView style={styles.menuScroll}>
                   <Text style={styles.sectionTitle}>MAIN</Text>
-                  
-                  <Pressable 
+
+                  <Pressable
                     style={[styles.menuItem, styles.activeMenuItem]}
                     onPress={() => setMenuOpen(false)}
                   >
@@ -219,7 +298,7 @@ export default function HomeScreen() {
                     </View>
                   </Pressable>
 
-                  <Pressable 
+                  <Pressable
                     style={styles.menuItem}
                     onPress={() => navigateToFeature('/live-location')}
                   >
@@ -231,7 +310,7 @@ export default function HomeScreen() {
                     </View>
                   </Pressable>
 
-                  <Pressable 
+                  <Pressable
                     style={styles.menuItem}
                     onPress={() => navigateToFeature('/circle')}
                   >
@@ -245,7 +324,7 @@ export default function HomeScreen() {
 
                   <Text style={styles.sectionTitle}>SAFETY</Text>
 
-                  <Pressable 
+                  <Pressable
                     style={styles.menuItem}
                     onPress={() => navigateToFeature('/sos')}
                   >
@@ -257,7 +336,7 @@ export default function HomeScreen() {
                     </View>
                   </Pressable>
 
-                  <Pressable 
+                  <Pressable
                     style={styles.menuItem}
                     onPress={() => navigateToFeature('/safety-plan')}
                   >
@@ -269,7 +348,7 @@ export default function HomeScreen() {
                     </View>
                   </Pressable>
 
-                  <Pressable 
+                  <Pressable
                     style={styles.menuItem}
                     onPress={() => navigateToFeature('/emergency')}
                   >
@@ -283,7 +362,7 @@ export default function HomeScreen() {
 
                   <Text style={styles.sectionTitle}>ACCOUNT</Text>
 
-                  <Pressable 
+                  <Pressable
                     style={styles.menuItem}
                     onPress={() => navigateToFeature('/change-password')}
                   >
@@ -295,7 +374,7 @@ export default function HomeScreen() {
                     </View>
                   </Pressable>
 
-                  <Pressable 
+                  <Pressable
                     style={styles.menuItem}
                     onPress={() => navigateToFeature('/about')}
                   >
@@ -307,7 +386,7 @@ export default function HomeScreen() {
                     </View>
                   </Pressable>
 
-                  <Pressable 
+                  <Pressable
                     style={styles.menuItem}
                     onPress={() => navigateToFeature('/about')}
                   >
@@ -319,7 +398,7 @@ export default function HomeScreen() {
                     </View>
                   </Pressable>
 
-                  <Pressable 
+                  <Pressable
                     style={styles.menuItem}
                     onPress={() => navigateToFeature('/about')}
                   >
@@ -331,7 +410,7 @@ export default function HomeScreen() {
                     </View>
                   </Pressable>
 
-                  <Pressable 
+                  <Pressable
                     style={[styles.menuItem, styles.signOutItem]}
                     onPress={signOut}
                   >
@@ -448,305 +527,540 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.background },
-  
-  mainScreen: { 
-    flex: 1, 
-    backgroundColor: '#FFE4F0',
+
+  // MAIN HOME SCREEN
+  mainScreen: {
+    flex: 1,
+    backgroundColor: colors.background,
   },
 
+  headerGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: height * 0.25,
+    backgroundColor: colors.primary,
+    opacity: 0.05,
+  },
+
+  // HAMBURGER MENU - Premium Navy
   hamburgerButton: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 50 : 20,
-    left: 20,
-    width: 44,
-    height: 44,
+    top: Platform.OS === 'ios' ? 60 : 50,
+    left: spacing.lg,
+    width: 56,
+    height: 56,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderRadius: 22,
-    zIndex: 10,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    zIndex: 3000,
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...shadows.md,
   },
 
   hamburgerLine: {
-    width: 20,
-    height: 2,
-    backgroundColor: '#DC2626',
-    marginVertical: 2,
-    borderRadius: 1,
+    width: 24,
+    height: 3,
+    backgroundColor: colors.primary,
+    marginVertical: 3,
+    borderRadius: borderRadius.sm,
   },
-  
-  panicContainer: { 
-    flex: 1, 
-    justifyContent: 'center', 
+
+  scrollContainer: {
+    flex: 1,
+  },
+
+  scrollContent: {
+    paddingTop: Platform.OS === 'ios' ? 120 : 110,
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing['5xl'],
+  },
+
+  // BRANDING SECTION
+  brandingSection: {
     alignItems: 'center',
+    marginBottom: spacing['3xl'],
   },
-  
-  panicButton: { 
-    width: Math.min(width * 0.7, 320),
-    height: Math.min(width * 0.7, 320),
-    maxWidth: 320,
-    maxHeight: 320,
-    minWidth: 200,
-    minHeight: 200,
-    borderRadius: Math.min(width * 0.7, 320) / 2,
-    backgroundColor: '#DC2626',
+
+  logoContainer: {
+    width: 80,
+    height: 80,
+    marginBottom: spacing.lg,
+    borderRadius: borderRadius.xl,
+    backgroundColor: colors.surface,
     justifyContent: 'center',
     alignItems: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#DC2626',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.4,
-        shadowRadius: 16,
-      },
-      android: {
-        elevation: 12,
-      },
-    }),
+    borderWidth: 2,
+    borderColor: colors.primary,
+    ...shadows.base,
   },
-  
-  panicButtonText: { 
-    fontSize: Math.min(width * 0.12, 48), 
-    fontWeight: '900', 
-    color: '#FFFFFF',
-    letterSpacing: 3,
-    textTransform: 'uppercase',
+
+  logo: {
+    width: '65%',
+    height: '65%',
   },
-  
-  modalOverlay: { 
-    flex: 1, 
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
+
+  appName: {
+    fontSize: typography.fontSize['3xl'],
+    fontWeight: typography.fontWeight.black,
+    color: colors.primary,
+    letterSpacing: 2,
+    marginBottom: spacing.xs,
   },
-  
-  menuContainer: { 
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: height * 0.85,
-    paddingBottom: Platform.OS === 'ios' ? 34 : 20,
+
+  tagline: {
+    fontSize: typography.fontSize.base,
+    fontWeight: typography.fontWeight.medium,
+    color: colors.textSecondary,
+    letterSpacing: 0.5,
   },
-  
-  menuHeader: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
+
+  // SOS SECTION - Premium Red Emergency Button
+  sosSection: {
     alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    marginBottom: spacing['4xl'],
+    paddingVertical: spacing.xl,
   },
-  
-  menuTitle: { 
-    fontSize: 24, 
-    fontWeight: '800', 
-    color: colors.text 
+
+  sosLabel: {
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.textSecondary,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    marginBottom: spacing.lg,
   },
-  
-  closeButton: { 
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: colors.surfaceMuted,
+
+  sosButton: {
+    width: Math.min(width * 0.65, 240),
+    height: Math.min(width * 0.65, 240),
+    borderRadius: Math.min(width * 0.65, 240) / 2,
+    backgroundColor: colors.danger,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+    ...shadows.xl,
   },
-  
-  closeButtonText: { 
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
+
+  sosButtonInner: {
+    width: '88%',
+    height: '88%',
+    borderRadius: 9999,
+    borderWidth: 3,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
   },
-  
-  menuScroll: { 
-    paddingHorizontal: 24,
-    paddingTop: 20,
+
+  sosButtonPulse: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    borderRadius: 9999,
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+
+  sosButtonText: {
+    fontSize: typography.fontSize['5xl'],
+    fontWeight: typography.fontWeight.black,
+    color: colors.textInverse,
+    letterSpacing: 6,
+    marginBottom: spacing.xs,
+  },
+
+  sosButtonSubtext: {
+    fontSize: typography.fontSize.xs,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.textInverse,
+    letterSpacing: 2,
+    opacity: 0.9,
+  },
+
+  sosHint: {
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.medium,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    paddingHorizontal: spacing['2xl'],
+  },
+
+  // QUICK ACTIONS
+  quickActionsSection: {
+    marginBottom: spacing.xl,
   },
 
   sectionTitle: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: colors.textSecondary,
-    letterSpacing: 1,
-    marginTop: 20,
-    marginBottom: 12,
-    marginLeft: 4,
+    fontSize: typography.fontSize.xs,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.textTertiary,
+    letterSpacing: 1.5,
+    marginBottom: spacing.lg,
+    textTransform: 'uppercase',
   },
-  
-  menuItem: { 
-    flexDirection: 'row', 
-    alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    marginBottom: 12,
+
+  quickActionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.md,
+    justifyContent: 'space-between',
+  },
+
+  quickActionCard: {
+    width: (width - spacing.xl * 2 - spacing.md) / 2,
     backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    alignItems: 'center',
     borderWidth: 1,
     borderColor: colors.border,
+    ...shadows.base,
   },
 
-  activeMenuItem: {
-    backgroundColor: '#FEE2E2',
-    borderColor: '#DC2626',
-  },
-  
-  iconCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+  quickActionIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: borderRadius.md,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
+    marginBottom: spacing.md,
   },
 
-  iconHome: {
-    backgroundColor: '#FEE2E2',
-  },
+  iconBlue: { backgroundColor: colors.infoSoft },
+  iconGreen: { backgroundColor: colors.successSoft },
+  iconPurple: { backgroundColor: '#F3E8FF' },
+  iconOrange: { backgroundColor: colors.warningSoft },
 
-  iconMap: {
-    backgroundColor: '#E0E7FF',
-  },
-
-  iconContacts: {
-    backgroundColor: '#E0E7FF',
-  },
-
-  iconAlert: {
-    backgroundColor: '#E0E7FF',
-  },
-
-  iconJourney: {
-    backgroundColor: '#E0E7FF',
-  },
-
-  iconFakeCall: {
-    backgroundColor: '#E0E7FF',
-  },
-
-  iconSettings: {
-    backgroundColor: '#E0E7FF',
-  },
-
-  iconGuide: {
-    backgroundColor: '#E0E7FF',
-  },
-
-  iconFaq: {
-    backgroundColor: '#E0E7FF',
-  },
-
-  iconFeedback: {
-    backgroundColor: '#E0E7FF',
-  },
-  
-  iconDanger: {
-    backgroundColor: '#FEE2E2',
-  },
-  
-  iconPrimary: {
-    backgroundColor: colors.accentSoft,
-  },
-  
-  iconSuccess: {
-    backgroundColor: colors.successSoft,
-  },
-  
-  iconWarning: {
-    backgroundColor: colors.warningSoft,
-  },
-  
-  iconInfo: {
-    backgroundColor: '#E0E7FF',
-  },
-  
-  iconNeutral: {
-    backgroundColor: colors.surfaceMuted,
-  },
-  
-  iconLogout: {
-    backgroundColor: colors.dangerSoft,
-  },
-  
-  iconText: {
-    fontSize: 11,
-    fontWeight: '800',
+  quickActionIconText: {
+    fontSize: typography.fontSize.xs,
+    fontWeight: typography.fontWeight.black,
     color: colors.text,
     letterSpacing: 0.5,
   },
-  
-  menuTextContainer: { 
-    flex: 1 
+
+  quickActionTitle: {
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.semibold,
+    color: colors.text,
+    textAlign: 'center',
   },
-  
-  menuItemTitle: { 
-    fontSize: 16, 
-    fontWeight: '600', 
+
+  // MENU MODAL - Premium Design
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: colors.overlay,
+    justifyContent: 'flex-end',
+  },
+
+  menuContainer: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: borderRadius['2xl'],
+    borderTopRightRadius: borderRadius['2xl'],
+    maxHeight: height * 0.88,
+    paddingBottom: Platform.OS === 'ios' ? 34 : spacing.lg,
+    ...shadows.xl,
+  },
+
+  menuHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+
+  menuTitle: {
+    fontSize: typography.fontSize['3xl'],
+    fontWeight: typography.fontWeight.black,
+    color: colors.primary,
+    letterSpacing: 0.5,
+  },
+
+  closeButton: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.base,
+    backgroundColor: colors.surfaceMuted,
+  },
+
+  closeButtonText: {
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.semibold,
+    color: colors.textSecondary,
+  },
+
+  menuScroll: {
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.lg,
+  },
+
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.base,
+    paddingHorizontal: spacing.base,
+    borderRadius: borderRadius.md,
+    marginBottom: spacing.sm,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    ...shadows.sm,
+  },
+
+  activeMenuItem: {
+    backgroundColor: colors.primarySoft,
+    borderColor: colors.primaryLight,
+    borderWidth: 2,
+  },
+
+  iconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: borderRadius.base,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: spacing.md,
+  },
+
+  iconHome: { backgroundColor: colors.primarySoft },
+  iconMap: { backgroundColor: colors.infoSoft },
+  iconContacts: { backgroundColor: colors.successSoft },
+  iconAlert: { backgroundColor: colors.warningSoft },
+  iconJourney: { backgroundColor: '#F3E8FF' },
+  iconFakeCall: { backgroundColor: colors.dangerLight },
+  iconSettings: { backgroundColor: colors.surfaceMuted },
+  iconGuide: { backgroundColor: colors.surfaceMuted },
+  iconFaq: { backgroundColor: colors.surfaceMuted },
+  iconFeedback: { backgroundColor: colors.surfaceMuted },
+  iconDanger: { backgroundColor: colors.dangerLight },
+  iconPrimary: { backgroundColor: colors.primarySoft },
+  iconSuccess: { backgroundColor: colors.successSoft },
+  iconWarning: { backgroundColor: colors.warningSoft },
+  iconInfo: { backgroundColor: colors.infoSoft },
+  iconNeutral: { backgroundColor: colors.surfaceMuted },
+  iconLogout: { backgroundColor: colors.dangerLight },
+
+  iconText: {
+    fontSize: typography.fontSize.xs,
+    fontWeight: typography.fontWeight.black,
+    color: colors.text,
+    letterSpacing: 0.3,
+  },
+
+  menuTextContainer: { flex: 1 },
+
+  menuItemTitle: {
+    fontSize: typography.fontSize.base,
+    fontWeight: typography.fontWeight.semibold,
     color: colors.text,
     marginBottom: 2,
+    letterSpacing: 0.2,
   },
-  
-  menuItemDesc: { 
-    fontSize: 13, 
+
+  menuItemDesc: {
+    fontSize: typography.fontSize.sm,
     color: colors.textSecondary,
     lineHeight: 18,
   },
-  
-  menuDivider: { 
-    height: 1, 
+
+  menuDivider: {
+    height: 1,
     backgroundColor: colors.border,
-    marginVertical: 16,
-  },
-  
-  signOutItem: { 
-    borderColor: colors.danger,
-    backgroundColor: colors.dangerSoft,
-    marginTop: 8,
-    marginBottom: 20,
-  },
-  
-  signOutText: {
-    color: colors.danger,
+    marginVertical: spacing.base,
   },
 
-  page: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 52, paddingBottom: 40 },
-  header: { alignItems: 'center', marginBottom: 28 },
+  signOutItem: {
+    borderColor: colors.danger,
+    backgroundColor: colors.dangerLight,
+    borderWidth: 2,
+    marginTop: spacing.md,
+    marginBottom: spacing.xl,
+  },
+
+  signOutText: {
+    color: colors.danger,
+    fontWeight: typography.fontWeight.bold,
+  },
+
+  // AUTH SCREENS - Premium Navy
+  page: {
+    flexGrow: 1,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing['4xl'],
+    paddingBottom: spacing['3xl'],
+  },
+
+  header: {
+    alignItems: 'center',
+    marginBottom: spacing['2xl'],
+  },
+
   brandMark: {
-    width: 64, height: 64, borderRadius: 32, borderWidth: 3,
-    borderColor: colors.accent, alignItems: 'center', justifyContent: 'center', marginBottom: 20,
+    width: 80,
+    height: 80,
+    borderRadius: borderRadius.xl,
+    borderWidth: 2,
+    borderColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.xl,
+    backgroundColor: colors.surface,
+    ...shadows.md,
   },
-  brandMarkInner: { width: 30, height: 30, borderRadius: 15, backgroundColor: colors.accent },
-  eyebrow: { color: colors.accent, fontSize: 11, fontWeight: '700', letterSpacing: 2 },
-  title: { color: colors.text, fontSize: 36, fontWeight: '800', marginTop: 6 },
-  subtitle: { color: colors.textSecondary, fontSize: 15, lineHeight: 22, marginTop: 8, textAlign: 'center' },
-  card: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 20, borderWidth: 1, padding: 22 },
-  cardTitle: { color: colors.text, fontSize: 22, fontWeight: '700' },
-  body: { color: colors.textSecondary, fontSize: 14, lineHeight: 21, marginTop: 8 },
-  warning: { color: colors.warning, backgroundColor: colors.warningSoft, borderRadius: 10, lineHeight: 20, marginTop: 16, overflow: 'hidden', padding: 12 },
-  label: { color: colors.text, fontSize: 13, fontWeight: '600', marginBottom: 7, marginTop: 18 },
+
+  brandMarkInner: {
+    width: 40,
+    height: 40,
+    borderRadius: borderRadius.base,
+    backgroundColor: colors.primary,
+  },
+
+  eyebrow: {
+    color: colors.primary,
+    fontSize: typography.fontSize.xs,
+    fontWeight: typography.fontWeight.bold,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+  },
+
+  title: {
+    color: colors.text,
+    fontSize: typography.fontSize['4xl'],
+    fontWeight: typography.fontWeight.black,
+    marginTop: spacing.sm,
+  },
+
+  subtitle: {
+    color: colors.textSecondary,
+    fontSize: typography.fontSize.base,
+    lineHeight: typography.lineHeight.relaxed * typography.fontSize.base,
+    marginTop: spacing.md,
+    textAlign: 'center',
+  },
+
+  card: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    padding: spacing.xl,
+    ...shadows.base,
+  },
+
+  cardTitle: {
+    color: colors.text,
+    fontSize: typography.fontSize.xl,
+    fontWeight: typography.fontWeight.bold,
+  },
+
+  body: {
+    color: colors.textSecondary,
+    fontSize: typography.fontSize.sm,
+    lineHeight: typography.lineHeight.relaxed * typography.fontSize.sm,
+    marginTop: spacing.sm,
+  },
+
+  warning: {
+    color: colors.warning,
+    backgroundColor: colors.warningSoft,
+    borderRadius: borderRadius.base,
+    lineHeight: typography.lineHeight.normal * typography.fontSize.sm,
+    marginTop: spacing.base,
+    overflow: 'hidden',
+    padding: spacing.md,
+  },
+
+  label: {
+    color: colors.text,
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.semibold,
+    marginBottom: spacing.sm,
+    marginTop: spacing.lg,
+  },
+
   input: {
-    backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 10,
-    borderWidth: 1, color: colors.text, fontSize: 16, minHeight: 50, paddingHorizontal: 14,
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: borderRadius.base,
+    borderWidth: 1,
+    color: colors.text,
+    fontSize: typography.fontSize.base,
+    minHeight: 50,
+    paddingHorizontal: spacing.base,
   },
-  message: { color: colors.danger, fontSize: 14, lineHeight: 20, marginTop: 14 },
-  infoMessage: { color: colors.textSecondary },
+
+  message: {
+    color: colors.danger,
+    fontSize: typography.fontSize.sm,
+    lineHeight: typography.lineHeight.normal * typography.fontSize.sm,
+    marginTop: spacing.md,
+  },
+
+  infoMessage: {
+    color: colors.textSecondary,
+  },
+
   primaryButton: {
-    alignItems: 'center', backgroundColor: colors.accent, borderRadius: 12,
-    justifyContent: 'center', marginTop: 22, minHeight: 52,
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.md,
+    justifyContent: 'center',
+    marginTop: spacing.xl,
+    minHeight: 52,
+    ...shadows.md,
   },
-  disabledButton: { opacity: 0.5 },
-  primaryButtonText: { color: colors.surface, fontSize: 16, fontWeight: '700' },
-  textButton: { alignItems: 'center', marginTop: 18, paddingVertical: 8 },
-  textButtonText: { color: colors.accent, fontSize: 14, fontWeight: '600', textAlign: 'center' },
-  infoCard: { backgroundColor: colors.surfaceMuted, borderRadius: 16, marginTop: 18, padding: 18 },
-  infoTitle: { color: colors.text, fontSize: 16, fontWeight: '700' },
-  aboutLink: { alignSelf: 'center', color: colors.accent, fontSize: 14, fontWeight: '600', marginTop: 26, padding: 8 },
+
+  disabledButton: {
+    opacity: 0.5,
+  },
+
+  primaryButtonText: {
+    color: colors.textInverse,
+    fontSize: typography.fontSize.base,
+    fontWeight: typography.fontWeight.bold,
+  },
+
+  textButton: {
+    alignItems: 'center',
+    marginTop: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
+
+  textButtonText: {
+    color: colors.primary,
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.semibold,
+    textAlign: 'center',
+  },
+
+  infoCard: {
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: borderRadius.lg,
+    marginTop: spacing.lg,
+    padding: spacing.lg,
+  },
+
+  infoTitle: {
+    color: colors.text,
+    fontSize: typography.fontSize.base,
+    fontWeight: typography.fontWeight.bold,
+  },
+
+  aboutLink: {
+    alignSelf: 'center',
+    color: colors.primary,
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.semibold,
+    marginTop: spacing['2xl'],
+    padding: spacing.sm,
+  },
 });

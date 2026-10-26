@@ -41,8 +41,8 @@ function disguiseScreenPreview(id) {
               <div class="disguise-preview-budget-section"><strong>Spending overview</strong><span>See all</span></div>
               <div class="disguise-preview-chart"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
               <div class="disguise-preview-budget-section"><strong>Recent activity</strong><span>Today</span></div>
-              <div class="disguise-preview-transaction"><i>G</i><span><b>Groceries</b><small>Today · Food</small></span><strong>−R 284.50</strong></div>
-              <div class="disguise-preview-transaction"><i>U</i><span><b>Utilities</b><small>Yesterday</small></span><strong>−R 1 200</strong></div>
+              <div class="disguise-preview-transaction"><i>SHOP</i><span><b>Groceries</b><small>Today · Food</small></span><strong>−R 284.50</strong></div>
+              <div class="disguise-preview-transaction"><i>UTIL</i><span><b>Utilities</b><small>Yesterday</small></span><strong>−R 1 200</strong></div>
             </div>`;
         case 'weather':
             return `<div class="disguise-preview disguise-preview--weather" aria-hidden="true">
