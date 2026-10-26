@@ -156,7 +156,7 @@ export default function CircleScreen() {
                         contact.status === 'accepted' && styles.contactStatusAccepted,
                       ]}
                     >
-                      {contact.status === 'accepted' ? '✓ Accepted' : '⏳ Invite pending'}
+                      {contact.status === 'accepted' ? 'Accepted' : 'Invite pending'}
                     </Text>
                   </View>
                   <Pressable
@@ -211,7 +211,7 @@ export default function CircleScreen() {
 
       <View style={styles.noteCard}>
         <Text style={styles.noteText}>
-          💡 <Text style={styles.noteBold}>Note:</Text> Your contacts can remove themselves from
+          <Text style={styles.noteBold}>Note:</Text> Your contacts can remove themselves from
           your Trusted Circle at any time. You can also remove anyone from here.
         </Text>
       </View>

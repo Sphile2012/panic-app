@@ -27,6 +27,7 @@ type AppState = {
     autoLockMinutes: number;
     alertLocation: string;
     locationShared: boolean;
+    alertLogWarning: boolean;
     editingNoteId: string | null;
     isFirstRun: boolean;
     recoveryConfigured: boolean;
@@ -57,6 +58,7 @@ function buildInitialState(): AppState {
         autoLockMinutes: pub.autoLockMinutes,
         alertLocation: 'Location not shared',
         locationShared: false,
+        alertLogWarning: false,
         editingNoteId: null,
         isFirstRun: pub.pin === '',
         recoveryConfigured: pub.recoveryQuestionIds !== null,
@@ -316,10 +318,15 @@ class Store {
         this.state = { ...this.state, locationShared: shared, alertLocation: locationText };
         this.notify();
     }
+    setAlertLogWarning(warning: boolean) {
+        this.state = { ...this.state, alertLogWarning: warning };
+        this.notify();
+    }
     startSending() {
         this.state = {
             ...this.state,
             screen: 'sending',
+            alertLogWarning: false,
             contacts: this.state.contacts.map(c => ({ ...c, status: 'sending' as const })),
         };
         this.notify();
@@ -334,6 +341,7 @@ class Store {
     resetAlertStatuses() {
         this.state = {
             ...this.state,
+            alertLogWarning: false,
             contacts: this.state.contacts.map(c => ({ ...c, status: 'pending' as const })),
             alertLocation: 'Location not shared',
             locationShared: false,
@@ -345,7 +353,7 @@ class Store {
         vault.notes = notes;
         await saveVault(vault, this.state.pinHash);
     }
-    saveNote(id: string | null, title: string, body: string) {
+    async saveNote(id: string | null, title: string, body: string): Promise<void> {
         const now = Date.now();
         let notes: Note[];
         if (id) {
@@ -354,17 +362,17 @@ class Store {
         else {
             notes = [{ id: uid(), title, body, createdAt: now, updatedAt: now }, ...this.state.notes];
         }
+        await this._saveNotes(notes);
         this.state = { ...this.state, notes, editingNoteId: null };
         this.touch();
         this.notify();
-        this._saveNotes(notes).catch(console.error);
     }
-    deleteNote(id: string) {
+    async deleteNote(id: string): Promise<void> {
         const notes = this.state.notes.filter(n => n.id !== id);
+        await this._saveNotes(notes);
         this.state = { ...this.state, notes };
         this.touch();
         this.notify();
-        this._saveNotes(notes).catch(console.error);
     }
     setEditingNote(id: string | null) {
         this.state = { ...this.state, editingNoteId: id };

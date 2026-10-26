@@ -150,7 +150,7 @@ export function renderEmergencyStatus(root: HTMLElement) {
                 
                 <div class="emergency-alert-banner">
                     <div class="emergency-pulse"></div>
-                    <h3>🚨 SOS Alert Activated</h3>
+                    <h3>SOS Alert Activated</h3>
                     <p>Emergency features are running</p>
                 </div>
                 
@@ -166,7 +166,7 @@ export function renderEmergencyStatus(root: HTMLElement) {
                         </div>
                         ${currentSession.gpsStatus === 'denied' ? `
                         <div class="emergency-permission-note">
-                            <p>⚠️ Location permission denied</p>
+                            <p>Location permission denied</p>
                             <button class="btn-secondary-outline btn-open-settings" id="btn-open-location-settings">Open Location Settings</button>
                             <button class="btn-secondary" id="btn-retry-location">Retry After Granting Permission</button>
                         </div>
@@ -181,7 +181,7 @@ export function renderEmergencyStatus(root: HTMLElement) {
                         </div>
                         ${currentSession.cameraStatus === 'denied' ? `
                         <div class="emergency-permission-note">
-                            <p>⚠️ Camera permission denied</p>
+                            <p>Camera permission denied</p>
                             <button class="btn-secondary-outline btn-open-settings" id="btn-open-camera-settings">Open Camera Settings</button>
                             <button class="btn-secondary" id="btn-retry-camera">Retry After Granting Permission</button>
                         </div>
@@ -207,7 +207,7 @@ export function renderEmergencyStatus(root: HTMLElement) {
                 
                 ${currentSession.errors.length > 0 ? `
                 <section class="emergency-errors">
-                    <h4>⚠️ Issues Detected</h4>
+                    <h4>Issues Detected</h4>
                     <ul>
                         ${currentSession.errors.map(err => `<li>${escapeHtml(err)}</li>`).join('')}
                     </ul>
@@ -238,7 +238,7 @@ export function renderEmergencyStatus(root: HTMLElement) {
                 
                 ${isTracking() ? `
                 <section class="emergency-tracking-section">
-                    <h3>🔴 Live Tracking</h3>
+                    <h3>Live Tracking</h3>
                     <div class="emergency-tracking-card">
                         <p>Your location is being updated in real-time</p>
                         <code class="emergency-tracking-url">${trackUrl()}</code>
@@ -249,7 +249,7 @@ export function renderEmergencyStatus(root: HTMLElement) {
                 
                 ${currentSession.photoCaptured && currentSession.photoCount > 0 ? `
                 <section class="emergency-photo-section">
-                    <h3>📸 Emergency Photos</h3>
+                    <h3>Emergency Photos</h3>
                     <div class="emergency-photo-card">
                         <p><strong>${currentSession.photoCount} photo(s) captured</strong></p>
                         ${currentSession.photoUrls.length > 0 ? `
@@ -257,7 +257,7 @@ export function renderEmergencyStatus(root: HTMLElement) {
                             <div class="emergency-photo-list">
                                 ${currentSession.photoUrls.map((url, i) => `
                                     <a href="${url}" target="_blank" class="emergency-photo-link">
-                                        📷 Photo ${i + 1}
+                                        Photo ${i + 1}
                                     </a>
                                 `).join('')}
                             </div>
@@ -371,7 +371,7 @@ export function renderEmergencyStatus(root: HTMLElement) {
             // For web browsers, open browser's site settings
             if (window.location.protocol === 'https:' || window.location.hostname === 'localhost') {
                 // Chrome/Edge command to open site settings
-                alert('To enable location access:\n\n1. Click the lock icon 🔒 in your address bar\n2. Select "Site settings" or "Permissions"\n3. Find "Location" and set to "Allow"\n4. Click "Retry After Granting Permission" below\n\nOR on Android:\n\n1. Open Settings app\n2. Go to Apps → Panic Ring (or your browser)\n3. Tap Permissions → Location\n4. Select "Allow" or "While using the app"\n5. Return here and click Retry');
+                alert('To enable location access:\n\n1. Open this site’s permissions in your browser settings\n2. Find Location and set it to Allow\n3. Return here and tap Retry\n\nOn Android, open Settings, choose Apps, select Panic Ring or your browser, then choose Permissions and Location. Set it to Allow and return here.');
             } else {
                 alert('To enable location access:\n\n1. Open your phone Settings\n2. Go to Apps → Panic Ring (or your browser)\n3. Tap Permissions → Location\n4. Select "Allow" or "While using the app"\n5. Return here and click "Retry After Granting Permission"');
             }
@@ -388,7 +388,7 @@ export function renderEmergencyStatus(root: HTMLElement) {
             // For web browsers, open browser's site settings
             if (window.location.protocol === 'https:' || window.location.hostname === 'localhost') {
                 // Chrome/Edge command to open site settings
-                alert('To enable camera access:\n\n1. Click the lock icon 🔒 in your address bar\n2. Select "Site settings" or "Permissions"\n3. Find "Camera" and set to "Allow"\n4. Click "Retry After Granting Permission" below\n\nOR on Android:\n\n1. Open Settings app\n2. Go to Apps → Panic Ring (or your browser)\n3. Tap Permissions → Camera\n4. Select "Allow"\n5. Return here and click Retry');
+                alert('To enable camera access:\n\n1. Open this site’s permissions in your browser settings\n2. Find Camera and set it to Allow\n3. Return here and tap Retry\n\nOn Android, open Settings, choose Apps, select Panic Ring or your browser, then choose Permissions and Camera. Set it to Allow and return here.');
             } else {
                 alert('To enable camera access:\n\n1. Open your phone Settings\n2. Go to Apps → Panic Ring (or your browser)\n3. Tap Permissions → Camera\n4. Select "Allow"\n5. Return here and click "Retry After Granting Permission"');
             }

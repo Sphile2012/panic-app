@@ -27,6 +27,9 @@ test('app menu button opens the full side menu and preserves the More action', (
 test('live location button requests location and does not start camera capture', () => {
   for (const source of [liveScreen, liveRuntime]) {
     assert.match(source, /void startTracking\(\)/);
+    assert.match(source, /getLocation\(12000\)/);
+    assert.match(source, /capturedLocation =/);
+    assert.doesNotMatch(source, /btn-share-location'\)\?\.addEventListener\('click', \(\) => \{\s*void startTracking/);
     assert.match(source, /class="screen live-location-screen"/);
     assert.match(source, /class="live-location-status" role="status" aria-live="polite"/);
     assert.match(source, /t\('trk\.off'\)/);
@@ -36,7 +39,10 @@ test('live location button requests location and does not start camera capture',
     assert.doesNotMatch(source, /startEvidenceCapture|evidence\.js/);
     assert.match(source, /<button[^>]+data-live-contact=/);
     assert.match(source, /<a[^>]+data-live-whatsapp=/);
+    assert.doesNotMatch(source, /data-share-whatsapp="[^"]+"[^>]*target="_blank"/);
+    assert.doesNotMatch(source, /data-live-whatsapp="[^"]+"[^>]*target="_blank"/);
     assert.match(source, /data-share-sms=/);
+    assert.match(source, /whatsappUri\(contact\.phone, locationShareBody\)/);
     assert.match(source, /root\.querySelectorAll(?:<[^>]+>)?\([^)]*data-share-sms/);
     assert.match(source, /scheduleSmsFallback\(locationShareBody\)/);
     assert.match(source, /No SMS app opened/);
@@ -48,13 +54,12 @@ test('live location button requests location and does not start camera capture',
     assert.match(source, /Open last GPS fix in Google Maps/);
     assert.match(source, /href="\$\{mapUrl\}"/);
     assert.match(source, /err === 'auth'/);
-    assert.match(source, /err === 'auth' \? mapUrl : null/);
     assert.match(source, /Share GPS via SMS/);
     assert.match(source, /GPS captured; live link sync unavailable/);
     assert.doesNotMatch(source, /id="btn-live-login"/);
-    assert.match(source, /err === null \? trackUrl\(\) : err === 'auth' \? mapUrl : null/);
+    assert.match(source, /on && err === null \? trackUrl\(\) : mapUrl/);
     assert.match(source, /: mapsUrl\(last\)/);
-    assert.match(source, /My last known location is here: \$\{link\} \(this map is not live tracking\)/);
+    assert.match(source, /My latest GPS fix is here: \$\{mapUrl\} \(not live tracking\)/);
     assert.match(source, /Waiting for a GPS fix before sharing a location/);
   }
 

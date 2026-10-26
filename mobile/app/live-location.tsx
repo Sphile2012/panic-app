@@ -22,13 +22,19 @@ type LocationData = {
   timestamp: number;
 };
 
+type TrustedContact = {
+  id: string;
+  name: string;
+  phone: string;
+};
+
 export default function LiveLocationScreen() {
   const [isTracking, setIsTracking] = useState(false);
   const [location, setLocation] = useState<LocationData | null>(null);
   const [permissionStatus, setPermissionStatus] = useState<'granted' | 'denied' | 'checking'>('checking');
   const [locationSubscription, setLocationSubscription] = useState<Location.LocationSubscription | null>(null);
   const [error, setError] = useState('');
-  const [contacts, setContacts] = useState<{ name: string; phone: string }[]>([]);
+  const [contacts, setContacts] = useState<TrustedContact[]>([]);
 
   const checkPermissions = async () => {
     try {
@@ -67,13 +73,15 @@ export default function LiveLocationScreen() {
 
       const { data, error: fetchError } = await client
         .from('contacts')
-        .select('name, phone')
+        .select('id, name, phone')
         .eq('user_id', session.user.id)
+        .eq('trusted', true)
         .limit(5);
 
       if (fetchError) throw fetchError;
       setContacts(data || []);
-    } catch {
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not load trusted contacts.');
     }
   };
 
@@ -152,15 +160,16 @@ export default function LiveLocationScreen() {
       const { data: { session } } = await client.auth.getSession();
       if (!session) return;
 
-      await client.from('live_locations').upsert({
+      const { error: saveError } = await client.from('live_locations').upsert({
         user_id: session.user.id,
         latitude: locationData.latitude,
         longitude: locationData.longitude,
         accuracy: locationData.accuracy,
         updated_at: new Date(locationData.timestamp).toISOString(),
       });
+      if (saveError) throw saveError;
     } catch (err) {
-      console.error('Could not save location:', err);
+      setError(err instanceof Error ? `Could not sync live location: ${err.message}` : 'Could not sync live location.');
     }
   }
 
@@ -169,31 +178,35 @@ export default function LiveLocationScreen() {
     return `https://www.google.com/maps?q=${location.latitude},${location.longitude}`;
   }
 
-  async function shareViaWhatsApp() {
+  async function shareViaWhatsApp(contact: TrustedContact) {
     if (!location) return;
-    
+    const number = contact.phone.replace(/\D/g, '').replace(/^0/, '27');
+    if (number.length < 7 || number.length > 15) {
+      Alert.alert('Invalid contact number', `Check ${contact.name}'s phone number in your trusted circle.`);
+      return;
+    }
     const mapsLink = getGoogleMapsLink();
-    const message = `PANIC RING LIVE LOCATION\n\nI'm sharing my live location with you:\n${mapsLink}\n\nLast updated: ${new Date(location.timestamp).toLocaleString()}`;
-    
+    const message = `My current location is here: ${mapsLink}\nLast updated: ${new Date(location.timestamp).toLocaleString()}`;
+    const whatsappUrl = `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
     try {
-      const whatsappUrl = `whatsapp://send?text=${encodeURIComponent(message)}`;
-      const canOpen = await Linking.canOpenURL(whatsappUrl);
-      
-      if (canOpen) {
-        await Linking.openURL(whatsappUrl);
-      } else {
-        Alert.alert('WhatsApp Not Available', 'WhatsApp is not installed on this device.');
-      }
+      await Linking.openURL(whatsappUrl);
     } catch {
-      Alert.alert('Error', 'Could not open WhatsApp.');
+      Alert.alert(
+        'Could not open WhatsApp',
+        `Could not open a message draft for ${contact.name}. Check that WhatsApp is available, or use SMS.`
+      );
     }
   }
 
   async function shareViaSMS() {
     if (!location) return;
+    if (contacts.length === 0) {
+      Alert.alert('No trusted contacts', 'Add a trusted contact before sharing your location.');
+      return;
+    }
 
     const mapsLink = getGoogleMapsLink();
-    const message = `PANIC RING LIVE LOCATION\n\nI'm sharing my live location with you:\n${mapsLink}\n\nLast updated: ${new Date(location.timestamp).toLocaleString()}`;
+    const message = `My current location is here: ${mapsLink}\nLast updated: ${new Date(location.timestamp).toLocaleString()}`;
 
     try {
       const isAvailable = await SMS.isAvailableAsync();
@@ -206,8 +219,8 @@ export default function LiveLocationScreen() {
       const recipients = contacts.length > 0 ? contacts.map(c => c.phone) : [];
       
       await SMS.sendSMSAsync(recipients, message);
-    } catch {
-      Alert.alert('Error', 'Could not send SMS.');
+    } catch (err) {
+      Alert.alert('Could not open SMS', err instanceof Error ? err.message : 'Could not prepare the SMS draft.');
     }
   }
 
@@ -287,19 +300,12 @@ export default function LiveLocationScreen() {
 
           {isTracking && location && (
             <View style={styles.card}>
-              <Text style={styles.cardTitle}>Share Location</Text>
+              <Text style={styles.cardTitle}>Share Current Location</Text>
               <Text style={styles.body}>
-                Send your current location to emergency contacts
+                Open a message draft for a trusted contact. Review and send it in the messaging app.
               </Text>
 
               <View style={styles.shareButtons}>
-                <Pressable
-                  style={styles.whatsappButton}
-                  onPress={shareViaWhatsApp}
-                >
-                  <Text style={styles.shareButtonText}>WhatsApp</Text>
-                </Pressable>
-
                 <Pressable
                   style={styles.smsButton}
                   onPress={shareViaSMS}
@@ -310,11 +316,19 @@ export default function LiveLocationScreen() {
 
               {contacts.length > 0 && (
                 <View style={styles.contactsList}>
-                  <Text style={styles.contactsLabel}>SMS will be sent to:</Text>
-                  {contacts.map((contact, index) => (
-                    <Text key={index} style={styles.contactItem}>
-                      • {contact.name} ({contact.phone})
-                    </Text>
+                  <Text style={styles.contactsLabel}>SMS opens with all trusted contacts. Choose one for WhatsApp:</Text>
+                  {contacts.map((contact) => (
+                    <View key={contact.id} style={styles.contactRow}>
+                      <Text style={styles.contactItem}>{contact.name} ({contact.phone})</Text>
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={`Share location with ${contact.name} using WhatsApp`}
+                        style={styles.whatsappButton}
+                        onPress={() => void shareViaWhatsApp(contact)}
+                      >
+                        <Text style={styles.shareButtonText}>WhatsApp</Text>
+                      </Pressable>
+                    </View>
                   ))}
                 </View>
               )}
@@ -324,8 +338,7 @@ export default function LiveLocationScreen() {
           <View style={styles.infoCard}>
             <Text style={styles.infoTitle}>How it works</Text>
             <Text style={styles.body}>
-              When live location is turned on, your location is updated every 10 seconds and saved securely. 
-              Only your trusted contacts can access your live location.
+              When tracking is on, your latest location is saved to your account every 10 seconds. SMS and WhatsApp open a draft with the current map pin for your trusted contacts. You must send it, and share again to provide an updated pin.
             </Text>
             <Text style={[styles.body, { marginTop: 12 }]}>
               Location tracking continues while the app is open. For background tracking, additional 
@@ -487,6 +500,13 @@ const styles = StyleSheet.create({
     padding: 12,
     backgroundColor: colors.surfaceMuted,
     borderRadius: 10,
+  },
+  contactRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    paddingVertical: 8,
   },
   contactsLabel: {
     color: colors.text,

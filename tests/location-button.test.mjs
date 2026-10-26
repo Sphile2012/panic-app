@@ -47,8 +47,14 @@ test('location screen shows and refreshes live position only after an explicit u
     assert.match(source, /getLocation\(12000\)/);
     assert.match(source, /result\.coords\.latitude/);
     assert.match(source, /store\.setLocationShared\(true, result\.text\)/);
-    assert.match(source, /buildSmsBody\('your trusted circle', result\.text, true, notes\)/);
-    assert.match(source, /window\.location\.href = whatsappUri\('', message\)/);
+    assert.match(source, /id="location-share-contact"/);
+    assert.match(source, /id="btn-share-sms"/);
+    assert.match(source, /store\.getState\(\)\.contacts\.find\(item => item\.id === shareContact\.value\)/);
+    assert.match(source, /smsUri\(contact\.phone, message\)/);
+    assert.match(source, /whatsappUri\(contact\.phone, message\)/);
+    assert.match(source, /Review it and tap Send; delivery is not confirmed/);
+    assert.doesNotMatch(source, /whatsappUri\('',/);
+    assert.doesNotMatch(source, /Jane\s+Doe/);
     assert.doesNotMatch(source, /loc-address-card|loc-address-line|loc-maps-link/);
   }
 

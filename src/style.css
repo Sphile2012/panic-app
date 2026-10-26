@@ -729,7 +729,7 @@ html[data-photo-background="true"] .phone-screen > .screen { background: transpa
   align-items: center;
   justify-content: center;
   gap: 2px;
-  border: 1px dashed color-mix(in srgb, var(--accent) 50%, white);
+  border: 1px solid color-mix(in srgb, var(--accent) 50%, white);
   border-radius: 50%;
   color: var(--accent);
   font-size: .65rem;
@@ -5085,36 +5085,95 @@ html[data-screen="history"] .history-screen {
 .history-item strong { color: #e8e8ed; font-size: .79rem; }
 .history-item div span { color: #858590; font-size: .72rem; }
 
-html[data-screen="contacts"] body { background: #303030; }
-html[data-screen="contacts"] .phone-frame { background: #303030; }
+html[data-screen="contacts"] body { background: #10111a; }
+html[data-screen="contacts"] .phone-frame { background: #10111a; }
 html[data-screen="contacts"] .contacts-screen {
   width: min(100%, 480px);
   min-height: 100%;
   margin: 0 auto;
   border-radius: 0;
   box-shadow: none;
-  background: #303030;
+  background: #10111a;
+  color: #f1f1f6;
 }
 
 html[data-screen="contacts"] .contacts-screen .screen-title,
 html[data-screen="contacts"] .contacts-list-heading h3,
 html[data-screen="contacts"] .contacts-screen .contact-name,
 html[data-screen="contacts"] .contacts-screen .form-section-title {
-  color: #f3f3f6;
+  color: #f5f4fa;
+}
+
+html[data-screen="contacts"] .contacts-list-heading h3 {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+html[data-screen="contacts"] .contacts-screen .contact-name {
+  color: #fff;
+  font-size: .96rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+html[data-screen="contacts"] .contacts-screen .contact-phone,
+html[data-screen="contacts"] .contacts-screen .contact-relationship {
+  color: #d0d0df;
+  font-size: .82rem;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+html[data-screen="contacts"] .contacts-list-heading p {
+  color: #c5c5d3;
+  font-size: .8rem;
+  line-height: 1.4;
 }
 
 html[data-screen="contacts"] .contacts-search,
 html[data-screen="contacts"] .contacts-list-panel,
 html[data-screen="contacts"] .contacts-list-panel .contact-item {
-  border-color: #3b3a42;
-  background: #202027;
-  color: #eeeef2;
+  border-color: #38394a;
+  background: #1a1b27;
+  color: #ededf5;
+}
+
+html[data-screen="contacts"] .contacts-list-panel .contact-item {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .24);
+}
+
+html[data-screen="contacts"] .contact-modal-panel,
+html[data-screen="contacts"] .contacts-form {
+  color: #ededf5;
+}
+
+html[data-screen="contacts"] .contact-modal-panel .text-input {
+  border-color: #3b3c4e;
+  background: #20212e;
+  color: #f5f4fa;
+}
+
+html[data-screen="contacts"] .contact-modal-panel .text-input::placeholder {
+  color: #a5a5b5;
 }
 
 html[data-screen="contacts"] .contacts-search input,
-html[data-screen="contacts"] .contacts-list-heading p,
-html[data-screen="contacts"] .contacts-screen .contact-phone {
-  color: #9999a5;
+html[data-screen="contacts"] .contacts-search input::placeholder {
+  color: #d0d0df;
+}
+
+html[data-screen="contacts"] .contacts-search input {
+  font-size: .95rem;
+}
+
+html[data-screen="contacts"] .contacts-count {
+  background: #2b2b3b;
+  color: #f0efff;
+  font-size: .82rem;
+}
+
+html[data-screen="contacts"] .contacts-screen .contact-item {
+  padding: 14px;
 }
 
 .disguise-backdrop {
@@ -7482,7 +7541,7 @@ h3,
   bottom: 0;
   display: flex;
   flex: 0 0 auto;
-  align-items: center;
+  align-items: flex-end;
   gap: 8px;
   padding: 8px;
   border: 1px solid rgba(255, 255, 255, .38);
@@ -7492,15 +7551,34 @@ h3,
   backdrop-filter: blur(16px);
 }
 
-.chat-screen .chat-form .text-input {
+.chat-screen .chat-form .chat-input {
+  box-sizing: border-box;
   min-width: 0;
-  flex: 1 1 auto;
-  border: 0;
-  background: transparent;
+  width: auto;
+  flex: 1 1 0;
+  height: 56px;
+  min-height: 56px;
+  max-height: 120px;
+  padding: 12px;
+  border: 1px solid #d8d3e3;
+  border-radius: 16px;
+  background: #f7f5fb;
+  color: #302844;
   box-shadow: none;
+  font-size: .95rem;
+  line-height: 1.4;
+  resize: none;
+  overflow-y: auto;
+}
+
+.chat-screen .chat-form .chat-input::placeholder {
+  color: #706a7d;
+  opacity: 1;
 }
 
 .chat-screen .chat-send {
+  width: auto;
+  min-width: 76px;
   flex: 0 0 auto;
   min-height: 44px;
   border-radius: 999px;

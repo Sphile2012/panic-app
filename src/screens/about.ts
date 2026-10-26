@@ -58,7 +58,7 @@ export function renderAbout(root) {
           <li>PIN hashes using SHA-256 (local) and bcrypt (cloud)</li>
           <li>AES-256-GCM encryption for sensitive data</li>
           <li>No tracking or analytics</li>
-          <li>✅ Works completely offline</li>
+          <li>Works completely offline</li>
         </ul>
       </section>
 
@@ -73,7 +73,7 @@ export function renderAbout(root) {
       </section>
 
       <section class="about-section">
-        <h3 class="about-section-title">🔐 Security Features</h3>
+        <h3 class="about-section-title">Security Features</h3>
         <ul class="about-list">
           <li>Two-PIN system (Secret + Decoy)</li>
           <li>Security questions for PIN recovery</li>

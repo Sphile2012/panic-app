@@ -2,7 +2,7 @@
 
 Panic Ring is a mobile-first personal safety app providing emergency alerts, location tracking, and safety planning features.
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Web App
 ```sh
@@ -31,42 +31,42 @@ Scan the QR code with **Expo Go** app on your Android device.
 
 ---
 
-## 📱 Mobile App Features
+## Mobile App Features
 
 The mobile app (`com.phumeh.mypanicring`) includes 6 core safety features:
 
-### 1. 🆘 SOS Alert System
+### 1. SOS Alert System
 - Hold-to-activate button (1.5 second press)
 - Silent alert mechanism
 - SMS sending to trusted contacts
 - Optional location sharing (off by default)
-- Real-time delivery status tracking
+- Message composer preparation status; delivery must be confirmed in the messaging app
 - Cancel alert functionality
 - Google Maps integration
 
-### 2. 👥 Trusted Circle Management
+### 2. Trusted Circle Management
 - Add up to 5 trusted contacts
 - Name and phone number tracking
 - Status monitoring (accepted/pending)
 - Remove contacts with confirmation
 - Database persistence with RLS security
 
-### 3. 📍 Live Location Tracking
-- Real-time tracking (10-second intervals)
+### 3. Live Location Tracking
+- Location tracking updates every 10 seconds while the app is open
 - Location accuracy reporting
 - WhatsApp and SMS sharing
 - Google Maps link generation
 - Start/stop controls
-- Background location support
+- Messaging apps open drafts; the user must review and send
 
-### 4. 🔒 Private Notes/Evidence
+### 4. Private Notes/Evidence
 - Create encrypted notes
 - Title and content fields
 - Timestamp tracking
 - Secure deletion with confirmation
 - Private storage with RLS
 
-### 5. 🛡️ Safety Plan
+### 5. Safety Plan
 Six categories for comprehensive safety planning:
 - Trusted People
 - Safe Places
@@ -75,7 +75,7 @@ Six categories for comprehensive safety planning:
 - Transport Options
 - Things to Remember
 
-### 6. 🚨 Emergency Services Dialer
+### 6. Emergency Services Dialer
 One-tap calling to South African emergency services:
 - **General Emergency**: 112
 - **Police SAPS**: 10111
@@ -85,7 +85,7 @@ One-tap calling to South African emergency services:
 
 ---
 
-## 🗄️ Database Schema
+## Database Schema
 
 All tables use Supabase with Row-Level Security (RLS) enabled:
 
@@ -98,14 +98,14 @@ All tables use Supabase with Row-Level Security (RLS) enabled:
 6. **alert_deliveries** - SMS delivery tracking
 
 ### Security:
-- ✓ Row-Level Security on all tables
-- ✓ Users can only access their own data
-- ✓ Trusted contacts can view shared locations
-- ✓ No cross-user data leakage
+- Row-Level Security is enabled on applicable tables
+- Users can only access their own records
+- Location messages are addressed only to trusted-circle contacts and require the user to send
+- Cross-user access is restricted by row-level policies
 
 ---
 
-## 📲 Android Permissions
+## Android Permissions
 
 Configured in `mobile/app.json`:
 - ACCESS_FINE_LOCATION
@@ -120,46 +120,23 @@ iOS permissions also configured for location services.
 
 ---
 
-## ✅ Verification Status
+## Verification Status
 
-### TypeScript Compilation: ✅ PASSED
-- All files compile without errors
-- Type safety verified across all components
+Latest local checks:
+- `npm test`: 60 tests passed
+- `npm run typecheck`: passed for web, mobile, and API
+- `npm run test:api`: 4 tests passed
+- Web build: passed with Vite 6.4.4
+- Android Expo export: passed
+- API build: passed
+- Root and API dependency audits: no reported vulnerabilities
+- Mobile dependency audit: 5 high-severity Expo toolchain advisories remain; resolving them automatically requires a breaking Expo version change
 
-### Database Integration: ✅ VERIFIED
-- All CRUD operations working
-- RLS policies tested
-- Data persistence confirmed
-
-### Features: ✅ 95% COMPLETE
-**Implemented:**
-- ✓ SOS Alert System
-- ✓ Trusted Circle Management
-- ✓ Live Location Tracking
-- ✓ Private Notes/Evidence
-- ✓ Safety Plan
-- ✓ Emergency Services Dialer
-- ✓ Database Integration
-- ✓ Security (RLS)
-- ✓ Permissions Setup
-
-**Not Implemented:**
-- Calculator-style PIN entry (web app feature)
-- Decoy PIN (web app feature)
-- Bluetooth Ring integration (hardware)
-- Support services directory (planned)
-- Consent-based referral (planned)
-
-### Code Quality: ✅ VERIFIED
-- TypeScript strict mode enabled
-- No compilation errors
-- Proper error handling
-- Loading states implemented
-- Consistent code style
+Physical-device checks and live Supabase integration checks are still required. These results do not certify every feature on every device or network.
 
 ---
 
-## 🧪 Testing Guide
+## Testing Guide
 
 ### Manual Testing Checklist:
 
@@ -224,7 +201,7 @@ iOS permissions also configured for location services.
 
 ---
 
-## 🔧 Environment Setup
+## Environment Setup
 
 ### Mobile App (.env file)
 Create `mobile/.env` with:
@@ -238,7 +215,7 @@ Already configured in root `.env`
 
 ---
 
-## 🚀 Deployment
+## Deployment
 
 ### Mobile App:
 ```bash
@@ -259,7 +236,7 @@ Deploy to Netlify or similar platform.
 
 ---
 
-## 📦 Dependencies
+## Dependencies
 
 ### Mobile App (Expo SDK ~58):
 - expo-location (v58.0.18)
@@ -271,7 +248,7 @@ Deploy to Netlify or similar platform.
 
 ---
 
-## ⚠️ Known Limitations
+## Known Limitations
 
 ### SMS Behavior:
 - **iOS**: User must manually tap "Send" in message composer
@@ -283,13 +260,17 @@ Deploy to Netlify or similar platform.
 
 ### Platform Limitations:
 - Web app uses SMS links (browser opens messaging app)
+- Web location sharing targets a selected trusted-circle phone number and pre-fills the SMS or WhatsApp composer
+- Mobile SMS drafts include trusted-circle numbers, and mobile WhatsApp drafts target the selected trusted contact
+- Mobile messaging shares the current map pin, not a continuously updating recipient link
+- The user must review and tap Send; neither app can confirm message delivery
 - Battery monitoring depends on browser support
-- Location is snapshot-based in web app
-- No automatic SMS/WhatsApp dispatch from web
+- Mobile messaging is snapshot-based; the web app shares a live link only while tracking and sync are active
+- No automatic SMS/WhatsApp dispatch from web or mobile
 
 ---
 
-## 🔒 Security & Privacy
+## Security & Privacy
 
 - All data encrypted at rest
 - No data shared without explicit user action
@@ -300,15 +281,15 @@ Deploy to Netlify or similar platform.
 
 ---
 
-## 📄 License
+## License
 
 MIT License
 
 ---
 
-## 📞 Emergency Services (South Africa)
+## Emergency Services (South Africa)
 
-**⚠️ These are real emergency numbers. Use responsibly.**
+These are real emergency numbers. Use responsibly.
 
 - **General Emergency**: 112
 - **Police SAPS**: 10111
@@ -318,14 +299,9 @@ MIT License
 
 ---
 
-## 🎯 Current Status
+## Current Status
 
-- ✅ TypeScript: NO ERRORS
-- ✅ Database: SCHEMA VERIFIED
-- ✅ Features: ALL IMPLEMENTED
-- ✅ Permissions: CONFIGURED
-- ✅ Code: COMMITTED & PUSHED
-- ✅ Status: READY FOR TESTING
+Type checks, automated tests, and platform builds pass locally. Physical-device and configured backend integration testing remain necessary.
 
 **Last Updated:** 2026-10-25  
 **Version:** 1.0.0  

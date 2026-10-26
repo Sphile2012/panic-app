@@ -1,7 +1,17 @@
 import { store } from '../state.js';
 import { getLocation } from '../alertService.js';
-import { buildSmsBody, whatsappUri } from '../storage.js';
+import { smsUri, whatsappUri } from '../storage.js';
+function esc(value) {
+    return value.replace(/[&<>"']/g, character => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;',
+    })[character] ?? character);
+}
 export function renderLocation(root) {
+    const { contacts } = store.getState();
     root.innerHTML = `
     <div class="screen location-screen">
 
@@ -38,9 +48,18 @@ export function renderLocation(root) {
             <circle cx="12" cy="12" r="10"/>
             <path d="M12 8v8M8 12h8"/>
           </svg>
-          Share my location
+          Alert my circle with my location
         </button>
-        <button class="btn-secondary" id="btn-share-whatsapp" type="button">
+        <label class="field-label" for="location-share-contact">Send a location message to</label>
+        <select class="text-input" id="location-share-contact" ${contacts.length ? '' : 'disabled'}>
+          ${contacts.length
+            ? contacts.map(contact => `<option value="${esc(contact.id)}">${esc(contact.name)} | ${esc(contact.phone)}</option>`).join('')
+            : '<option value="">Add a trusted contact first</option>'}
+        </select>
+        <button class="btn-secondary" id="btn-share-sms" type="button" ${contacts.length ? '' : 'disabled'}>
+          Share location via SMS
+        </button>
+        <button class="btn-secondary" id="btn-share-whatsapp" type="button" ${contacts.length ? '' : 'disabled'}>
           Share location via WhatsApp
         </button>
         <button class="btn-skip-location" id="btn-skip">
@@ -116,7 +135,7 @@ export function renderLocation(root) {
           </ul>
           <p>
             Tap Show my live location to display and refresh your position while this screen is open. Tap Stop live location to stop access.
-            Share my location sends one current fix in an SMS draft. Share location via WhatsApp prepares a WhatsApp message with the same current location. Review and send messages yourself; live coordinates are not sent automatically.
+            Alert my circle prepares a message for each trusted contact using that contact’s chosen app. SMS and WhatsApp buttons prepare a draft for the selected trusted contact. Review and tap Send in the messaging app; delivery is not confirmed here.
             The map sends coordinates to Google Maps to display your position.
             Your browser will ask for location permission when you tap Show my live location or Share my location. Camera permission is not needed to show a map.
             If device Location is turned off, enable it in device settings; this website cannot turn on that system setting for you.
@@ -140,7 +159,9 @@ export function renderLocation(root) {
     const mapDetails = root.querySelector('#location-map-details');
     const errorEl = root.querySelector('#loc-error');
     const shareBtn = root.querySelector('#btn-share');
+    const smsBtn = root.querySelector('#btn-share-sms');
     const whatsappBtn = root.querySelector('#btn-share-whatsapp');
+    const shareContact = root.querySelector('#location-share-contact');
     const skipBtn = root.querySelector('#btn-skip');
     const liveToggle = root.querySelector('#btn-live-toggle');
     const denyLocation = root.querySelector('#btn-deny-location');
@@ -424,7 +445,7 @@ export function renderLocation(root) {
             showLocationError(`${result.reason} If device Location is off, turn it on in your device settings before trying again.`, 'share');
         }
     });
-    whatsappBtn.addEventListener('click', async () => {
+    async function shareDirectly(channel) {
         if (locationChoice !== 'allowed') {
             const reason = locationChoice === 'denied'
                 ? 'You denied location for this screen. Tap Allow location before sharing coordinates.'
@@ -434,29 +455,38 @@ export function renderLocation(root) {
             permissionHelp.hidden = false;
             return;
         }
+        const contact = store.getState().contacts.find(item => item.id === shareContact.value);
+        if (!contact) {
+            errorEl.textContent = 'Choose a trusted contact before sharing your location.';
+            return;
+        }
+        smsBtn.disabled = true;
         whatsappBtn.disabled = true;
         errorEl.textContent = '';
         retryBtn.hidden = true;
         permissionHelp.hidden = true;
-        mapStatus.textContent = 'Getting your current location for WhatsApp…';
+        mapStatus.textContent = 'Getting your current location…';
         try {
             const result = await getLocation(12000);
-            if (result.ok === false) {
-                showLocationError(`${result.reason} If device Location is off, turn it on in your device settings before trying again.`, 'share');
+            if (!result.ok) {
+                showLocationError(result.reason, 'share');
                 return;
             }
             updateMap(result.coords.latitude, result.coords.longitude, result.accuracy, 'Current location');
-            const { notes } = store.getState();
-            const message = buildSmsBody('your trusted circle', result.text, true, notes);
-            store.setLocationShared(true, result.text);
-            window.location.href = whatsappUri('', message);
-            mapStatus.textContent = 'WhatsApp opened with your current location. Choose recipients and tap Send; delivery is not confirmed.';
+            const message = `My current location: ${result.mapsUrl}\nGPS accuracy: ±${Math.round(result.accuracy)} m`;
+            window.location.href = channel === 'sms'
+                ? smsUri(contact.phone, message)
+                : whatsappUri(contact.phone, message);
+            mapStatus.textContent = `${channel === 'sms' ? 'SMS' : 'WhatsApp'} draft prepared for ${contact.name}. Review it and tap Send; delivery is not confirmed.`;
         } catch (error) {
             showLocationError(error instanceof Error ? error.message : 'Could not prepare the WhatsApp location message.', 'share');
         } finally {
+            smsBtn.disabled = false;
             whatsappBtn.disabled = false;
         }
-    });
+    }
+    smsBtn.addEventListener('click', () => void shareDirectly('sms'));
+    whatsappBtn.addEventListener('click', () => void shareDirectly('whatsapp'));
     skipBtn.addEventListener('click', () => {
         store.setLocationShared(false, 'Location not shared');
         store.startSending();

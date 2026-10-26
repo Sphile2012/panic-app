@@ -1,4 +1,5 @@
 import { store } from '../state.js';
+import { smsUri, whatsappUri } from '../storage.js';
 
 function escapeHtml(value: string): string {
   return value.replace(/[&<>"']/g, character => ({
@@ -14,9 +15,7 @@ function renderContact(contact: ReturnType<typeof store.getState>['contacts'][nu
   const name = escapeHtml(contact.name);
   const phone = escapeHtml(contact.phone);
   const relationship = escapeHtml(contact.relationship || 'Other');
-  const digits = contact.phone.replace(/\D/g, '');
-  const smsPhone = contact.phone.replace(/[^\d+]/g, '');
-  const message = encodeURIComponent(`Hi ${contact.name}, I may need your help. Please contact me.`);
+  const message = `Hi ${contact.name}, I may need your help. Please contact me.`;
 
   return `
     <li class="contact-item contact-item--manage" data-search="${escapeHtml(`${contact.name} ${contact.phone} ${contact.email || ''} ${contact.relationship || 'Other'}`.toLowerCase())}">
@@ -25,7 +24,7 @@ function renderContact(contact: ReturnType<typeof store.getState>['contacts'][nu
         <span class="contact-name">${name}</span>
         <span class="contact-phone">${phone}</span>
         <span class="contact-relationship">${relationship}</span>
-        <span class="contact-relationship">Priority ${contact.priority ?? '—'} · ${contact.notificationChannel === 'whatsapp' ? 'WhatsApp' : 'SMS'}</span>
+        <span class="contact-relationship">Priority ${contact.priority ?? '—'} | ${contact.notificationChannel === 'whatsapp' ? 'WhatsApp' : 'SMS'}</span>
         ${contact.email ? `<span class="contact-relationship">${escapeHtml(contact.email)}</span>` : ''}
         <div class="contact-manage-actions">
           <button class="contact-edit" data-id="${escapeHtml(contact.id)}" type="button">Edit</button>
@@ -33,10 +32,10 @@ function renderContact(contact: ReturnType<typeof store.getState>['contacts'][nu
         </div>
       </div>
       <div class="contact-actions">
-        <a class="contact-message contact-message--whatsapp" href="https://wa.me/${digits}?text=${message}" target="_blank" rel="noopener noreferrer" aria-label="Message ${name} on WhatsApp" title="WhatsApp">
+        <a class="contact-message contact-message--whatsapp" href="${whatsappUri(contact.phone, message)}" target="_blank" rel="noopener noreferrer" aria-label="Message ${name} on WhatsApp" title="WhatsApp">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 11.8a8.4 8.4 0 0 1-12.4 7.4L3 20.5l1.4-5A8.4 8.4 0 1 1 20.5 11.8Z"/><path d="M8.8 8.1c.2-.4.4-.4.7-.4h.5c.2 0 .4.1.5.4l.7 1.7c.1.2.1.4-.1.6l-.5.6c-.2.2-.2.4 0 .7.5.8 1.2 1.4 2 1.9.2.1.5.1.6-.1l.7-.8c.2-.2.4-.2.7-.1l1.6.8c.3.1.4.3.4.5 0 .3-.2 1.2-.8 1.6-.5.4-1.1.6-1.8.5-1-.1-2.2-.6-3.7-1.9-1.2-1-2-2.3-2.3-3.2-.3-.9 0-1.8.4-2.3Z"/></svg>
         </a>
-        <a class="contact-message contact-message--sms" href="sms:${smsPhone}?body=${message}" aria-label="Text ${name} by SMS" title="SMS">
+        <a class="contact-message contact-message--sms" href="${smsUri(contact.phone, message)}" aria-label="Text ${name} by SMS" title="SMS">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H6l-3 2 1-4.5A7.5 7.5 0 1 1 20 11.5Z"/><path d="M8 11.5h.01M12 11.5h.01M16 11.5h.01"/></svg>
         </a>
       </div>
@@ -86,11 +85,11 @@ export function renderContacts(root: HTMLElement, notice = ''): void {
             <h3 class="form-section-title" id="form-title">Add Contact</h3>
             <input type="hidden" id="edit-id" value="" />
             <label class="field-label" for="c-name">Full name *</label>
-            <input class="text-input" id="c-name" type="text" placeholder="Jane Doe" required />
+            <input class="text-input" id="c-name" type="text" placeholder="Full name" required />
             <label class="field-label" for="c-phone">Phone number *</label>
             <input class="text-input" id="c-phone" type="tel" placeholder="+27 82 123 4567" required />
             <label class="field-label" for="c-email">Email</label>
-            <input class="text-input" id="c-email" type="email" placeholder="jane@email.com" />
+            <input class="text-input" id="c-email" type="email" placeholder="name@example.com" />
             <label class="field-label" for="c-relationship">Relationship</label>
             <select class="text-input" id="c-relationship" required>
               <option value="" disabled selected>Choose a relationship</option>

@@ -2,6 +2,7 @@ import '../strings/groupA.js';
 import { store } from '../state.js';
 import { t } from '../i18n.js';
 import { smsUri, whatsappUri } from '../storage.js';
+import { getLocation } from '../alertService.js';
 import { DB_CONFIGURED } from '../db.js';
 import { startTracking, stopTracking, isTracking, getLast, getError, getLowBattery, dismissLowBattery, onTrackChange, trackUrl, mapsUrl, } from '../tracking.js';
 let unsubscribe = null;
@@ -27,32 +28,27 @@ export function renderLive(root) {
         unsubscribeStore();
     const { contacts } = store.getState();
     let isAuthenticated = store.getState().isAuthenticated;
+    let capturedLocation = null;
     const paint = () => {
         const on = isTracking();
-        const last = getLast();
+        const last = on ? getLast() ?? capturedLocation : capturedLocation ?? getLast();
         const err = getError();
         const low = getLowBattery();
         const mapUrl = last ? mapsUrl(last) : null;
         const link = last
             ? DB_CONFIGURED
-                ? err === null ? trackUrl() : err === 'auth' ? mapUrl : null
+                ? on && err === null ? trackUrl() : mapUrl
                 : mapsUrl(last)
             : null;
         const callPolice = 'Please call the police now (SAPS 10111).';
-        const locationMessage = DB_CONFIGURED
-            ? err === 'auth' && mapUrl
-                ? `My latest GPS location is here: ${mapUrl} (one-time location; live updates are unavailable).`
-                : link
-                ? t('trk.link.sms', { url: link })
-                : last
-                    ? 'Live updates are unavailable. Share this last GPS fix instead.'
-                    : 'No GPS fix is available yet; I cannot share a location.'
-            : last
-                ? `My last known location is here: ${link} (this map is not live tracking).`
+        const locationMessage = on && err === null && link
+            ? t('trk.link.sms', { url: link })
+            : mapUrl
+                ? `My latest GPS fix is here: ${mapUrl} (not live tracking).`
                 : 'No GPS fix is available yet; I cannot share a location.';
         const linkBody = `${locationMessage}\n${callPolice}`;
         const locationShareBody = last
-            ? `My location is here: ${mapUrl}`
+            ? `My location is here: ${mapUrl}\nGPS accuracy: ±${Math.round(last.accuracy)} m`
             : 'Please enable location access to share your current location.';
         const lowBody = `${DB_CONFIGURED && link
             ? t('trk.low.sms', { pct: low ?? '', url: link ?? '' })
@@ -131,7 +127,7 @@ export function renderLive(root) {
                     <strong>${esc(contact.name)}</strong>
                     <div>
                       <a class="btn-secondary" data-share-sms="${index}" href="${smsUri(contact.phone, locationShareBody)}">SMS</a>
-                      <a class="btn-secondary" data-share-whatsapp="${index}" href="${whatsappUri(contact.phone, locationShareBody)}" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+                      <a class="btn-secondary" data-share-whatsapp="${index}" href="${whatsappUri(contact.phone, locationShareBody)}">WhatsApp</a>
                     </div>
                   </div>
                 `).join('') : `<p>Add a trusted contact before sharing from here.</p>`}
@@ -140,8 +136,9 @@ export function renderLive(root) {
               <textarea class="live-share-copy" id="live-share-copy" aria-label="Location message" readonly hidden></textarea>
               <button class="btn-secondary" id="live-copy-message" type="button" hidden>Copy location message</button>
             ` : `
-              <p>Get your current GPS location first, then share it using SMS or WhatsApp.</p>
+              <p>Get a current GPS fix, then choose SMS or WhatsApp for a trusted contact.</p>
               <button class="btn-primary live-location-toggle" id="btn-share-location" type="button">Get location to share</button>
+              <p class="live-share-feedback" id="live-share-feedback" role="status" aria-live="polite"></p>
             `}
           </section>
           <button class="live-location-toggle-secondary" id="btn-toggle" type="button" aria-pressed="${on}">
@@ -153,7 +150,7 @@ export function renderLive(root) {
             ${link ? `<div class="live-links">
               ${contacts.map((c, index) => `
                 <button class="btn-secondary" type="button" data-live-contact="${index}">${err === 'auth' ? 'Share GPS via SMS' : `SMS: ${esc(c.name)}`}</button>
-                <a class="btn-secondary" data-live-whatsapp="${index}" href="${whatsappUri(c.phone, linkBody)}" target="_blank" rel="noopener noreferrer">${err === 'auth' ? 'Share GPS via WhatsApp' : `WhatsApp: ${esc(c.name)}`}</a>
+                <a class="btn-secondary" data-live-whatsapp="${index}" href="${whatsappUri(c.phone, linkBody)}">${err === 'auth' ? 'Share GPS via WhatsApp' : `WhatsApp: ${esc(c.name)}`}</a>
               `).join('')}
             </div>` : `<p class="live-intro">${esc(err === 'network' ? t('trk.network') : err === 'pending' ? t('trk.requesting') : 'Waiting for a GPS fix before sharing a location.')}</p>`}` : ''}
           ${isAuthenticated
@@ -197,8 +194,33 @@ export function renderLive(root) {
                 void startTracking();
             }
         });
-        root.querySelector('#btn-share-location')?.addEventListener('click', () => {
-            void startTracking();
+        root.querySelector('#btn-share-location')?.addEventListener('click', async (event) => {
+            const button = event.currentTarget;
+            const feedback = root.querySelector('#live-share-feedback');
+            button.disabled = true;
+            if (feedback) feedback.textContent = 'Getting a current GPS fix…';
+            try {
+                const result = await getLocation(12000);
+                if (!result.ok) {
+                    if (feedback) feedback.textContent = result.reason;
+                    return;
+                }
+                capturedLocation = {
+                    lat: result.coords.latitude,
+                    lng: result.coords.longitude,
+                    accuracy: result.accuracy,
+                    battery: null,
+                    charging: false,
+                    at: Date.now(),
+                };
+                paint();
+            } catch (error) {
+                if (feedback) feedback.textContent = error instanceof Error
+                    ? error.message
+                    : 'Could not get your current location.';
+            } finally {
+                button.disabled = false;
+            }
         });
         root.querySelector('#btn-map-signin')?.addEventListener('click', () => store.navigateTo('welcome'));
         root.querySelector('#btn-manage-safe-zones')?.addEventListener('click', () => store.navigateTo('safety-plan'));

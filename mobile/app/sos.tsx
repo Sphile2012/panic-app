@@ -129,7 +129,7 @@ export default function SOSScreen() {
       ? `\n\nLocation: https://www.google.com/maps?q=${location.latitude},${location.longitude}`
       : '';
 
-    const message = `🚨 PANIC RING SOS ALERT 🚨\n\nI need help! This is an emergency alert from your trusted contact.\n\nPlease check on me or call me immediately.${locationText}\n\nSent from Panic Ring`;
+    const message = `PANIC RING SOS ALERT\n\nI need help! This is an emergency alert from your trusted contact.\n\nPlease check on me or call me immediately.${locationText}\n\nSent from Panic Ring`;
 
     const smsUrl = `sms:${contact.phone}${Platform.OS === 'ios' ? '&' : '?'}body=${encodeURIComponent(message)}`;
 
@@ -182,7 +182,7 @@ export default function SOSScreen() {
       ) : alertActive ? (
         <>
           <View style={styles.alertActiveCard}>
-            <Text style={styles.alertIcon}>🚨</Text>
+            <Text style={styles.alertLabel}>SOS</Text>
             <Text style={styles.alertTitle}>Alert Activated</Text>
             <Text style={styles.alertBody}>
               Sending alerts to your trusted contacts...
@@ -299,7 +299,6 @@ export default function SOSScreen() {
               <View style={styles.contactsList}>
                 {contacts.map((contact) => (
                   <View key={contact.id} style={styles.contactPreviewItem}>
-                    <Text style={styles.contactPreviewIcon}>👤</Text>
                     <Text style={styles.contactPreviewName}>{contact.name}</Text>
                   </View>
                 ))}
@@ -309,7 +308,7 @@ export default function SOSScreen() {
 
           <View style={styles.disclaimerCard}>
             <Text style={styles.disclaimerText}>
-              ⚠️ This alert opens your SMS app. You must tap Send in the messaging app. Panic Ring
+              This alert opens your SMS app. You must tap Send in the messaging app. Panic Ring
               does not send messages automatically.
             </Text>
           </View>
@@ -415,7 +414,6 @@ const styles = StyleSheet.create({
   addContactButtonText: { color: colors.surface, fontSize: 14, fontWeight: '700' },
   contactsList: { gap: 8 },
   contactPreviewItem: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8 },
-  contactPreviewIcon: { fontSize: 20 },
   contactPreviewName: { color: colors.text, fontSize: 15, fontWeight: '600' },
   disclaimerCard: {
     backgroundColor: colors.warningSoft,
@@ -432,7 +430,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     alignItems: 'center',
   },
-  alertIcon: { fontSize: 64, marginBottom: 16 },
+  alertLabel: { color: colors.danger, fontSize: 42, fontWeight: '900', marginBottom: 16 },
   alertTitle: { color: colors.danger, fontSize: 24, fontWeight: '800', marginBottom: 8 },
   alertBody: { color: colors.text, fontSize: 16, textAlign: 'center' },
   statusCard: {

@@ -17,6 +17,7 @@ export function renderNotes(root) {
         Notes are stored on this device only. They are not shared
         unless you choose to include them in an alert.
       </p>
+      <p class="setup-hint" id="note-action-error" role="alert" aria-live="assertive"></p>
 
       <ul class="note-list" id="note-list">
         ${notes.length === 0
@@ -41,7 +42,7 @@ export function renderNotes(root) {
         store.setEditingNote(null);
         store.navigateTo('note-edit');
     });
-    root.querySelector('#note-list').addEventListener('click', e => {
+    root.querySelector('#note-list').addEventListener('click', async (e) => {
         const editBtn = e.target.closest('[data-edit]');
         const deleteBtn = e.target.closest('[data-delete]');
         if (editBtn) {
@@ -51,8 +52,13 @@ export function renderNotes(root) {
         if (deleteBtn) {
             const id = deleteBtn.dataset['delete'];
             if (confirm('Delete this note?')) {
-                store.deleteNote(id);
-                store.navigateTo('notes');
+                try {
+                    await store.deleteNote(id);
+                    store.navigateTo('notes');
+                }
+                catch {
+                    root.querySelector('#note-action-error').textContent = 'Could not delete this note. It is still saved on this device. Try again.';
+                }
             }
         }
     });
@@ -70,6 +76,7 @@ export function renderNoteEdit(root) {
         <h2 class="screen-title">${existing ? 'Edit note' : 'New note'}</h2>
         <button class="btn-text-action" id="btn-save-note">Save</button>
       </header>
+      <p class="setup-hint" id="note-save-error" role="alert" aria-live="assertive"></p>
 
       <form class="note-form" id="note-form" autocomplete="off">
         <input
@@ -96,15 +103,27 @@ export function renderNoteEdit(root) {
     });
     const titleEl = root.querySelector('#note-title');
     const bodyEl = root.querySelector('#note-body');
-    root.querySelector('#btn-save-note').addEventListener('click', () => {
+    root.querySelector('#btn-save-note').addEventListener('click', async (event) => {
         const title = titleEl.value.trim();
         const body = bodyEl.value.trim();
         if (!title) {
             titleEl.focus();
             return;
         }
-        store.saveNote(editingNoteId, title, body);
-        store.navigateTo('notes');
+        const button = event.currentTarget;
+        const error = root.querySelector('#note-save-error');
+        button.disabled = true;
+        error.textContent = '';
+        try {
+            await store.saveNote(editingNoteId, title, body);
+            store.navigateTo('notes');
+        }
+        catch {
+            error.textContent = 'Could not save this note. Your changes are still on screen. Try again.';
+        }
+        finally {
+            button.disabled = false;
+        }
     });
 }
 function noteCard(n) {

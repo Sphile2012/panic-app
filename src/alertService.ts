@@ -155,54 +155,69 @@ export async function runAlertSequence(locationText, locationShared, onStep) {
         .sort((a, b) => (a.contact.priority ?? a.index + 1) - (b.contact.priority ?? b.index + 1) || a.index - b.index)
         .map(item => item.contact);
     let opened = 0;
+    let failed = 0;
     for (let i = 0; i < prioritizedContacts.length; i++) {
         const contact = prioritizedContacts[i];
         const body = buildSmsBody(contact.name, locationText, locationShared, notes);
+        const returnPromise = waitForReturn();
         window.location.href = contact.notificationChannel === 'whatsapp'
             ? whatsappUri(contact.phone, body)
             : smsUri(contact.phone, body);
-        await waitForReturn();
-        store.updateContactStatus(contact.id, 'opened');
-        opened++;
+        const appOpened = await returnPromise;
+        store.updateContactStatus(contact.id, appOpened ? 'opened' : 'failed');
+        if (appOpened) opened++;
+        else failed++;
         onStep();
         if (i < contacts.length - 1)
             await delay(600);
     }
-    void logAlert(contacts.length, locationShared, opened, 0);
+    const recorded = await logAlert(contacts.length, locationShared, opened, failed);
+    store.setAlertLogWarning(!recorded);
     await delay(500);
     store.navigateTo('sent');
 }
 function delay(ms) {
     return new Promise(r => setTimeout(r, ms));
 }
-function waitForReturn() {
-    return new Promise<void>(resolve => {
+function waitForReturn(): Promise<boolean> {
+    return new Promise(resolve => {
         let done = false;
-        const finish = () => {
+        let leftPage = document.visibilityState === 'hidden';
+        let timeout = 0;
+        const finish = (opened: boolean) => {
             if (done)
                 return;
             done = true;
+            window.clearTimeout(timeout);
             document.removeEventListener('visibilitychange', onVisible);
-            resolve();
+            resolve(opened);
         };
         const onVisible = () => {
-            if (document.visibilityState === 'visible')
-                finish();
+            if (document.visibilityState === 'hidden') {
+                leftPage = true;
+            } else if (leftPage) {
+                finish(true);
+            }
         };
         document.addEventListener('visibilitychange', onVisible);
-        setTimeout(finish, 30000);
+        timeout = window.setTimeout(() => finish(false), 30000);
     });
 }
-async function logAlert(contactCount, locationShared, opened, failed) {
-    const user = await getUser();
-    if (!user)
-        return;
-    await insertAlertLog({
-        user_id: user.id,
-        device_id: getDeviceId(),
-        contact_count: contactCount,
-        location_shared: locationShared,
-        contacts_opened: opened,
-        contacts_failed: failed,
-    });
+async function logAlert(contactCount: number, locationShared: boolean, opened: number, failed: number): Promise<boolean> {
+    try {
+        const user = await getUser();
+        if (!user)
+            return false;
+        return await insertAlertLog({
+            user_id: user.id,
+            device_id: getDeviceId(),
+            contact_count: contactCount,
+            location_shared: locationShared,
+            contacts_opened: opened,
+            contacts_failed: failed,
+        });
+    } catch (error) {
+        console.warn('[alerts] Could not record alert history:', error);
+        return false;
+    }
 }

@@ -31,7 +31,7 @@ export function renderChat(root: HTMLElement) {
         ${history.map(m => `<div class="chat-msg chat-msg--${m.from}">${esc(m.text)}</div>`).join('')}
       </div>
       <form class="chat-form" id="chat-form" autocomplete="off">
-        <input class="text-input" id="chat-input" type="text" maxlength="200" placeholder="${esc(t('chat.placeholder'))}" />
+        <textarea class="text-input chat-input" id="chat-input" rows="2" maxlength="200" aria-label="${esc(t('chat.placeholder'))}" placeholder="${esc(t('chat.placeholder'))}"></textarea>
         <button class="btn-primary chat-send" type="submit">${esc(t('chat.send'))}</button>
       </form>
     </div>`;
@@ -39,14 +39,18 @@ export function renderChat(root: HTMLElement) {
     const log = root.querySelector('#chat-log') as HTMLElement;
     log.scrollTop = log.scrollHeight;
     root.querySelector('#btn-back')!.addEventListener('click', () => store.navigateTo('app'));
+    const input = root.querySelector('#chat-input') as HTMLTextAreaElement;
+    input.addEventListener('input', () => {
+        input.style.height = 'auto';
+        input.style.height = `${Math.min(input.scrollHeight, 120)}px`;
+    });
     root.querySelector('#chat-form')!.addEventListener('submit', (e) => {
         e.preventDefault();
-        const input = root.querySelector('#chat-input') as HTMLInputElement;
         const text = input.value.trim();
         if (!text) return;
         history.push({ from: 'me', text });
         history.push({ from: 'bot', text: answer(text) });
         renderChat(root);
-        (root.querySelector('#chat-input') as HTMLInputElement).focus();
+        (root.querySelector('#chat-input') as HTMLTextAreaElement).focus();
     });
 }

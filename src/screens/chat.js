@@ -25,16 +25,20 @@ export function renderChat(root) {
         ${history.map(m => `<div class="chat-msg chat-msg--${m.from}">${esc(m.text)}</div>`).join('')}
       </div>
       <form class="chat-form" id="chat-form" autocomplete="off">
-        <input class="text-input" id="chat-input" type="text" maxlength="200" placeholder="${esc(t('chat.placeholder'))}" />
+        <textarea class="text-input chat-input" id="chat-input" rows="2" maxlength="200" aria-label="${esc(t('chat.placeholder'))}" placeholder="${esc(t('chat.placeholder'))}"></textarea>
         <button class="btn-primary chat-send" type="submit">${esc(t('chat.send'))}</button>
       </form>
     </div>`;
     const log = root.querySelector('#chat-log');
     log.scrollTop = log.scrollHeight;
     root.querySelector('#btn-back').addEventListener('click', () => store.navigateTo('app'));
+    const input = root.querySelector('#chat-input');
+    input.addEventListener('input', () => {
+        input.style.height = 'auto';
+        input.style.height = `${Math.min(input.scrollHeight, 120)}px`;
+    });
     root.querySelector('#chat-form').addEventListener('submit', (e) => {
         e.preventDefault();
-        const input = root.querySelector('#chat-input');
         const text = input.value.trim();
         if (!text)
             return;

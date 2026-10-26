@@ -37,20 +37,20 @@ function disguiseScreenPreview(id) {
         case 'budget':
             return `<div class="disguise-preview disguise-preview--budget" aria-hidden="true">
               <div class="disguise-preview-budget-header"><strong>My Budget</strong><span>Oct 2026⌄</span></div>
-              <div class="disguise-preview-balance"><small>Available balance</small><strong>R 16 970.50</strong><div class="disguise-preview-balance-meta"><span>This month</span><b>↗ 8.4%</b></div></div>
+              <div class="disguise-preview-balance"><small>Available balance</small><strong>R 16 970.50</strong><div class="disguise-preview-balance-meta"><span>This month</span><b>Up 8.4%</b></div></div>
               <div class="disguise-preview-budget-section"><strong>Spending overview</strong><span>See all</span></div>
               <div class="disguise-preview-chart"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
               <div class="disguise-preview-budget-section"><strong>Recent activity</strong><span>Today</span></div>
-              <div class="disguise-preview-transaction"><i>🛒</i><span><b>Groceries</b><small>Today · Food</small></span><strong>−R 284.50</strong></div>
-              <div class="disguise-preview-transaction"><i>⚡</i><span><b>Utilities</b><small>Yesterday</small></span><strong>−R 1 200</strong></div>
+              <div class="disguise-preview-transaction"><i>G</i><span><b>Groceries</b><small>Today · Food</small></span><strong>−R 284.50</strong></div>
+              <div class="disguise-preview-transaction"><i>U</i><span><b>Utilities</b><small>Yesterday</small></span><strong>−R 1 200</strong></div>
             </div>`;
         case 'weather':
             return `<div class="disguise-preview disguise-preview--weather" aria-hidden="true">
               <div class="disguise-preview-weather-header"><strong>Johannesburg</strong><span>⌕　•••</span></div>
-              <div class="disguise-preview-weather-hero"><span>☀️</span><strong>23°</strong><b>Partly cloudy</b><small>H:27°　L:16°</small></div>
+              <div class="disguise-preview-weather-hero"><span>Sunny</span><strong>23°</strong><b>Partly cloudy</b><small>H:27°　L:16°</small></div>
               <div class="disguise-preview-weather-details"><span>62%<small>Humidity</small></span><span>14 km/h<small>Wind</small></span><span>06:12<small>Sunrise</small></span></div>
               <div class="disguise-preview-weather-section">7-DAY FORECAST</div>
-              <div class="disguise-preview-forecast"><span>Today　☀️　23°</span><span>Tue　🌤️　27°</span><span>Wed　🌧️　18°</span></div>
+              <div class="disguise-preview-forecast"><span>Today　23°</span><span>Tue　27°</span><span>Wed　18°</span></div>
             </div>`;
         case 'notes-plain':
             return `<div class="disguise-preview disguise-preview--notes" aria-hidden="true">
@@ -64,8 +64,8 @@ function disguiseScreenPreview(id) {
             return `<div class="disguise-preview disguise-preview--clock" aria-hidden="true">
               <div class="disguise-preview-clock-tabs"><b>Clock</b><span>Alarm</span><span>Timer</span><span>Stopwatch</span></div>
               <div class="disguise-preview-clock-face"><strong>09:41</strong><span>Saturday, October 24</span><small>Johannesburg · SAST</small></div>
-              <div class="disguise-preview-clock-world"><span>🌍　Cape Town</span><b>09:41</b></div>
-              <div class="disguise-preview-clock-world"><span>🌍　London</span><b>08:41</b></div>
+              <div class="disguise-preview-clock-world"><span>Cape Town</span><b>09:41</b></div>
+              <div class="disguise-preview-clock-world"><span>London</span><b>08:41</b></div>
             </div>`;
         default:
             return '';

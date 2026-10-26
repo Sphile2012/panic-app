@@ -124,7 +124,7 @@ export function renderWelcome(root: HTMLElement) {
         <div class="splash-card relative flex w-full max-w-[390px] flex-1 flex-col rounded-[28px] border border-white/20 px-5 pb-5 pt-4 shadow-2xl">
           <div class="splash-header-row">
             <button class="splash-emergency-pill" id="splash-panic-button" type="button" aria-label="Panic button. Log in to use the app.">
-              <span class="splash-emergency-icon" aria-hidden="true">⚠</span>
+              <span class="splash-emergency-icon" aria-hidden="true">!</span>
               <span class="splash-emergency-label">PANIC</span>
               <small>EMERGENCY</small>
             </button>

@@ -361,16 +361,20 @@ export async function upsertDevice(row) {
         console.warn('[db] upsertDevice offline:', e);
     }
 }
-export async function insertAlertLog(row) {
+export async function insertAlertLog(row): Promise<boolean> {
     if (!DB_CONFIGURED)
-        return;
+        return false;
     try {
         const { error } = await getClient().from('alert_logs').insert(row);
-        if (error)
+        if (error) {
             console.warn('[db] insertAlertLog:', error.message);
+            return false;
+        }
+        return true;
     }
     catch (e) {
         console.warn('[db] insertAlertLog offline:', e);
+        return false;
     }
 }
 export async function fetchAlertStats() {

@@ -25,18 +25,25 @@ export function updateSendingList(root) {
     list.innerHTML = store.getState().contacts.map(sendingRow).join('');
 }
 export function renderSent(root) {
-    const { contacts, alertLocation, locationShared, notes } = store.getState();
+    const { contacts, alertLocation, locationShared, notes, alertLogWarning } = store.getState();
     const opened = contacts.filter(c => c.status === 'opened').length;
     const failed = contacts.filter(c => c.status === 'failed').length;
-    const summaryLine = failed > 0
-        ? `${opened} message app${opened !== 1 ? 's' : ''} opened · ${failed} could not be prepared`
-        : `${opened} message app${opened !== 1 ? 's' : ''} opened; review and tap Send`;
+    const summaryLine = contacts.length === 0
+        ? 'No trusted contacts were available. No messages were prepared.'
+        : failed > 0
+            ? `${opened} message app${opened !== 1 ? 's' : ''} opened; ${failed} could not be opened`
+            : `${opened} message app${opened !== 1 ? 's' : ''} opened; review and tap Send`;
     root.innerHTML = `
     <div class="screen sent-screen">
 
       <div class="sent-hero" aria-hidden="true">${failed > 0 ? '!' : 'OK'}</div>
-      <h2 class="sent-title">Alert prepared</h2>
+      <h2 class="sent-title">${contacts.length ? 'Alert prepared' : 'Alert not prepared'}</h2>
       <p class="sent-summary">${summaryLine}</p>
+      ${alertLogWarning ? `
+        <p class="sent-warning" role="alert">
+          Panic Ring could not save this alert to account history. The message apps were opened or failed to open; delivery is not confirmed.
+        </p>
+      ` : ''}
 
       ${failed > 0 ? `
         <p class="sent-warning">

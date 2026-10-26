@@ -31,9 +31,9 @@ export function renderAbout(root) {
           <li>${t('b.about.does.4')}</li>
           <li>${t('b.about.does.5')}</li>
           <li>${t('b.about.does.6')}</li>
-          <li>🔐 Custom PIN creation with disguise modes</li>
-          <li>🔑 Password and PIN recovery options</li>
-          <li>☁️ Optional cloud backup ${authEnabled ? '(Enabled)' : '(Disabled)'}</li>
+          <li>Custom PIN creation with disguise modes</li>
+          <li>Password and PIN recovery options</li>
+          <li>Optional cloud backup ${authEnabled ? '(Enabled)' : '(Disabled)'}</li>
         </ul>
       </section>
 
@@ -52,11 +52,11 @@ export function renderAbout(root) {
         <h3 class="about-section-title">${t('b.about.data.title')}</h3>
         <p class="about-section-body">${t('b.about.data.body')}</p>
         <ul class="about-list">
-          <li>📱 All data encrypted on your device</li>
-          <li>🔒 PIN hashes using SHA-256 (local) and bcrypt (cloud)</li>
-          <li>🔐 AES-256-GCM encryption for sensitive data</li>
-          <li>🚫 No tracking or analytics</li>
-          <li>✅ Works completely offline</li>
+          <li>All data encrypted on your device</li>
+          <li>PIN hashes using SHA-256 (local) and bcrypt (cloud)</li>
+          <li>AES-256-GCM encryption for sensitive data</li>
+          <li>No tracking or analytics</li>
+          <li>Works completely offline</li>
         </ul>
       </section>
 
@@ -71,7 +71,7 @@ export function renderAbout(root) {
       </section>
 
       <section class="about-section">
-        <h3 class="about-section-title">🔐 Security Features</h3>
+        <h3 class="about-section-title">Security Features</h3>
         <ul class="about-list">
           <li>Two-PIN system (Secret + Decoy)</li>
           <li>Security questions for PIN recovery</li>

@@ -27,6 +27,7 @@ function buildInitialState() {
         autoLockMinutes: pub.autoLockMinutes,
         alertLocation: 'Location not shared',
         locationShared: false,
+        alertLogWarning: false,
         editingNoteId: null,
         isFirstRun: pub.pin === '',
         recoveryConfigured: pub.recoveryQuestionIds !== null,
@@ -297,10 +298,15 @@ class Store {
         this.state = { ...this.state, locationShared: shared, alertLocation: locationText };
         this.notify();
     }
+    setAlertLogWarning(warning) {
+        this.state = { ...this.state, alertLogWarning: warning };
+        this.notify();
+    }
     startSending() {
         this.state = {
             ...this.state,
             screen: 'sending',
+            alertLogWarning: false,
             contacts: this.state.contacts.map(c => ({ ...c, status: 'sending' })),
         };
         this.notify();
@@ -315,6 +321,7 @@ class Store {
     resetAlertStatuses() {
         this.state = {
             ...this.state,
+            alertLogWarning: false,
             contacts: this.state.contacts.map(c => ({ ...c, status: 'pending' })),
             alertLocation: 'Location not shared',
             locationShared: false,
@@ -326,7 +333,7 @@ class Store {
         vault.notes = notes;
         await saveVault(vault, this.state.pinHash);
     }
-    saveNote(id, title, body) {
+    async saveNote(id, title, body) {
         const now = Date.now();
         let notes;
         if (id) {
@@ -335,17 +342,17 @@ class Store {
         else {
             notes = [{ id: uid(), title, body, createdAt: now, updatedAt: now }, ...this.state.notes];
         }
+        await this._saveNotes(notes);
         this.state = { ...this.state, notes, editingNoteId: null };
         this.touch();
         this.notify();
-        this._saveNotes(notes).catch(console.error);
     }
-    deleteNote(id) {
+    async deleteNote(id) {
         const notes = this.state.notes.filter(n => n.id !== id);
+        await this._saveNotes(notes);
         this.state = { ...this.state, notes };
         this.touch();
         this.notify();
-        this._saveNotes(notes).catch(console.error);
     }
     setEditingNote(id) {
         this.state = { ...this.state, editingNoteId: id };
