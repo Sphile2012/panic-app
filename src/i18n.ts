@@ -14,7 +14,7 @@ type Dict = Record<string, string>;
 
 const en: Dict = {
     'lang.title': 'Language',
-    'welcome.title': 'Your Safety Matters',
+    'welcome.title': 'We are one',
     'welcome.pinHint': 'Sign in with your 4-digit PIN. No password needed.',
     'welcome.login': 'Login with PIN',
     'welcome.new': 'New here?',
@@ -145,7 +145,7 @@ const en: Dict = {
 
 const zu: Dict = {
     'lang.title': 'Ulimi',
-    'welcome.title': 'Ukuphepha kwakho kubalulekile',
+    'welcome.title': 'Singabanye',
     'welcome.pinHint': 'Ngena nge-PIN yakho enezinombolo ezi-4. Iphasiwedi ayidingeki.',
     'welcome.login': 'Ngena nge-PIN',
     'welcome.new': 'Usanda kujoyina?',
@@ -269,7 +269,7 @@ const zu: Dict = {
 
 const xh: Dict = {
     'lang.title': 'Ulwimi',
-    'welcome.title': 'Ukhuseleko lwakho lubalulekile',
+    'welcome.title': 'Simanyene',
     'welcome.pinHint': 'Ngena nge-PIN yakho enamanani ama-4. Akufuneki gama liyimfihlo.',
     'welcome.login': 'Ngena nge-PIN',
     'welcome.new': 'Umtsha apha?',
@@ -279,7 +279,7 @@ const xh: Dict = {
 
 const st: Dict = {
     'lang.title': 'Puo',
-    'welcome.title': 'Tshireletseho ya hao e bohlokwa',
+    'welcome.title': 'Re ntho e le nngwe',
     'welcome.pinHint': 'Kena ka PIN ya hao ya dinomoro tse 4. Phasewete ha e hlokahale.',
     'welcome.login': 'Kena ka PIN',
     'welcome.new': 'O motjha mona?',
@@ -403,7 +403,7 @@ const st: Dict = {
 
 const af: Dict = {
     'lang.title': 'Taal',
-    'welcome.title': 'Jou veiligheid is belangrik',
+    'welcome.title': 'Ons is een',
     'welcome.pinHint': 'Meld aan met jou 4-syfer-PIN. Geen wagwoord nodig nie.',
     'welcome.login': 'Meld aan met PIN',
     'welcome.new': 'Nuut hier?',

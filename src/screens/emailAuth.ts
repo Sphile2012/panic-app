@@ -112,9 +112,11 @@ function showPhoneCodeForm(form: HTMLFormElement, phone: string, purpose: 'signu
 export function renderWelcome(root: HTMLElement) {
   const hasPinStored = Boolean(store.getState().pinHash);
   const welcomeTitle = t('welcome.title');
-  const welcomeTitleHtml = welcomeTitle === 'Your Safety Matters'
-    ? 'Your Safety<br><em>Matters</em>'
-    : escapeSignupValue(welcomeTitle);
+  const welcomeTitleHtml = ({
+    'We are one': 'We are<br><em>one</em>',
+    'Re ntho e le nngwe': 'Re ntho e le<br><em>nngwe</em>',
+    'Ons is een': 'Ons is<br><em>een</em>',
+  } as Record<string, string>)[welcomeTitle] ?? escapeSignupValue(welcomeTitle);
   root.innerHTML = `
     <div class="screen splash-screen relative isolate min-h-full overflow-y-auto bg-[#170820] p-0 text-white">
       <img class="splash-backdrop" src="/gbv-home-cover.png" alt="" aria-hidden="true" />

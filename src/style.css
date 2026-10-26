@@ -6809,10 +6809,22 @@ select:focus-visible {
 .splash-tagline {
   @apply m-0 text-center text-4xl font-black leading-none tracking-[-.055em] text-white;
   font-family: 'Trebuchet MS', 'Segoe UI', system-ui, sans-serif;
-  text-shadow: 0 3px 22px rgba(16, 3, 24, .45);
+  transform: perspective(500px) rotateX(5deg);
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, .7),
+    0 2px 0 rgba(220, 187, 240, .52),
+    0 4px 0 rgba(113, 54, 145, .9),
+    0 7px 12px rgba(12, 2, 21, .8),
+    0 0 28px rgba(220, 141, 255, .3);
 }
 
-.splash-tagline em { @apply block not-italic text-fuchsia-200; }
+.splash-tagline em {
+  @apply block not-italic text-fuchsia-200;
+  background: linear-gradient(180deg, #fff4ff 8%, #e7a9ff 48%, #a946d5 100%);
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 0 rgba(104, 33, 145, .85)) drop-shadow(0 6px 7px rgba(10, 1, 19, .65));
+}
 .splash-pin-hint {
   @apply mt-2.5 max-w-[30ch] text-center text-xs font-medium leading-relaxed text-white/80;
 }
