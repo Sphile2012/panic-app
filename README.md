@@ -25,7 +25,6 @@ npm start
 
 Scan the QR code with **Expo Go** app on your Android device.
 
----
 
 ## Mobile App Features
 
@@ -79,7 +78,6 @@ One-tap calling to South African emergency services:
 - **GBV Command Centre**: 0800 428 428
 - **Childline**: 116
 
----
 
 ## Database Schema
 
@@ -99,7 +97,6 @@ All tables use Supabase with Row-Level Security (RLS) enabled:
 - ✓ Trusted contacts can view shared locations
 - ✓ No cross-user data leakage
 
----
 
 ## Android Permissions
 
@@ -114,7 +111,6 @@ Configured in `mobile/app.json`:
 
 iOS permissions also configured for location services.
 
----
 
 ## Verification Status
 
@@ -153,7 +149,6 @@ iOS permissions also configured for location services.
 - Loading states implemented
 - Consistent code style
 
----
 
 ## Testing Guide
 
@@ -218,7 +213,6 @@ iOS permissions also configured for location services.
 - [ ] Battery low during tracking
 - [ ] App in background
 
----
 
 ## 🔧 Environment Setup
 
@@ -232,7 +226,6 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
 ### Web App (.env file)
 Already configured in root `.env`
 
----
 
 ## Deployment
 
@@ -253,7 +246,6 @@ npm run build:web
 
 Deploy to Netlify or similar platform.
 
----
 
 ## 📦 Dependencies
 
@@ -265,7 +257,6 @@ Deploy to Netlify or similar platform.
 - expo-router (v58.0.24)
 - react-native (v0.88.0)
 
----
 
 ## Known Limitations
 
@@ -283,7 +274,6 @@ Deploy to Netlify or similar platform.
 - Location is snapshot-based in web app
 - No automatic SMS/WhatsApp dispatch from web
 
----
 
 ## Security & Privacy
 
@@ -294,13 +284,11 @@ Deploy to Netlify or similar platform.
 - No cross-user data access
 - RLS enforced on all tables
 
----
 
 ## License
 
 MIT License
 
----
 
 ## Emergency Services (South Africa)
 
@@ -312,7 +300,6 @@ MIT License
 - **GBV Command Centre**: 0800 428 428
 - **Childline**: 116
 
----
 
 ## Current Status
 

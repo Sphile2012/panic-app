@@ -161,13 +161,11 @@ export default function HomeScreen() {
     >
       {session ? (
         <View style={styles.mainScreen}>
-          {/* Decorative corner elements */}
           <View style={styles.cornerTopLeft} />
           <View style={styles.cornerTopRight} />
           <View style={styles.cornerBottomLeft} />
           <View style={styles.cornerBottomRight} />
           
-          {/* Decorative circles */}
           <View style={styles.decorativeCircle1} />
           <View style={styles.decorativeCircle2} />
           <View style={styles.decorativeCircle3} />
@@ -183,20 +181,26 @@ export default function HomeScreen() {
             <View style={styles.hamburgerLine} />
           </Pressable>
 
-          <View style={styles.panicContainer}>
-            <Text style={styles.appTitle}>PANIC RING</Text>
-            <Text style={styles.appSubtitle}>Your Safety, Our Priority</Text>
-            
-            <Pressable
-              style={styles.panicButton}
-              onPress={handlePanicPress}
-              accessibilityLabel="Panic button - share your location"
-              accessibilityRole="button"
-            >
-              <Text style={styles.panicButtonText}>PANIC</Text>
-            </Pressable>
-            
-            <Text style={styles.instructionText}>Hold for emergency</Text>
+          <View style={styles.fullScreenContainer}>
+            <View style={styles.topSection}>
+              <Text style={styles.brandTitle}>PANIC RING</Text>
+              <Text style={styles.brandSubtitle}>Your Safety Matters</Text>
+            </View>
+
+            <View style={styles.centerSection}>
+              <Pressable
+                style={styles.panicButton}
+                onPress={handlePanicPress}
+                accessibilityLabel="Panic button - share your location"
+                accessibilityRole="button"
+              >
+                <Text style={styles.panicButtonText}>PANIC</Text>
+              </Pressable>
+            </View>
+
+            <View style={styles.bottomSection}>
+              <Text style={styles.instructionText}>Hold for emergency</Text>
+            </View>
           </View>
 
           <Modal
@@ -469,7 +473,6 @@ const styles = StyleSheet.create({
     flex: 1, 
     backgroundColor: '#FFE4F0',
     position: 'relative',
-    overflow: 'hidden',
   },
 
   cornerTopLeft: {
@@ -562,71 +565,86 @@ const styles = StyleSheet.create({
 
   hamburgerButton: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 50 : 20,
+    top: Platform.OS === 'ios' ? 60 : 30,
     left: 20,
-    width: 44,
-    height: 44,
+    width: 56,
+    height: 56,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 22,
-    zIndex: 10,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 28,
+    zIndex: 100,
+    borderWidth: 3,
+    borderColor: '#DC2626',
     ...Platform.select({
       ios: {
         shadowColor: '#DC2626',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.4,
+        shadowRadius: 10,
       },
       android: {
-        elevation: 6,
+        elevation: 8,
       },
     }),
   },
 
   hamburgerLine: {
-    width: 20,
-    height: 2,
+    width: 26,
+    height: 3,
     backgroundColor: '#DC2626',
-    marginVertical: 2,
-    borderRadius: 1,
+    marginVertical: 3,
+    borderRadius: 2,
   },
   
-  panicContainer: { 
-    flex: 1, 
-    justifyContent: 'center', 
+  fullScreenContainer: {
+    flex: 1,
+    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingVertical: 60,
   },
 
-  appTitle: {
-    fontSize: 36,
+  topSection: {
+    alignItems: 'center',
+    marginTop: 80,
+  },
+
+  brandTitle: {
+    fontSize: 48,
     fontWeight: '900',
     color: '#DC2626',
-    letterSpacing: 4,
-    marginBottom: 8,
+    letterSpacing: 6,
+    marginBottom: 12,
     textShadowColor: 'rgba(220, 38, 38, 0.3)',
     textShadowOffset: { width: 2, height: 2 },
     textShadowRadius: 4,
   },
 
-  appSubtitle: {
-    fontSize: 16,
-    fontWeight: '600',
+  brandSubtitle: {
+    fontSize: 20,
+    fontWeight: '800',
     color: '#DC2626',
     letterSpacing: 2,
+    opacity: 0.9,
+  },
+
+  centerSection: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  bottomSection: {
+    alignItems: 'center',
     marginBottom: 40,
-    opacity: 0.8,
-    fontStyle: 'italic',
   },
 
   instructionText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: '700',
     color: '#DC2626',
-    marginTop: 30,
-    opacity: 0.7,
-    letterSpacing: 1,
+    letterSpacing: 1.5,
+    opacity: 0.8,
   },
   
   panicButton: { 
