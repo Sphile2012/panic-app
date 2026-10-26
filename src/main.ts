@@ -20,7 +20,7 @@ import { renderAppearance } from './screens/appearance.js';
 import { renderBudget } from './screens/disguise/budget.js';
 import { renderWeather } from './screens/disguise/weather.js';
 import { renderNotesPlain } from './screens/disguise/notesPlain.js';
-import { renderClock } from './screens/disguise/clock.js';
+import { disposeClock, renderClock } from './screens/disguise/clock.js';
 import { renderCompanion } from './screens/companion.js';
 import { renderAbout } from './screens/about.js';
 import { renderTerms } from './screens/terms.js';
@@ -75,6 +75,8 @@ function renderDisguise() {
 }
 
 function render(screen: string) {
+    if (currentScreen === 'calculator' && screen !== 'calculator')
+        disposeClock();
     currentScreen = screen;
     document.documentElement.dataset['screen'] = screen;
     appRoot.scrollTop = 0;

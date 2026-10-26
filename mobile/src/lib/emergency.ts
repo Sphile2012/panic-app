@@ -26,8 +26,12 @@ export function isValidPhoneNumber(value: string): boolean {
 }
 
 export function getLiveTrackingUrl(sessionId: string): string | null {
-  const configuredUrl = process.env.EXPO_PUBLIC_TRACKING_URL?.trim();
-  if (!configuredUrl) return null;
+  const configuredUrl = process.env.EXPO_PUBLIC_TRACKING_URL?.trim()
+    || 'https://panic-ring-app.netlify.app/track.html';
+  const token = sessionId.replaceAll('-', '').toLowerCase();
+  if (!/^[0-9a-f]{32}$/.test(token)) {
+    throw new Error('The live tracking token is invalid.');
+  }
 
   let url: URL;
   try {
@@ -45,8 +49,60 @@ export function getLiveTrackingUrl(sessionId: string): string | null {
   if (!url.pathname.endsWith('.html')) {
     url.pathname = `${url.pathname.replace(/\/+$/, '')}/track.html`;
   }
-  url.hash = sessionId.replaceAll('-', '').toLowerCase();
+  url.hash = token;
   return url.toString();
+}
+
+export async function startLiveTracking(position: LocationObject): Promise<string> {
+  const location = getValidatedLocation(position);
+  const { data, error } = await getSupabaseClient().rpc('start_track', {
+    p_lat: location.latitude,
+    p_lng: location.longitude,
+    p_accuracy: location.accuracy_meters,
+  });
+  if (error) throw new Error(`Could not start live tracking: ${error.message}`);
+  if (typeof data !== 'string' || !/^[0-9a-f]{32}$/.test(data)) {
+    throw new Error('The server returned an invalid live tracking token.');
+  }
+  return data;
+}
+
+export async function recordLiveLocation(token: string, position: LocationObject): Promise<void> {
+  if (!/^[0-9a-f]{32}$/.test(token)) throw new Error('The live tracking token is invalid.');
+  const location = getValidatedLocation(position);
+  const { data, error } = await getSupabaseClient().rpc('push_track', {
+    p_token: token,
+    p_lat: location.latitude,
+    p_lng: location.longitude,
+    p_accuracy: location.accuracy_meters,
+    p_battery: null,
+    p_charging: false,
+  });
+  if (error) throw new Error(`Could not update the live location: ${error.message}`);
+  if (data !== true) throw new Error('The live tracking session is no longer active.');
+}
+
+export async function stopLiveTracking(token: string): Promise<void> {
+  if (!/^[0-9a-f]{32}$/.test(token)) throw new Error('The live tracking token is invalid.');
+  const { data, error } = await getSupabaseClient().rpc('stop_track', { p_token: token });
+  if (error) throw new Error(`Could not stop live tracking: ${error.message}`);
+  if (data !== true) throw new Error('The live tracking session was already stopped.');
+}
+
+function getValidatedLocation(position: LocationObject): {
+  latitude: number;
+  longitude: number;
+  accuracy_meters: number | null;
+} {
+  const { latitude, longitude, accuracy } = position.coords;
+  if (
+    !Number.isFinite(latitude) || latitude < -90 || latitude > 90
+    || !Number.isFinite(longitude) || longitude < -180 || longitude > 180
+    || (accuracy !== null && (!Number.isFinite(accuracy) || accuracy < 0))
+  ) {
+    throw new Error('The device returned invalid GPS coordinates or accuracy.');
+  }
+  return { latitude, longitude, accuracy_meters: accuracy };
 }
 
 async function requireUserId(): Promise<string> {

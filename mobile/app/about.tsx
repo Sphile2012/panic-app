@@ -36,6 +36,7 @@ export default function AboutScreen() {
           The mobile build provides Supabase account sign-in, a trusted contact list, emergency session records, and foreground-only location updates. An SOS can open an SMS composer for you to review and send.
         </Text>
         <Bullet>Trusted contacts and emergency location records are stored under your account’s row-level security policies.</Bullet>
+        <Bullet>When preparing a location message, the app asks the device’s reverse-geocoding provider for an approximate address. If no address is available, the message includes GPS coordinates and a map link instead.</Bullet>
         <Bullet>Account sign-in uses Supabase Auth.</Bullet>
         <Bullet>The API verifies account tokens with Supabase Auth.</Bullet>
       </Section>

@@ -1,5 +1,6 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { FeatureNavigation } from '../src/components/FeatureNavigation';
 import { colors } from '../src/lib/theme';
 
 export default function RootLayout() {
@@ -12,6 +13,7 @@ export default function RootLayout() {
           contentStyle: { backgroundColor: colors.background },
         }}
       />
+      <FeatureNavigation />
     </>
   );
 }

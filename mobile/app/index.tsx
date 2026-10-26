@@ -12,12 +12,11 @@ import {
   TextInput,
   View,
   Dimensions,
-  Animated,
 } from 'react-native';
 import type { Session } from '@supabase/supabase-js';
 import { Link, useRouter } from 'expo-router';
 import * as Linking from 'expo-linking';
-import { getApiBaseUrl, verifyApiSession } from '../src/lib/backend';
+import { verifyApiSession } from '../src/lib/backend';
 import { getSupabaseClient, isSupabaseConfigured } from '../src/lib/supabase';
 import { formatAuthError, SIGNUP_CONFIRMATION_MESSAGE } from '../src/lib/auth-messages';
 import { colors, spacing, borderRadius, shadows, typography } from '../src/lib/theme';
@@ -27,6 +26,7 @@ type AuthMode = 'sign-in' | 'sign-up';
 const { width, height } = Dimensions.get('window');
 
 export default function HomeScreen() {
+  const configured = isSupabaseConfigured();
   const router = useRouter();
   const [session, setSession] = useState<Session | null>(null);
   const [email, setEmail] = useState('');
@@ -35,16 +35,10 @@ export default function HomeScreen() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [messageKind, setMessageKind] = useState<'error' | 'info'>('error');
-  const [backendStatus, setBackendStatus] = useState('Checking backend connection…');
-  const [backendBusy, setBackendBusy] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const configured = isSupabaseConfigured();
 
   useEffect(() => {
-    if (!configured) {
-      setBackendStatus('Add the Supabase and API values to mobile/.env to connect.');
-      return;
-    }
+    if (!configured) return;
 
     let active = true;
     const client = getSupabaseClient();
@@ -70,23 +64,11 @@ export default function HomeScreen() {
   }, [configured]);
 
   useEffect(() => {
-    if (!session) {
-      setBackendStatus('Sign in to verify your account with the API.');
-      return;
-    }
-
+    if (!session) return;
     let active = true;
-    setBackendBusy(true);
-    void verifyApiSession(session.access_token).then((user) => {
-      if (active) setBackendStatus(`API verified account ${user.id.slice(0, 8)}…`);
-    }).catch((error: unknown) => {
-      if (active) {
-        setBackendStatus(error instanceof Error ? error.message : 'The API could not verify your account.');
-      }
-    }).finally(() => {
-      if (active) setBackendBusy(false);
+    void verifyApiSession(session.access_token).catch((error: unknown) => {
+      if (active) console.warn('Could not verify the API session.', error);
     });
-
     return () => {
       active = false;
     };

@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import {
   Alert,
   Linking,
@@ -91,7 +90,7 @@ export default function EmergencyScreen() {
         <Text style={styles.introIcon}>!</Text>
         <Text style={styles.introTitle}>Help for anyone who needs it</Text>
         <Text style={styles.introBody}>
-          Choose a service to open your phone's dialer. Check the number and tap Call.
+          Choose a service to open your phone&apos;s dialer. Check the number and tap Call.
         </Text>
       </View>
 

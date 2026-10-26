@@ -35,7 +35,8 @@ test('live location button requests location and does not start camera capture',
     assert.match(source, /t\('trk\.off'\)/);
     assert.match(source, /t\('trk\.enable'\)/);
     assert.match(source, /Last location update:/);
-    assert.doesNotMatch(source, /last\.lat\.toFixed|last\.lng\.toFixed/);
+    assert.match(source, /GPS coordinates: \$\{last\.lat\.toFixed\(6\)\}, \$\{last\.lng\.toFixed\(6\)\}/);
+    assert.match(source, /Nearby mapped address \(approximate\):/);
     assert.doesNotMatch(source, /startEvidenceCapture|evidence\.js/);
     assert.match(source, /<button[^>]+data-live-contact=/);
     assert.match(source, /<a[^>]+data-live-whatsapp=/);

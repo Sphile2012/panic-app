@@ -14,6 +14,10 @@ const nativeEmergency = await readFile(
   new URL('../supabase/migrations/20261024160000_add_native_emergency_core.sql', import.meta.url),
   'utf8',
 );
+const liveTrackSessions = await readFile(
+  new URL('../supabase/migrations/20261028120000_add_live_track_sessions.sql', import.meta.url),
+  'utf8',
+);
 const runner = await readFile(new URL('../scripts/db.mjs', import.meta.url), 'utf8');
 const bootstrap = await readFile(new URL('../supabase/schema.sql', import.meta.url), 'utf8');
 const compose = await readFile(new URL('../docker-compose.yml', import.meta.url), 'utf8');
@@ -53,6 +57,19 @@ test('tracking migration restricts writes to authenticated owners and validates 
   assert.match(migration, /grant execute on function public\.get_track[\s\S]*?to anon, authenticated/i);
   assert.match(migration, /p_lat < -90 or p_lat > 90/);
   assert.match(migration, /p_lng < -180 or p_lng > 180/);
+});
+
+test('live share sessions get unguessable tokens and only authenticated users can create them', () => {
+  assert.match(liveTrackSessions, /create or replace function public\.start_track/i);
+  assert.match(liveTrackSessions, /auth\.uid\(\) is null/);
+  assert.match(liveTrackSessions, /replace\(gen_random_uuid\(\)::text, '-', ''\)/);
+  assert.match(liveTrackSessions, /insert into public\.live_tracks \(token, user_id, lat, lng, accuracy, updated_at\)/);
+  assert.match(liveTrackSessions, /p_lat < -90 or p_lat > 90/);
+  assert.match(liveTrackSessions, /p_lng < -180 or p_lng > 180/);
+  assert.match(liveTrackSessions, /revoke all on function public\.start_track[\s\S]*?from public, anon, authenticated/i);
+  assert.match(liveTrackSessions, /grant execute on function public\.start_track[\s\S]*?to authenticated/i);
+  assert.match(bootstrap, /create or replace function public\.start_track/i);
+  assert.match(bootstrap, /grant execute on function public\.start_track[\s\S]*?to authenticated/i);
 });
 
 test('migration runner backs up and verifies before a locked, checksummed transaction', () => {

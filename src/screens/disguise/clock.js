@@ -1,8 +1,54 @@
 import '../../strings/groupC.js';
 import { t, getLang } from '../../i18n.js';
 import { store } from '../../state.js';
+import { formatCountdown, getCountdownSecondsLeft, parseCountdownDuration } from './clockTimer.js';
 const LOCALES = { en: 'en-ZA', zu: 'zu-ZA', st: 'st-ZA', af: 'af-ZA' };
+let clockInterval = null;
+let countdownTimer = null;
+let stopwatchInterval = null;
+let countdownDeadline = null;
+let countdownDisplay = null;
+let countdown = null;
+let timerInput = null;
+let timerMessage = null;
+export function disposeClock() {
+    if (clockInterval !== null)
+        clearInterval(clockInterval);
+    if (countdownTimer !== null)
+        clearInterval(countdownTimer);
+    if (stopwatchInterval !== null)
+        clearInterval(stopwatchInterval);
+    clockInterval = null;
+    countdownTimer = null;
+    stopwatchInterval = null;
+    document.removeEventListener('visibilitychange', updateCountdown);
+    countdownDeadline = null;
+    countdownDisplay = null;
+    countdown = null;
+    timerInput = null;
+    timerMessage = null;
+}
+function updateCountdown() {
+    if (countdownDeadline === null || !countdownDisplay)
+        return;
+    const secondsLeft = getCountdownSecondsLeft(countdownDeadline, Date.now());
+    countdownDisplay.textContent = formatCountdown(secondsLeft);
+    if (secondsLeft > 0)
+        return;
+    if (countdownTimer !== null)
+        clearInterval(countdownTimer);
+    countdownTimer = null;
+    countdownDeadline = null;
+    if (timerInput)
+        timerInput.value = '';
+    if (timerMessage) {
+        timerMessage.textContent = t('c.clock.timerDone');
+        timerMessage.classList.remove('clock-timer-message--error');
+        timerMessage.hidden = false;
+    }
+}
 export function renderClock(root) {
+    disposeClock();
     const locale = LOCALES[getLang()] || 'en-ZA';
     root.innerHTML = `
     <div class="screen clock-screen">
@@ -24,7 +70,8 @@ export function renderClock(root) {
           <button class="clock-timer-btn clock-timer-btn--start" id="timer-start">${t('c.clock.start')}</button>
           <button class="clock-timer-btn clock-timer-btn--cancel" id="timer-cancel">${t('c.clock.cancel')}</button>
         </div>
-        <div class="clock-countdown" id="clock-countdown" style="display:none"><span id="countdown-display">00:00</span></div>
+        <div class="clock-countdown" id="clock-countdown" style="display:none" role="timer" aria-live="off"><span id="countdown-display">00:00</span></div>
+        <p class="clock-timer-message" id="timer-message" role="status" aria-live="polite" hidden></p>
       </div>
       <div class="clock-stopwatch-panel" id="stopwatch-panel" style="display:none">
         <div class="clock-time" id="sw-display">00:00.00</div>
@@ -54,7 +101,7 @@ export function renderClock(root) {
         }
     }
     updateClock();
-    const clockInterval = setInterval(updateClock, 1000);
+    clockInterval = setInterval(updateClock, 1000);
     const clockFace = root.querySelector('#clock-face');
     const timerPanel = root.querySelector('#timer-panel');
     const stopwatchPanel = root.querySelector('#stopwatch-panel');
@@ -68,66 +115,80 @@ export function renderClock(root) {
     root.querySelector('#tab-clock').addEventListener('click', () => showTab('clock'));
     root.querySelector('#tab-timer').addEventListener('click', () => showTab('timer'));
     root.querySelector('#tab-stopwatch').addEventListener('click', () => showTab('stopwatch'));
-    const timerInput = root.querySelector('#timer-input');
-    const countdown = root.querySelector('#clock-countdown');
-    const countdownDisp = root.querySelector('#countdown-display');
-    let countdownTimer = null;
+    timerInput = root.querySelector('#timer-input');
+    countdown = root.querySelector('#clock-countdown');
+    countdownDisplay = root.querySelector('#countdown-display');
+    timerMessage = root.querySelector('#timer-message');
     timerInput.addEventListener('input', () => {
         let digits = timerInput.value.replace(/\D/g, '').slice(0, 4);
         if (digits.length > 2)
             digits = digits.slice(0, 2) + ':' + digits.slice(2);
         timerInput.value = digits;
     });
+    let pinEvaluationPending = false;
     root.querySelector('#timer-start').addEventListener('click', async () => {
-        const raw = timerInput.value.replace(/\D/g, '');
-        if (raw.length < 4)
+        if (pinEvaluationPending)
             return;
-        store.clearPin();
-        for (const d of raw)
-            store.appendPin(d);
-        const route = await store.evaluatePin();
-        if (route) {
-            clearInterval(clockInterval);
+        const raw = timerInput.value.replace(/\D/g, '');
+        timerMessage.hidden = true;
+        if (raw.length !== 4) {
+            timerMessage.textContent = t('c.clock.timerInvalid');
+            timerMessage.classList.add('clock-timer-message--error');
+            timerMessage.hidden = false;
             return;
         }
-        store.clearPin();
-        let secs = parseInt(raw.slice(0, 2), 10) * 60 + parseInt(raw.slice(2, 4), 10);
-        if (secs <= 0)
-            secs = 60;
-        countdown.style.display = 'flex';
-        if (countdownTimer)
-            clearInterval(countdownTimer);
-        countdownTimer = setInterval(() => {
-            secs--;
-            const m = Math.floor(secs / 60).toString().padStart(2, '0');
-            const s = (secs % 60).toString().padStart(2, '0');
-            countdownDisp.textContent = `${m}:${s}`;
-            if (secs <= 0) {
-                clearInterval(countdownTimer);
-                countdown.style.display = 'none';
-                timerInput.value = '';
+        pinEvaluationPending = true;
+        try {
+            store.clearPin();
+            for (const d of raw)
+                store.appendPin(d);
+            const route = await store.evaluatePin();
+            if (route || store.getState().screen !== 'calculator')
+                return;
+            store.clearPin();
+            const durationSeconds = parseCountdownDuration(timerInput.value);
+            if (durationSeconds === null) {
+                timerMessage.textContent = t('c.clock.timerInvalid');
+                timerMessage.classList.add('clock-timer-message--error');
+                timerMessage.hidden = false;
+                return;
             }
-        }, 1000);
+            if (countdownTimer !== null)
+                clearInterval(countdownTimer);
+            countdownDeadline = Date.now() + durationSeconds * 1000;
+            countdown.style.display = 'flex';
+            timerMessage.hidden = true;
+            timerMessage.classList.remove('clock-timer-message--error');
+            updateCountdown();
+            if (countdownDeadline !== null)
+                countdownTimer = setInterval(updateCountdown, 250);
+        }
+        finally {
+            pinEvaluationPending = false;
+        }
     });
     root.querySelector('#timer-cancel').addEventListener('click', () => {
-        if (countdownTimer) {
+        if (countdownTimer !== null) {
             clearInterval(countdownTimer);
             countdownTimer = null;
         }
+        countdownDeadline = null;
         countdown.style.display = 'none';
         timerInput.value = '';
+        timerMessage.hidden = true;
+        timerMessage.classList.remove('clock-timer-message--error');
         store.clearPin();
     });
+    document.addEventListener('visibilitychange', updateCountdown);
     const swDisplay = root.querySelector('#sw-display');
     const swStart = root.querySelector('#sw-start');
     let swRunning = false;
     let swMs = 0;
-    let swInterval = null;
     swStart.addEventListener('click', e => {
         swRunning = !swRunning;
         swStart.textContent = swRunning ? t('c.clock.stop') : t('c.clock.start');
         if (swRunning) {
-            swInterval = setInterval(() => {
+            stopwatchInterval = setInterval(() => {
                 swMs += 10;
                 const mins = Math.floor(swMs / 60000);
                 const secs = Math.floor((swMs % 60000) / 1000);
@@ -135,8 +196,9 @@ export function renderClock(root) {
                 swDisplay.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${hundredths.toString().padStart(2, '0')}`;
             }, 10);
         }
-        else if (swInterval) {
-            clearInterval(swInterval);
+        else if (stopwatchInterval !== null) {
+            clearInterval(stopwatchInterval);
+            stopwatchInterval = null;
         }
     });
 }

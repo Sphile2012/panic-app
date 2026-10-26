@@ -17,26 +17,22 @@ import { getSupabaseClient, isSupabaseConfigured } from '../src/lib/supabase';
 import { colors } from '../src/lib/theme';
 
 export default function ResetPasswordScreen() {
+  const configured = isSupabaseConfigured();
+  const url = Linking.useLinkingURL();
   const [recoveryReady, setRecoveryReady] = useState(false);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState('Opening your secure recovery link…');
-  const configured = isSupabaseConfigured();
-  const url = Linking.useLinkingURL();
+  const [message, setMessage] = useState(() => {
+    if (!configured) return 'Supabase is not configured. Add the values in mobile/.env first.';
+    if (!url) return 'Open the password reset link sent to your email on this device.';
+    return 'Opening your secure recovery link…';
+  });
   const processedUrls = useRef(new Set<string>());
 
   useEffect(() => {
-    if (!configured) {
-      setMessage('Supabase is not configured. Add the values in mobile/.env first.');
-      return;
-    }
-
     let active = true;
-    if (!url) {
-      setMessage('Open the password reset link sent to your email on this device.');
-      return () => { active = false; };
-    }
+    if (!configured || !url) return;
     if (processedUrls.current.has(url)) return () => { active = false; };
     processedUrls.current.add(url);
 

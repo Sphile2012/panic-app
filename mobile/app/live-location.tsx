@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -12,7 +12,14 @@ import {
 import { Link } from 'expo-router';
 import * as Location from 'expo-location';
 import * as SMS from 'expo-sms';
-import { getSupabaseClient } from '../src/lib/supabase';
+import {
+  getLiveTrackingUrl,
+  listTrustedContacts,
+  recordLiveLocation,
+  startLiveTracking,
+  stopLiveTracking,
+} from '../src/lib/emergency';
+import { resolveStreetAddress } from '../src/lib/location-address';
 import { colors, spacing, borderRadius, shadows, typography } from '../src/lib/theme';
 
 type LocationData = {
@@ -24,29 +31,61 @@ type LocationData = {
 
 type TrustedContact = {
   id: string;
-  name: string;
-  phone: string;
+  display_name: string;
+  phone_number: string;
 };
 
 export default function LiveLocationScreen() {
   const [isTracking, setIsTracking] = useState(false);
+  const [isStarting, setIsStarting] = useState(false);
+  const [isStopping, setIsStopping] = useState(false);
+  const [isPreparingShare, setIsPreparingShare] = useState(false);
   const [location, setLocation] = useState<LocationData | null>(null);
   const [permissionStatus, setPermissionStatus] = useState<'granted' | 'denied' | 'checking'>('checking');
-  const [locationSubscription, setLocationSubscription] = useState<Location.LocationSubscription | null>(null);
   const [error, setError] = useState('');
   const [contacts, setContacts] = useState<TrustedContact[]>([]);
+  const [trackingUrl, setTrackingUrl] = useState<string | null>(null);
+  const mountedRef = useRef(false);
+  const isStartingRef = useRef(false);
+  const isStoppingRef = useRef(false);
+  const locationSubscriptionRef = useRef<Location.LocationSubscription | null>(null);
+  const trackingTokenRef = useRef<string | null>(null);
+  const locationSyncQueueRef = useRef<Promise<void>>(Promise.resolve());
 
-  const checkPermissions = async () => {
-    try {
-      const { status } = await Location.getForegroundPermissionsAsync();
-      setPermissionStatus(status === 'granted' ? 'granted' : 'denied');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not check location permissions.');
-      setPermissionStatus('denied');
-    }
-  };
+  useEffect(() => {
+    mountedRef.current = true;
+    void Location.getForegroundPermissionsAsync()
+      .then(({ status }) => {
+        if (mountedRef.current) setPermissionStatus(status === 'granted' ? 'granted' : 'denied');
+      })
+      .catch((err: unknown) => {
+        if (!mountedRef.current) return;
+        setError(err instanceof Error ? err.message : 'Could not check location permissions.');
+        setPermissionStatus('denied');
+      });
+    void listTrustedContacts()
+      .then((trustedContacts) => {
+        if (mountedRef.current) setContacts(trustedContacts);
+      })
+      .catch((err: unknown) => {
+        if (mountedRef.current) setError(err instanceof Error ? err.message : 'Could not load trusted contacts.');
+      });
 
-  const requestPermissions = async () => {
+    return () => {
+      mountedRef.current = false;
+      locationSubscriptionRef.current?.remove();
+      locationSubscriptionRef.current = null;
+      const token = trackingTokenRef.current;
+      trackingTokenRef.current = null;
+      if (token) {
+        void stopLiveTracking(token).catch((err: unknown) => {
+          console.error('Could not revoke the live location link on screen close.', err);
+        });
+      }
+    };
+  }, []);
+
+  async function requestPermissions() {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       setPermissionStatus(status === 'granted' ? 'granted' : 'denied');
@@ -61,65 +100,40 @@ export default function LiveLocationScreen() {
         );
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not request location permissions.');
-    }
-  };
-
-  const loadContacts = async () => {
-    try {
-      const client = getSupabaseClient();
-      const { data: { session } } = await client.auth.getSession();
-      if (!session) return;
-
-      const { data, error: fetchError } = await client
-        .from('contacts')
-        .select('id, name, phone')
-        .eq('user_id', session.user.id)
-        .eq('trusted', true)
-        .limit(5);
-
-      if (fetchError) throw fetchError;
-      setContacts(data || []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not load trusted contacts.');
-    }
-  };
-
-  useEffect(() => {
-    void checkPermissions();
-    void loadContacts();
-
-    return () => {
-      if (locationSubscription) {
-        locationSubscription.remove();
+      if (mountedRef.current) {
+        setError(err instanceof Error ? err.message : 'Could not request location permissions.');
       }
-    };
-  }, [locationSubscription]);
+    }
+  }
 
   async function startTracking() {
+    if (isStartingRef.current || isStoppingRef.current || isTracking) return;
     if (permissionStatus !== 'granted') {
       await requestPermissions();
       return;
     }
 
+    let token: string | null = null;
+    isStartingRef.current = true;
     try {
+      setIsStarting(true);
       setError('');
-      
+      getLiveTrackingUrl('0'.repeat(32));
       const currentLocation = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.High,
       });
-
-      const locationData: LocationData = {
-        latitude: currentLocation.coords.latitude,
-        longitude: currentLocation.coords.longitude,
-        accuracy: currentLocation.coords.accuracy,
-        timestamp: currentLocation.timestamp,
-      };
-
-      setLocation(locationData);
-      setIsTracking(true);
-
-      await saveLocationToDatabase(locationData);
+      if (!mountedRef.current) return;
+      token = await startLiveTracking(currentLocation);
+      trackingTokenRef.current = token;
+      if (!mountedRef.current) {
+        trackingTokenRef.current = null;
+        await stopLiveTracking(token);
+        return;
+      }
+      const liveUrl = getLiveTrackingUrl(token);
+      if (!liveUrl) throw new Error('Live location sharing is not configured for this app.');
+      setTrackingUrl(liveUrl);
+      setLocation(toLocationData(currentLocation));
 
       const subscription = await Location.watchPositionAsync(
         {
@@ -128,48 +142,77 @@ export default function LiveLocationScreen() {
           distanceInterval: 10, // 10 meters
         },
         (newLocation) => {
-          const updatedLocation: LocationData = {
-            latitude: newLocation.coords.latitude,
-            longitude: newLocation.coords.longitude,
-            accuracy: newLocation.coords.accuracy,
-            timestamp: newLocation.timestamp,
-          };
-          setLocation(updatedLocation);
-          void saveLocationToDatabase(updatedLocation);
+          const activeToken = trackingTokenRef.current;
+          if (!activeToken) return;
+          setLocation(toLocationData(newLocation));
+          locationSyncQueueRef.current = locationSyncQueueRef.current
+            .then(() => {
+              if (trackingTokenRef.current === activeToken) {
+                return recordLiveLocation(activeToken, newLocation);
+              }
+            })
+            .catch((err: unknown) => {
+              if (trackingTokenRef.current === activeToken) {
+                setError(err instanceof Error ? err.message : 'Could not update the live location.');
+              }
+            });
         }
       );
-
-      setLocationSubscription(subscription);
+      if (!mountedRef.current) {
+        subscription.remove();
+        if (trackingTokenRef.current === token) {
+          trackingTokenRef.current = null;
+          await stopLiveTracking(token);
+        }
+        return;
+      }
+      locationSubscriptionRef.current = subscription;
+      setIsTracking(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not start location tracking.');
-      setIsTracking(false);
+      let message = err instanceof Error ? err.message : 'Could not start location tracking.';
+      locationSubscriptionRef.current?.remove();
+      locationSubscriptionRef.current = null;
+      if (token) {
+        trackingTokenRef.current = null;
+        try {
+          await stopLiveTracking(token);
+        } catch (revokeError) {
+          message += ` The live link may still be available: ${revokeError instanceof Error ? revokeError.message : 'revocation failed.'}`;
+        }
+      }
+      if (mountedRef.current) {
+        setError(message);
+        setIsTracking(false);
+        setTrackingUrl(null);
+      } else {
+        console.error('Could not finish starting or revoke live location after screen close.', message);
+      }
+    } finally {
+      isStartingRef.current = false;
+      if (mountedRef.current) setIsStarting(false);
     }
   }
 
   async function stopTracking() {
-    if (locationSubscription) {
-      locationSubscription.remove();
-      setLocationSubscription(null);
-    }
+    if (isStoppingRef.current) return;
+    isStoppingRef.current = true;
+    setIsStopping(true);
+    locationSubscriptionRef.current?.remove();
+    locationSubscriptionRef.current = null;
+    const token = trackingTokenRef.current;
+    trackingTokenRef.current = null;
     setIsTracking(false);
-  }
-
-  async function saveLocationToDatabase(locationData: LocationData) {
     try {
-      const client = getSupabaseClient();
-      const { data: { session } } = await client.auth.getSession();
-      if (!session) return;
-
-      const { error: saveError } = await client.from('live_locations').upsert({
-        user_id: session.user.id,
-        latitude: locationData.latitude,
-        longitude: locationData.longitude,
-        accuracy: locationData.accuracy,
-        updated_at: new Date(locationData.timestamp).toISOString(),
-      });
-      if (saveError) throw saveError;
+      if (token) await stopLiveTracking(token);
+      setTrackingUrl(null);
+      setError('');
     } catch (err) {
-      setError(err instanceof Error ? `Could not sync live location: ${err.message}` : 'Could not sync live location.');
+      const message = err instanceof Error ? err.message : 'Tracking stopped on this device, but the live link could not be revoked.';
+      if (mountedRef.current) setError(message);
+      else console.error('Could not revoke the live location link after screen close.', message);
+    } finally {
+      isStoppingRef.current = false;
+      if (mountedRef.current) setIsStopping(false);
     }
   }
 
@@ -178,37 +221,54 @@ export default function LiveLocationScreen() {
     return `https://www.google.com/maps?q=${location.latitude},${location.longitude}`;
   }
 
+  async function buildShareMessage(): Promise<string | null> {
+    if (!location || !trackingUrl) return null;
+    setIsPreparingShare(true);
+    try {
+      const address = await resolveStreetAddress(location.latitude, location.longitude);
+      const coordinates = `${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`;
+      const addressLine = address
+        ? `Approximate address: ${address}`
+        : `Street address unavailable; GPS coordinates: ${coordinates}`;
+      const accuracyLine = location.accuracy === null
+        ? 'GPS accuracy estimate unavailable.'
+        : `GPS accuracy estimate: ±${Math.round(location.accuracy)} m.`;
+      return `${addressLine}\nCoordinates: ${coordinates}\n${accuracyLine}\nMap: ${getGoogleMapsLink()}\nLive location: ${trackingUrl}\nThe live link updates while sharing is on.`;
+    } finally {
+      if (mountedRef.current) setIsPreparingShare(false);
+    }
+  }
+
   async function shareViaWhatsApp(contact: TrustedContact) {
-    if (!location) return;
-    const number = contact.phone.replace(/\D/g, '').replace(/^0/, '27');
-    if (number.length < 7 || number.length > 15) {
-      Alert.alert('Invalid contact number', `Check ${contact.name}'s phone number in your trusted circle.`);
+    if (!trackingUrl) return;
+    const number = contact.phone_number.replace(/^\+/, '');
+    if (!/^[1-9]\d{7,14}$/.test(number)) {
+      Alert.alert('Invalid contact number', `Check ${contact.display_name}'s phone number in your trusted circle.`);
       return;
     }
-    const mapsLink = getGoogleMapsLink();
-    const message = `My current location is here: ${mapsLink}\nLast updated: ${new Date(location.timestamp).toLocaleString()}`;
-    const whatsappUrl = `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
     try {
+      const message = await buildShareMessage();
+      if (!message) return;
+      const whatsappUrl = `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
       await Linking.openURL(whatsappUrl);
     } catch {
       Alert.alert(
         'Could not open WhatsApp',
-        `Could not open a message draft for ${contact.name}. Check that WhatsApp is available, or use SMS.`
+        `Could not open a message draft for ${contact.display_name}. Check that WhatsApp is available, or use SMS.`
       );
     }
   }
 
   async function shareViaSMS() {
-    if (!location) return;
+    if (!trackingUrl) return;
     if (contacts.length === 0) {
       Alert.alert('No trusted contacts', 'Add a trusted contact before sharing your location.');
       return;
     }
 
-    const mapsLink = getGoogleMapsLink();
-    const message = `My current location is here: ${mapsLink}\nLast updated: ${new Date(location.timestamp).toLocaleString()}`;
-
     try {
+      const message = await buildShareMessage();
+      if (!message) return;
       const isAvailable = await SMS.isAvailableAsync();
       
       if (!isAvailable) {
@@ -216,9 +276,7 @@ export default function LiveLocationScreen() {
         return;
       }
 
-      const recipients = contacts.length > 0 ? contacts.map(c => c.phone) : [];
-      
-      await SMS.sendSMSAsync(recipients, message);
+      await SMS.sendSMSAsync(contacts.map((contact) => contact.phone_number), message);
     } catch (err) {
       Alert.alert('Could not open SMS', err instanceof Error ? err.message : 'Could not prepare the SMS draft.');
     }
@@ -276,6 +334,9 @@ export default function LiveLocationScreen() {
                 {location.accuracy !== null && (
                   <Text style={styles.accuracy}>Accuracy: ±{Math.round(location.accuracy)}m</Text>
                 )}
+                {location.accuracy === null && (
+                  <Text style={styles.accuracy}>GPS accuracy estimate unavailable</Text>
+                )}
                 <Text style={styles.timestamp}>
                   Last updated: {new Date(location.timestamp).toLocaleString()}
                 </Text>
@@ -291,42 +352,45 @@ export default function LiveLocationScreen() {
             <Pressable
               style={[styles.primaryButton, isTracking ? styles.dangerButton : null]}
               onPress={isTracking ? stopTracking : startTracking}
+              disabled={isStarting || isStopping}
             >
               <Text style={styles.primaryButtonText}>
-                {isTracking ? 'Turn off live location' : 'Turn on live location'}
+                {isStarting ? 'Starting live location...' : isStopping ? 'Stopping live location...' : isTracking ? 'Turn off live location' : 'Turn on live location'}
               </Text>
             </Pressable>
           </View>
 
           {isTracking && location && (
             <View style={styles.card}>
-              <Text style={styles.cardTitle}>Share Current Location</Text>
+              <Text style={styles.cardTitle}>Share Live Location</Text>
               <Text style={styles.body}>
-                Open a message draft for a trusted contact. Review and send it in the messaging app.
+                Location messages include an approximate address when available, plus GPS coordinates and the live link. Only share this link with people you trust; anyone with it can view your location while tracking is active.
               </Text>
 
               <View style={styles.shareButtons}>
                 <Pressable
                   style={styles.smsButton}
                   onPress={shareViaSMS}
+                  disabled={isPreparingShare}
                 >
-                  <Text style={styles.shareButtonText}>SMS</Text>
+                  <Text style={styles.shareButtonText}>{isPreparingShare ? 'Preparing address...' : 'SMS'}</Text>
                 </Pressable>
               </View>
 
               {contacts.length > 0 && (
                 <View style={styles.contactsList}>
-                  <Text style={styles.contactsLabel}>SMS opens with all trusted contacts. Choose one for WhatsApp:</Text>
+                  <Text style={styles.contactsLabel}>SMS opens with your trusted circle. Choose one person for WhatsApp:</Text>
                   {contacts.map((contact) => (
                     <View key={contact.id} style={styles.contactRow}>
-                      <Text style={styles.contactItem}>{contact.name} ({contact.phone})</Text>
+                      <Text style={styles.contactItem}>{contact.display_name} ({contact.phone_number})</Text>
                       <Pressable
                         accessibilityRole="button"
-                        accessibilityLabel={`Share location with ${contact.name} using WhatsApp`}
+                        accessibilityLabel={`Share location with ${contact.display_name} using WhatsApp`}
                         style={styles.whatsappButton}
                         onPress={() => void shareViaWhatsApp(contact)}
+                        disabled={isPreparingShare}
                       >
-                        <Text style={styles.shareButtonText}>WhatsApp</Text>
+                        <Text style={styles.shareButtonText}>{isPreparingShare ? 'Preparing address...' : 'WhatsApp'}</Text>
                       </Pressable>
                     </View>
                   ))}
@@ -338,17 +402,25 @@ export default function LiveLocationScreen() {
           <View style={styles.infoCard}>
             <Text style={styles.infoTitle}>How it works</Text>
             <Text style={styles.body}>
-              When tracking is on, your latest location is saved to your account every 10 seconds. SMS and WhatsApp open a draft with the current map pin for your trusted contacts. You must send it, and share again to provide an updated pin.
+              While this screen is active, your live link is refreshed when your phone reports a new GPS position. The recipient page checks for updates about every 10 seconds. SMS and WhatsApp open a draft for your trusted contacts; you must review and send it.
             </Text>
             <Text style={[styles.body, { marginTop: 12 }]}>
-              Location tracking continues while the app is open. For background tracking, additional 
-              permissions may be required.
+              Turning tracking off or leaving this screen stops GPS updates and revokes the link. GPS accuracy varies by device and surroundings.
             </Text>
           </View>
         </>
       )}
     </ScrollView>
   );
+}
+
+function toLocationData(position: Location.LocationObject): LocationData {
+  return {
+    latitude: position.coords.latitude,
+    longitude: position.coords.longitude,
+    accuracy: position.coords.accuracy,
+    timestamp: position.timestamp,
+  };
 }
 
 const styles = StyleSheet.create({

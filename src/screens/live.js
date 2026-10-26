@@ -2,7 +2,7 @@ import '../strings/groupA.js';
 import { store } from '../state.js';
 import { t } from '../i18n.js';
 import { smsUri, whatsappUri } from '../storage.js';
-import { getLocation } from '../alertService.js';
+import { getLocation, reverseGeocode } from '../alertService.js';
 import { DB_CONFIGURED } from '../db.js';
 import { startTracking, stopTracking, isTracking, getLast, getError, getLowBattery, dismissLowBattery, onTrackChange, trackUrl, mapsUrl, } from '../tracking.js';
 let unsubscribe = null;
@@ -29,12 +29,52 @@ export function renderLive(root) {
     const { contacts } = store.getState();
     let isAuthenticated = store.getState().isAuthenticated;
     let capturedLocation = null;
+    let resolvedAddress = null;
+    let pendingAddress = null;
+    function distanceMeters(lat1, lng1, lat2, lng2) {
+        const radians = (degrees) => degrees * Math.PI / 180;
+        const latDifference = radians(lat2 - lat1);
+        const lngDifference = radians(lng2 - lng1);
+        const value = Math.sin(latDifference / 2) ** 2
+            + Math.cos(radians(lat1)) * Math.cos(radians(lat2)) * Math.sin(lngDifference / 2) ** 2;
+        return 6_371_000 * 2 * Math.atan2(Math.sqrt(value), Math.sqrt(1 - value));
+    }
+    function resolveCurrentAddress(last) {
+        if (resolvedAddress
+            && distanceMeters(last.lat, last.lng, resolvedAddress.lat, resolvedAddress.lng) <= 100)
+            return resolvedAddress.address;
+        const requestIsCurrent = pendingAddress
+            && distanceMeters(last.lat, last.lng, pendingAddress.lat, pendingAddress.lng) <= 100;
+        const canRefresh = !resolvedAddress || Date.now() - resolvedAddress.at >= 30_000;
+        if (!requestIsCurrent && !pendingAddress && canRefresh) {
+            const requestedLocation = { lat: last.lat, lng: last.lng };
+            pendingAddress = requestedLocation;
+            void reverseGeocode(last.lat, last.lng).then(address => {
+                resolvedAddress = { ...requestedLocation, address, at: Date.now() };
+                if (pendingAddress === requestedLocation)
+                    pendingAddress = null;
+                if (root.isConnected)
+                    paint();
+            }).catch(error => {
+                if (pendingAddress === requestedLocation)
+                    pendingAddress = null;
+                console.warn('[tracking] Could not resolve a nearby address.', error);
+            });
+        }
+        return null;
+    }
     const paint = () => {
         const on = isTracking();
         const last = on ? getLast() ?? capturedLocation : capturedLocation ?? getLast();
         const err = getError();
         const low = getLowBattery();
         const mapUrl = last ? mapsUrl(last) : null;
+        const address = last ? resolveCurrentAddress(last) : null;
+        const locationDetails = last
+            ? `${address
+                ? `Nearby mapped address (approximate): ${address}`
+                : `Street address unavailable; GPS coordinates: ${last.lat.toFixed(6)}, ${last.lng.toFixed(6)}`}\nGPS accuracy: ±${Math.round(last.accuracy)} m`
+            : 'No GPS fix is available yet; I cannot share a location.';
         const link = last
             ? DB_CONFIGURED
                 ? on && err === null ? trackUrl() : mapUrl
@@ -42,13 +82,13 @@ export function renderLive(root) {
             : null;
         const callPolice = 'Please call the police now (SAPS 10111).';
         const locationMessage = on && err === null && link
-            ? t('trk.link.sms', { url: link })
+            ? `${t('trk.link.sms', { url: link })}\n${locationDetails}`
             : mapUrl
-                ? `My latest GPS fix is here: ${mapUrl} (not live tracking).`
-                : 'No GPS fix is available yet; I cannot share a location.';
+                ? `My latest GPS fix is here: ${mapUrl} (not live tracking).\n${locationDetails}`
+                : locationDetails;
         const linkBody = `${locationMessage}\n${callPolice}`;
         const locationShareBody = last
-            ? `My location is here: ${mapUrl}\nGPS accuracy: ±${Math.round(last.accuracy)} m`
+            ? `${locationDetails}\nMap: ${mapUrl}`
             : 'Please enable location access to share your current location.';
         const lowBody = `${DB_CONFIGURED && link
             ? t('trk.low.sms', { pct: low ?? '', url: link ?? '' })
@@ -211,6 +251,12 @@ export function renderLive(root) {
                     accuracy: result.accuracy,
                     battery: null,
                     charging: false,
+                    at: Date.now(),
+                };
+                resolvedAddress = {
+                    lat: capturedLocation.lat,
+                    lng: capturedLocation.lng,
+                    address: result.address,
                     at: Date.now(),
                 };
                 paint();

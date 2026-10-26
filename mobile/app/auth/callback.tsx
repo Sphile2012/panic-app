@@ -7,21 +7,18 @@ import { isSupabaseConfigured } from '../../src/lib/supabase';
 import { colors } from '../../src/lib/theme';
 
 export default function AuthCallbackScreen() {
-  const [message, setMessage] = useState('Confirming your account…');
   const url = Linking.useLinkingURL();
+  const configured = isSupabaseConfigured();
+  const [message, setMessage] = useState(() => {
+    if (!configured) return 'Supabase is not configured. Add the values in mobile/.env first.';
+    if (!url) return 'Open the confirmation link from your email on this device.';
+    return 'Confirming your account…';
+  });
   const processedUrls = useRef(new Set<string>());
 
   useEffect(() => {
-    if (!isSupabaseConfigured()) {
-      setMessage('Supabase is not configured. Add the values in mobile/.env first.');
-      return;
-    }
-
     let active = true;
-    if (!url) {
-      setMessage('Open the confirmation link from your email on this device.');
-      return () => { active = false; };
-    }
+    if (!configured || !url) return;
     if (processedUrls.current.has(url)) return () => { active = false; };
     processedUrls.current.add(url);
 
@@ -40,7 +37,7 @@ export default function AuthCallbackScreen() {
     return () => {
       active = false;
     };
-  }, [url]);
+  }, [configured, url]);
 
   return (
     <View style={styles.page}>

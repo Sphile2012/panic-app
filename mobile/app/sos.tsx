@@ -13,6 +13,7 @@ import {
 import { Link, router } from 'expo-router';
 import * as Location from 'expo-location';
 import { getSupabaseClient } from '../src/lib/supabase';
+import { resolveStreetAddress } from '../src/lib/location-address';
 import { colors, spacing, borderRadius, shadows, typography } from '../src/lib/theme';
 
 type Contact = {
@@ -30,32 +31,39 @@ export default function SOSScreen() {
   const [holdProgress, setHoldProgress] = useState(0);
   const [shareLocation, setShareLocation] = useState(false);
   const [deliveryStatuses, setDeliveryStatuses] = useState<Record<string, DeliveryStatus>>({});
-  const [currentLocation, setCurrentLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [currentLocation, setCurrentLocation] = useState<{
+    latitude: number;
+    longitude: number;
+    address: string | null;
+  } | null>(null);
 
   useEffect(() => {
-    void loadContacts();
-  }, []);
+    let active = true;
+    async function fetchContacts() {
+      try {
+        const client = getSupabaseClient();
+        const { data: { session } } = await client.auth.getSession();
+        if (!session) return;
 
-  async function loadContacts() {
-    try {
-      const client = getSupabaseClient();
-      const { data: { session } } = await client.auth.getSession();
-      if (!session) return;
+        const { data, error } = await client
+          .from('contacts')
+          .select('id, name, phone')
+          .eq('user_id', session.user.id)
+          .eq('status', 'accepted');
 
-      const { data, error } = await client
-        .from('contacts')
-        .select('id, name, phone')
-        .eq('user_id', session.user.id)
-        .eq('status', 'accepted');
-
-      if (error) throw error;
-      setContacts(data || []);
-    } catch (error) {
-      Alert.alert('Error', 'Could not load contacts.');
-    } finally {
-      setLoading(false);
+        if (error) throw error;
+        if (active) setContacts(data || []);
+      } catch (error) {
+        if (active) Alert.alert('Error', error instanceof Error ? error.message : 'Could not load contacts.');
+      } finally {
+        if (active) setLoading(false);
+      }
     }
-  }
+    void fetchContacts();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   async function getLocation() {
     try {
@@ -69,9 +77,13 @@ export default function SOSScreen() {
         accuracy: Location.Accuracy.High,
       });
 
+      const latitude = location.coords.latitude;
+      const longitude = location.coords.longitude;
+      const address = await resolveStreetAddress(latitude, longitude);
       return {
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
+        latitude,
+        longitude,
+        address,
       };
     } catch {
       return null;
@@ -124,9 +136,12 @@ export default function SOSScreen() {
     }
   }
 
-  async function sendSMSAlert(contact: Contact, location: { latitude: number; longitude: number } | null) {
+  async function sendSMSAlert(
+    contact: Contact,
+    location: { latitude: number; longitude: number; address: string | null } | null,
+  ) {
     const locationText = location
-      ? `\n\nLocation: https://www.google.com/maps?q=${location.latitude},${location.longitude}`
+      ? `\n\n${location.address ? `Approximate address: ${location.address}\n` : 'Street address unavailable; GPS coordinates:\n'}Coordinates: ${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}\nMap: https://www.google.com/maps?q=${location.latitude},${location.longitude}`
       : '';
 
     const message = `PANIC RING SOS ALERT\n\nI need help! This is an emergency alert from your trusted contact.\n\nPlease check on me or call me immediately.${locationText}\n\nSent from Panic Ring`;

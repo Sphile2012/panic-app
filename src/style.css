@@ -3708,6 +3708,8 @@ details[open] .loc-info-summary::before { transform: rotate(90deg); }
   display: flex; align-items: center; gap: 8px;
   font-size: 2.4rem; font-weight: 100; color: var(--safe);
 }
+.clock-timer-message { color: var(--safe); font-size: 0.85rem; text-align: center; }
+.clock-timer-message--error { color: var(--danger); }
 
 
 .companion-screen { background: var(--bg); }
