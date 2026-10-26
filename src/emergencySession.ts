@@ -392,7 +392,7 @@ export function getEmergencyMessage(): string {
     }
     
     if (isTracking() && DB_CONFIGURED) {
-        message += `🔴 Live tracking active:\n${trackUrl()}\n\n`;
+        message += `LIVE: Tracking active:\n${trackUrl()}\n\n`;
     }
     
     if (currentSession.photoCaptured && currentSession.photoCount > 0) {
@@ -410,7 +410,7 @@ export function getEmergencyMessage(): string {
         message += `SAVED NOTES:\n${notes.map(note => `${note.title}\n${note.body}`).join('\n\n')}\n\n`;
     }
     
-    message += `⚠️ Please contact immediately or send help!\n`;
+    message += `WARNING: Please contact immediately or send help!\n`;
     message += `This is an automated emergency alert from Panic Ring app.`;
     
     return message;

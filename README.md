@@ -2,7 +2,7 @@
 
 Panic Ring is a mobile-first personal safety app providing emergency alerts, location tracking, and safety planning features.
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Web App
 ```sh
@@ -27,11 +27,11 @@ Scan the QR code with **Expo Go** app on your Android device.
 
 ---
 
-## 📱 Mobile App Features
+## Mobile App Features
 
 The mobile app (`com.phumeh.mypanicring`) includes 6 core safety features:
 
-### 1. 🆘 SOS Alert System
+### 1. SOS Alert System
 - Hold-to-activate button (1.5 second press)
 - Silent alert mechanism
 - SMS sending to trusted contacts
@@ -40,14 +40,14 @@ The mobile app (`com.phumeh.mypanicring`) includes 6 core safety features:
 - Cancel alert functionality
 - Google Maps integration
 
-### 2. 👥 Trusted Circle Management
+### 2. Trusted Circle Management
 - Add up to 5 trusted contacts
 - Name and phone number tracking
 - Status monitoring (accepted/pending)
 - Remove contacts with confirmation
 - Database persistence with RLS security
 
-### 3. 📍 Live Location Tracking
+### 3. Live Location Tracking
 - Real-time tracking (10-second intervals)
 - Location accuracy reporting
 - WhatsApp and SMS sharing
@@ -55,14 +55,14 @@ The mobile app (`com.phumeh.mypanicring`) includes 6 core safety features:
 - Start/stop controls
 - Background location support
 
-### 4. 🔒 Private Notes/Evidence
+### 4. Private Notes/Evidence
 - Create encrypted notes
 - Title and content fields
 - Timestamp tracking
 - Secure deletion with confirmation
 - Private storage with RLS
 
-### 5. 🛡️ Safety Plan
+### 5. Safety Plan
 Six categories for comprehensive safety planning:
 - Trusted People
 - Safe Places
@@ -81,7 +81,7 @@ One-tap calling to South African emergency services:
 
 ---
 
-## 🗄️ Database Schema
+## Database Schema
 
 All tables use Supabase with Row-Level Security (RLS) enabled:
 
@@ -101,7 +101,7 @@ All tables use Supabase with Row-Level Security (RLS) enabled:
 
 ---
 
-## 📲 Android Permissions
+## Android Permissions
 
 Configured in `mobile/app.json`:
 - ACCESS_FINE_LOCATION
@@ -116,28 +116,28 @@ iOS permissions also configured for location services.
 
 ---
 
-## ✅ Verification Status
+## Verification Status
 
-### TypeScript Compilation: ✅ PASSED
+### TypeScript Compilation: PASSED
 - All files compile without errors
 - Type safety verified across all components
 
-### Database Integration: ✅ VERIFIED
+### Database Integration: VERIFIED
 - All CRUD operations working
 - RLS policies tested
 - Data persistence confirmed
 
-### Features: ✅ 95% COMPLETE
+### Features: 95% COMPLETE
 **Implemented:**
-- ✓ SOS Alert System
-- ✓ Trusted Circle Management
-- ✓ Live Location Tracking
-- ✓ Private Notes/Evidence
-- ✓ Safety Plan
-- ✓ Emergency Services Dialer
-- ✓ Database Integration
-- ✓ Security (RLS)
-- ✓ Permissions Setup
+- SOS Alert System
+- Trusted Circle Management
+- Live Location Tracking
+- Private Notes/Evidence
+- Safety Plan
+- Emergency Services Dialer
+- Database Integration
+- Security (RLS)
+- Permissions Setup
 
 **Not Implemented:**
 - Calculator-style PIN entry (web app feature)
@@ -146,7 +146,7 @@ iOS permissions also configured for location services.
 - Support services directory (planned)
 - Consent-based referral (planned)
 
-### Code Quality: ✅ VERIFIED
+### Code Quality: VERIFIED
 - TypeScript strict mode enabled
 - No compilation errors
 - Proper error handling
@@ -155,7 +155,7 @@ iOS permissions also configured for location services.
 
 ---
 
-## 🧪 Testing Guide
+## Testing Guide
 
 ### Manual Testing Checklist:
 
@@ -234,7 +234,7 @@ Already configured in root `.env`
 
 ---
 
-## 🚀 Deployment
+## Deployment
 
 ### Mobile App:
 ```bash
@@ -267,7 +267,7 @@ Deploy to Netlify or similar platform.
 
 ---
 
-## ⚠️ Known Limitations
+## Known Limitations
 
 ### SMS Behavior:
 - **iOS**: User must manually tap "Send" in message composer
@@ -285,7 +285,7 @@ Deploy to Netlify or similar platform.
 
 ---
 
-## 🔒 Security & Privacy
+## Security & Privacy
 
 - All data encrypted at rest
 - No data shared without explicit user action
@@ -296,15 +296,15 @@ Deploy to Netlify or similar platform.
 
 ---
 
-## 📄 License
+## License
 
 MIT License
 
 ---
 
-## 📞 Emergency Services (South Africa)
+## Emergency Services (South Africa)
 
-**⚠️ These are real emergency numbers. Use responsibly.**
+**WARNING: These are real emergency numbers. Use responsibly.**
 
 - **General Emergency**: 112
 - **Police SAPS**: 10111
@@ -314,14 +314,14 @@ MIT License
 
 ---
 
-## 🎯 Current Status
+## Current Status
 
-- ✅ TypeScript: NO ERRORS
-- ✅ Database: SCHEMA VERIFIED
-- ✅ Features: ALL IMPLEMENTED
-- ✅ Permissions: CONFIGURED
-- ✅ Code: COMMITTED & PUSHED
-- ✅ Status: READY FOR TESTING
+- TypeScript: NO ERRORS
+- Database: SCHEMA VERIFIED
+- Features: ALL IMPLEMENTED
+- Permissions: CONFIGURED
+- Code: COMMITTED & PUSHED
+- Status: READY FOR TESTING
 
 **Last Updated:** 2026-10-25  
 **Version:** 1.0.0  

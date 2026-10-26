@@ -357,7 +357,7 @@ export function renderLocation(root) {
                 let reason = 'Could not get your location.';
                 
                 if (geoError.code === geoError.PERMISSION_DENIED) {
-                    reason = 'Location permission denied. Click the lock icon 🔒 in your address bar, select "Site settings", and allow Location. Then click "Try again" below.';
+                    reason = 'Location permission denied. Click the lock icon in your address bar, select "Site settings", and allow Location. Then click "Try again" below.';
                 } else if (geoError.code === geoError.POSITION_UNAVAILABLE) {
                     reason = 'Location unavailable. Make sure Location is turned ON in your device settings (Settings → Location). Then try again.';
                 } else if (geoError.code === geoError.TIMEOUT) {
@@ -457,7 +457,7 @@ export function renderLocation(root) {
             
             // Add helpful instructions based on the error
             if (result.reason.includes('denied')) {
-                enhancedReason += '\n\nTo fix: Click the lock icon 🔒 in your browser address bar → Site settings → Location → Allow';
+                enhancedReason += '\n\nTo fix: Click the lock icon in your browser address bar → Site settings → Location → Allow';
             } else if (result.reason.includes('unavailable') || result.reason.includes('No GPS')) {
                 enhancedReason += '\n\nMake sure Location is turned ON in your device settings.';
             }

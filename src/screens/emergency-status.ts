@@ -166,7 +166,7 @@ export function renderEmergencyStatus(root: HTMLElement) {
                         </div>
                         ${currentSession.gpsStatus === 'denied' ? `
                         <div class="emergency-permission-note">
-                            <p>⚠️ Location permission denied</p>
+                            <p>WARNING: Location permission denied</p>
                             <button class="btn-secondary-outline btn-open-settings" id="btn-open-location-settings">Open Location Settings</button>
                             <button class="btn-secondary" id="btn-retry-location">Retry After Granting Permission</button>
                         </div>
@@ -181,7 +181,7 @@ export function renderEmergencyStatus(root: HTMLElement) {
                         </div>
                         ${currentSession.cameraStatus === 'denied' ? `
                         <div class="emergency-permission-note">
-                            <p>⚠️ Camera permission denied</p>
+                            <p>WARNING: Camera permission denied</p>
                             <button class="btn-secondary-outline btn-open-settings" id="btn-open-camera-settings">Open Camera Settings</button>
                             <button class="btn-secondary" id="btn-retry-camera">Retry After Granting Permission</button>
                         </div>
@@ -207,7 +207,7 @@ export function renderEmergencyStatus(root: HTMLElement) {
                 
                 ${currentSession.errors.length > 0 ? `
                 <section class="emergency-errors">
-                    <h4>⚠️ Issues Detected</h4>
+                    <h4>WARNING: Issues Detected</h4>
                     <ul>
                         ${currentSession.errors.map(err => `<li>${escapeHtml(err)}</li>`).join('')}
                     </ul>
@@ -238,7 +238,7 @@ export function renderEmergencyStatus(root: HTMLElement) {
                 
                 ${isTracking() ? `
                 <section class="emergency-tracking-section">
-                    <h3>🔴 Live Tracking</h3>
+                    <h3>LIVE: Tracking Active</h3>
                     <div class="emergency-tracking-card">
                         <p>Your location is being updated in real-time</p>
                         <code class="emergency-tracking-url">${trackUrl()}</code>
@@ -371,7 +371,7 @@ export function renderEmergencyStatus(root: HTMLElement) {
             // For web browsers, open browser's site settings
             if (window.location.protocol === 'https:' || window.location.hostname === 'localhost') {
                 // Chrome/Edge command to open site settings
-                alert('To enable location access:\n\n1. Click the lock icon 🔒 in your address bar\n2. Select "Site settings" or "Permissions"\n3. Find "Location" and set to "Allow"\n4. Click "Retry After Granting Permission" below\n\nOR on Android:\n\n1. Open Settings app\n2. Go to Apps → Panic Ring (or your browser)\n3. Tap Permissions → Location\n4. Select "Allow" or "While using the app"\n5. Return here and click Retry');
+                alert('To enable location access:\n\n1. Click the lock icon in your address bar\n2. Select "Site settings" or "Permissions"\n3. Find "Location" and set to "Allow"\n4. Click "Retry After Granting Permission" below\n\nOR on Android:\n\n1. Open Settings app\n2. Go to Apps → Panic Ring (or your browser)\n3. Tap Permissions → Location\n4. Select "Allow" or "While using the app"\n5. Return here and click Retry');
             } else {
                 alert('To enable location access:\n\n1. Open your phone Settings\n2. Go to Apps → Panic Ring (or your browser)\n3. Tap Permissions → Location\n4. Select "Allow" or "While using the app"\n5. Return here and click "Retry After Granting Permission"');
             }
@@ -388,7 +388,7 @@ export function renderEmergencyStatus(root: HTMLElement) {
             // For web browsers, open browser's site settings
             if (window.location.protocol === 'https:' || window.location.hostname === 'localhost') {
                 // Chrome/Edge command to open site settings
-                alert('To enable camera access:\n\n1. Click the lock icon 🔒 in your address bar\n2. Select "Site settings" or "Permissions"\n3. Find "Camera" and set to "Allow"\n4. Click "Retry After Granting Permission" below\n\nOR on Android:\n\n1. Open Settings app\n2. Go to Apps → Panic Ring (or your browser)\n3. Tap Permissions → Camera\n4. Select "Allow"\n5. Return here and click Retry');
+                alert('To enable camera access:\n\n1. Click the lock icon in your address bar\n2. Select "Site settings" or "Permissions"\n3. Find "Camera" and set to "Allow"\n4. Click "Retry After Granting Permission" below\n\nOR on Android:\n\n1. Open Settings app\n2. Go to Apps → Panic Ring (or your browser)\n3. Tap Permissions → Camera\n4. Select "Allow"\n5. Return here and click Retry');
             } else {
                 alert('To enable camera access:\n\n1. Open your phone Settings\n2. Go to Apps → Panic Ring (or your browser)\n3. Tap Permissions → Camera\n4. Select "Allow"\n5. Return here and click "Retry After Granting Permission"');
             }

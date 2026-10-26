@@ -309,7 +309,7 @@ export default function SOSScreen() {
 
           <View style={styles.disclaimerCard}>
             <Text style={styles.disclaimerText}>
-              ⚠️ This alert opens your SMS app. You must tap Send in the messaging app. Panic Ring
+              WARNING: This alert opens your SMS app. You must tap Send in the messaging app. Panic Ring
               does not send messages automatically.
             </Text>
           </View>

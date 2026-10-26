@@ -58,7 +58,7 @@ export function renderAbout(root) {
           <li>PIN hashes using SHA-256 (local) and bcrypt (cloud)</li>
           <li>AES-256-GCM encryption for sensitive data</li>
           <li>No tracking or analytics</li>
-          <li>✅ Works completely offline</li>
+          <li>Works completely offline</li>
         </ul>
       </section>
 
