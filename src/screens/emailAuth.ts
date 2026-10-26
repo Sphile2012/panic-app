@@ -116,30 +116,30 @@ export function renderWelcome(root: HTMLElement) {
     ? 'Your Safety<br><em>Matters</em>'
     : escapeSignupValue(welcomeTitle);
   root.innerHTML = `
-    <div class="screen splash-screen">
-      <div class="splash-scene">
-        <div class="splash-card">
+    <div class="screen splash-screen relative isolate min-h-full overflow-y-auto bg-[#170820] p-0 text-white">
+      <img class="splash-backdrop" src="/gbv-home-cover.png" alt="" aria-hidden="true" />
+      <div class="splash-scene relative z-10 flex min-h-full w-full flex-col items-center justify-between gap-5 px-5 py-5">
+        <div class="splash-card relative flex w-full max-w-[390px] flex-1 flex-col rounded-[28px] border border-white/20 px-5 pb-5 pt-4 shadow-2xl">
           <div class="splash-header-row">
-            <div class="splash-emergency-pill" aria-label="Emergency">
+            <button class="splash-emergency-pill" id="splash-panic-button" type="button" aria-label="Panic button. Log in to use the app.">
               <span class="splash-emergency-icon" aria-hidden="true">⚠</span>
               <span class="splash-emergency-label">PANIC</span>
               <small>EMERGENCY</small>
-            </div>
+            </button>
             ${languageBarHtml()}
           </div>
-
           <div class="splash-content">
             <h1 class="splash-tagline">${welcomeTitleHtml}</h1>
             <p class="splash-pin-hint">${t('welcome.pinHint')}</p>
             <p class="splash-panic-message" id="splash-panic-message" role="status" hidden>Please log in to use the app.</p>
+            <p class="splash-panic-message" id="splash-panic-message" role="status" hidden>Please log in to use the app.</p>
+            <div class="splash-artwork-wrap">
+              <img class="splash-artwork" src="/gbv-home-cover.png" alt="Stop GBV — South Africa United" />
+            </div>
             <div class="splash-actions">
               <button class="btn-primary splash-btn" id="splash-login" type="button">${t('welcome.login')}</button>
               <p class="splash-signup-text">${t('welcome.new')} <button class="auth-link-btn" id="splash-signup" type="button">${t('welcome.signup')}</button></p>
               <button class="auth-link-btn splash-forgot-link" id="splash-forgot" type="button">${t('welcome.forgot')}</button>
-            </div>
-
-            <div class="splash-visual" aria-hidden="true">
-              <div class="splash-visual-badge">NO TO GBV</div>
             </div>
 
             <button class="splash-install-btn" id="splash-install" type="button">
