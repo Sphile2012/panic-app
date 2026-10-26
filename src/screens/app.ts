@@ -1,4 +1,5 @@
 import { store } from '../state.js';
+import { t } from '../i18n.js';
 import { loadAppearance, saveAppearance, DISGUISE_OPTIONS } from '../theme.js';
 import { isCheckinActive, checkinSecondsLeft, startCheckin, cancelCheckin, resumeCheckinIfActive } from '../checkin.js';
 import { openMenu, openMoreMenu } from '../menu.js';
@@ -43,18 +44,35 @@ export function renderApp(root) {
       </header>
 
       <section class="dashboard-alert-card relative z-10 flex flex-1 items-center justify-center" aria-label="Emergency alert">
-        <button class="btn-hold relative inline-flex items-center justify-center rounded-full font-black tracking-[.12em] text-white" id="btn-hold" aria-label="Hold the PANIC button to send an alert" title="Hold for 1.5 seconds to send">
-          <span class="btn-hold-label">PANIC</span>
-          <div class="btn-hold-ring"></div>
-        </button>
+        <div class="dashboard-alert-actions">
+          <button class="btn-hold relative inline-flex items-center justify-center rounded-full font-black tracking-[.12em] text-white" id="btn-hold" aria-label="Hold the PANIC button to send an alert" title="Hold for 1.5 seconds to send">
+            <span class="btn-hold-label">PANIC</span>
+            <div class="btn-hold-ring"></div>
+          </button>
+          <button class="dashboard-checkin-button" id="btn-quick-checkin" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path>
+            </svg>
+            <span>Check-in timer</span>
+          </button>
+        </div>
       </section>
 
       <div id="dashboard-battery-alert"></div>
 
       <nav class="app-bottom-nav" aria-label="Main navigation">
-        <button class="app-bottom-nav-btn rounded-xl font-semibold text-white/80 transition hover:bg-white/15 hover:text-white" data-bottom-nav="contacts" type="button">Circle</button>
-        <button class="app-bottom-nav-btn rounded-xl font-semibold text-white/80 transition hover:bg-white/15 hover:text-white" data-bottom-nav="profile" type="button">Profile</button>
-        <button class="app-bottom-nav-btn rounded-xl font-semibold text-white/80 transition hover:bg-white/15 hover:text-white" id="btn-open-menu" type="button">More</button>
+        <button class="app-bottom-nav-btn" data-bottom-nav="contacts" type="button" aria-label="${t('nav.circle')}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.5"/><path d="M17 14c2.5 0 4 1.8 4 4"/></svg>
+          <span>${t('nav.circle')}</span>
+        </button>
+        <button class="app-bottom-nav-btn" id="btn-open-menu" type="button" aria-label="${t('nav.more')}">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+          <span>${t('nav.more')}</span>
+        </button>
+        <button class="app-bottom-nav-btn" data-bottom-nav="change-pins" type="button" aria-label="${t('nav.changePin')}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/></svg>
+          <span>${t('nav.changePin')}</span>
+        </button>
       </nav>
 
       <div class="checkin-bar" id="checkin-bar" style="display:none">

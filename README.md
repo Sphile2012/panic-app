@@ -16,6 +16,10 @@ npm run build:web
 npm test
 ```
 
+### In-app help assistant
+
+Open **Safety assistant** from the dashboard's **More** menu to get built-in guidance for PINs, trusted contacts, alerts, location, check-in timers, journeys, safety plans, notes, records, settings, privacy, and other app features. The assistant does not access your account data or send alerts. It is not a live emergency service; use the Emergency dialer or local emergency services if you need urgent help.
+
 ### Mobile App (React Native/Expo)
 ```sh
 cd mobile

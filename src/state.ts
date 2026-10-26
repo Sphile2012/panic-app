@@ -70,12 +70,14 @@ class Store {
     listeners: Array<(state: AppState) => void>;
     lockTimer: number | null;
     screenHistory: string[];
+    forwardHistory: string[];
 
     constructor() {
         this.state = buildInitialState();
         this.listeners = [];
         this.lockTimer = null;
         this.screenHistory = [];
+        this.forwardHistory = [];
     }
     getState(): AppState { return this.state; }
     subscribe(fn: (state: AppState) => void) {
@@ -111,11 +113,13 @@ class Store {
         if (screen !== this.state.screen) {
             if (screen === 'app') {
                 this.screenHistory = [];
+                this.forwardHistory = [];
             }
             else {
                 this.screenHistory.push(this.state.screen);
                 if (this.screenHistory.length > 50)
                     this.screenHistory.shift();
+                this.forwardHistory = [];
             }
         }
         this.state = { ...this.state, screen };
@@ -127,7 +131,19 @@ class Store {
             return;
         const previousScreen = this.screenHistory.pop()
             ?? (this.state.screen === 'app' ? 'calculator' : 'welcome');
+        this.forwardHistory.push(this.state.screen);
         this.state = { ...this.state, screen: previousScreen };
+        this.touch();
+        this.notify();
+    }
+    navigateForward() {
+        if (this.state.screen === 'pin-recovery' && this.state.pinFailures >= PIN_FAILURE_LIMIT)
+            return;
+        const nextScreen = this.forwardHistory.pop();
+        if (!nextScreen)
+            return;
+        this.screenHistory.push(this.state.screen);
+        this.state = { ...this.state, screen: nextScreen };
         this.touch();
         this.notify();
     }
@@ -156,6 +172,7 @@ class Store {
         const hashed = await hashPin(pin);
         if (hashed === pub.pin) {
             this.screenHistory = [];
+            this.forwardHistory = [];
             const vault: VaultData = await loadVault(hashed);
             this.state = {
                 ...this.state,
@@ -177,6 +194,7 @@ class Store {
         }
         if (pub.decoyPin !== '' && hashed === pub.decoyPin) {
             this.screenHistory = [];
+            this.forwardHistory = [];
             this.state = { ...this.state, screen: 'decoy' };
             this.notify();
             return 'decoy';
@@ -382,8 +400,10 @@ class Store {
             if (!vault)
                 return false;
             await savePinHashes(pinHash, decoyHash, this.state.autoLockMinutes);
-            if (returnTo === 'app')
+            if (returnTo === 'app') {
                 this.screenHistory = [];
+                this.forwardHistory = [];
+            }
             this.state = {
                 ...this.state,
                 screen: returnTo,
@@ -458,12 +478,17 @@ class Store {
         clearAll();
         await signOut().catch(() => { });
         this.screenHistory = [];
+        this.forwardHistory = [];
         this.state = buildInitialState();
         this.notify();
     }
     setAuthEmail(email: string | null, isAuthenticated = Boolean(email), restoreSession = false) {
         const previousEmail = this.state.authEmail;
         const identityChanged = previousEmail !== email;
+        if (identityChanged) {
+            this.screenHistory = [];
+            this.forwardHistory = [];
+        }
         this.state = {
             ...this.state,
             authEmail: email,
@@ -488,6 +513,8 @@ class Store {
         if (!pub.pin)
             await this.savePin(primaryPin, secondPin);
         const vault = await loadVault(pinHash);
+        this.screenHistory = [];
+        this.forwardHistory = [];
         this.state = {
             ...this.state,
             pinHash,
@@ -514,6 +541,8 @@ class Store {
     }
     async signOut() {
         await signOut();
+        this.screenHistory = [];
+        this.forwardHistory = [];
         this.state = buildInitialState();
         this.notify();
     }

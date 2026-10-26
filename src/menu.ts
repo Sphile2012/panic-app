@@ -112,7 +112,11 @@ function renderMenu() {
             <small>On this device</small>
           </span>
         </button>
-        <button class="side-menu-close" data-close="1" aria-label="${t('common.close')}">${t('common.close')}</button>
+        <button class="side-menu-close" data-close="1" type="button" aria-label="${t('common.close')}" title="${t('common.close')}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <path d="m6 6 12 12M18 6 6 18" />
+          </svg>
+        </button>
       </div>
       <nav class="side-menu-body">
         ${menuItems}

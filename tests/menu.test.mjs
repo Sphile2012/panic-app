@@ -12,10 +12,12 @@ test('hamburger and More open the same full menu without subscriptions, smartwat
   assert.match(app, /root\.querySelector\('#btn-open-menu'\)\.addEventListener\('click', openMoreMenu\)/);
   assert.doesNotMatch(app, /querySelector\('#btn-profile'\)|querySelector\('#btn-disguise'\)/);
   const bottomNav = app.match(/<nav class="app-bottom-nav"[^>]*>([\s\S]*?)<\/nav>/)?.[1] ?? '';
-  assert.deepEqual([...bottomNav.matchAll(/<button\b[^>]*>([^<]*)<\/button>/g)].map(([, label]) => label), ['Circle', 'Profile', 'More']);
-  assert.match(bottomNav, /data-bottom-nav="contacts"[^>]*>Circle<\/button>/);
-  assert.match(bottomNav, /data-bottom-nav="profile"[^>]*>Profile<\/button>/);
-  assert.match(bottomNav, /id="btn-open-menu"[^>]*>More<\/button>/);
+  assert.equal([...bottomNav.matchAll(/<button\b/g)].length, 3);
+  assert.match(bottomNav, /data-bottom-nav="contacts"[\s\S]*?<span>\$\{t\('nav\.circle'\)\}<\/span>/);
+  assert.match(bottomNav, /id="btn-open-menu"[\s\S]*?<span>\$\{t\('nav\.more'\)\}<\/span>/);
+  assert.match(bottomNav, /data-bottom-nav="change-pins"[\s\S]*?<span>\$\{t\('nav\.changePin'\)\}<\/span>/);
+  assert.match(bottomNav, /<svg[\s\S]*?aria-hidden="true"/);
+  assert.match(app, /store\.navigateTo\(button\.dataset\['bottomNav'\] \?\? 'app'\)/);
   assert.doesNotMatch(bottomNav, />\s*Home\s*</);
   assert.match(menu, /export function openMoreMenu\(\)/);
   assert.doesNotMatch(menu, /screen: '(?:subscriptions|watch|location)'/);
@@ -23,6 +25,8 @@ test('hamburger and More open the same full menu without subscriptions, smartwat
   assert.match(menu, /screen: 'fakecall', label: t\('menu\.fakecall'\)/);
   assert.match(menu, /screen: 'guide', label: t\('menu\.guide'\)/);
   assert.match(menu, /<details class="side-menu-disguise">[\s\S]*?<summary>[\s\S]*?Disguise screen[\s\S]*?DISGUISE_OPTIONS\.map/);
+  assert.match(menu, /class="side-menu-close"[^>]*aria-label="\$\{t\('common\.close'\)\}"[\s\S]*?<svg[\s\S]*?<path d="m6 6 12 12M18 6 6 18"/);
+  assert.doesNotMatch(menu, /side-menu-nav-controls|data-history=|side-menu-cancel/);
   assert.match(menu, /id="side-menu-theme-toggle"[\s\S]*?Day mode/);
   assert.match(menu, /applyAppearance\(appearance\)/);
 });

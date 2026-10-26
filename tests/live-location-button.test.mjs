@@ -14,9 +14,11 @@ test('app menu button opens the full side menu and preserves the More action', (
     assert.match(source, /title="Open app menu"/);
     assert.match(source, /<path d="M4 6h16M4 12h16M4 18h16"\/>/);
     assert.match(source, /root\.querySelector\('#btn-menu'\)\.addEventListener\('click', openMenu\)/);
-    assert.match(source, /id="btn-open-menu"[^>]*>More<\/button>/);
+    assert.match(source, /id="btn-open-menu"[^>]*aria-label="\$\{t\('nav\.more'\)\}"[\s\S]*?<span>\$\{t\('nav\.more'\)\}<\/span>/);
     assert.match(source, /root\.querySelector\('#btn-open-menu'\)\.addEventListener\('click', openMoreMenu\)/);
     assert.match(source, /id="btn-hold"/);
+    assert.match(source, /id="btn-quick-checkin"[^>]*>[\s\S]*?Check-in timer/);
+    assert.match(source, /root\.querySelector\('#btn-quick-checkin'\)\?\.addEventListener/);
     assert.doesNotMatch(source, /store\.navigateTo\('live'\);\s*void startTracking\(\)/);
     assert.doesNotMatch(source, /Quick access|dashboard-grid|dashboard-trusted-circle/);
   }
