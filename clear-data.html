@@ -104,7 +104,7 @@
 </head>
 <body>
     <div class="container">
-        <div class="icon">🧹</div>
+        <div class="icon">Data</div>
         <h1>Clear App Data</h1>
         <p>This will clear all locally stored data for the Panic Ring app, including:</p>
         <ul>
@@ -117,8 +117,8 @@
         </ul>
         <p><strong>Note:</strong> This only clears local browser storage. Your account data in the cloud will remain safe.</p>
         
-        <button class="btn btn-clear" onclick="clearAllData()">🗑️ Clear All Local Data</button>
-        <a href="/" class="btn btn-home">🏠 Go to App</a>
+        <button class="btn btn-clear" onclick="clearAllData()">Clear All Local Data</button>
+        <a href="/" class="btn btn-home">Go to App</a>
         
         <div class="status" id="status"></div>
     </div>
@@ -152,11 +152,11 @@
                 
                 statusEl.className = 'status success';
                 statusEl.style.display = 'block';
-                statusEl.innerHTML = '✅ All local data cleared successfully!<br><br>Click "Go to App" to start fresh.';
+                statusEl.innerHTML = 'All local data cleared successfully.<br><br>Click "Go to App" to start fresh.';
                 
                 // Change button text
                 const clearBtn = document.querySelector('.btn-clear');
-                clearBtn.innerHTML = '✓ Data Cleared';
+                clearBtn.innerHTML = 'Data Cleared';
                 clearBtn.disabled = true;
                 clearBtn.style.opacity = '0.6';
                 clearBtn.style.cursor = 'not-allowed';
@@ -164,7 +164,7 @@
             } catch (error) {
                 statusEl.className = 'status info';
                 statusEl.style.display = 'block';
-                statusEl.innerHTML = '⚠️ Some data may not have been cleared. Try manually clearing your browser cache.<br><br>Error: ' + error.message;
+                statusEl.innerHTML = 'Some data may not have been cleared. Try manually clearing your browser cache.<br><br>Error: ' + error.message;
             }
         }
         
@@ -175,7 +175,7 @@
                 const statusEl = document.getElementById('status');
                 statusEl.className = 'status info';
                 statusEl.style.display = 'block';
-                statusEl.innerHTML = `📊 Found ${items} item(s) in local storage.`;
+                statusEl.innerHTML = `Found ${items} item(s) in local storage.`;
             }
         });
     </script>

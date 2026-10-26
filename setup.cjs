@@ -69,7 +69,7 @@ const root = path.resolve(__dirname);
 fs.writeFileSync(path.join(root, '.env.docker.local'), dockerLocal);
 fs.writeFileSync(path.join(root, '.env'), devEnv);
 
-console.log('\n✅  Panic Ring backend setup complete\n');
+console.log('\nPanic Ring backend setup complete\n');
 console.log('  Generated files:');
 console.log('    .env.docker.local  — Docker secrets (never commit)');
 console.log('    .env               — Vite dev env  (never commit)\n');
