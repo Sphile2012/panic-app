@@ -12,6 +12,7 @@ import {
   TextInput,
   View,
   Dimensions,
+  Animated,
 } from 'react-native';
 import type { Session } from '@supabase/supabase-js';
 import { Link, useRouter } from 'expo-router';
@@ -19,7 +20,7 @@ import * as Linking from 'expo-linking';
 import { getApiBaseUrl, verifyApiSession } from '../src/lib/backend';
 import { getSupabaseClient, isSupabaseConfigured } from '../src/lib/supabase';
 import { formatAuthError, SIGNUP_CONFIRMATION_MESSAGE } from '../src/lib/auth-messages';
-import { colors } from '../src/lib/theme';
+import { colors, spacing, borderRadius, shadows, typography } from '../src/lib/theme';
 
 type AuthMode = 'sign-in' | 'sign-up';
 
@@ -162,14 +163,7 @@ export default function HomeScreen() {
     >
       {session ? (
         <View style={styles.mainScreen}>
-          <View style={styles.cornerTopLeft} />
-          <View style={styles.cornerTopRight} />
-          <View style={styles.cornerBottomLeft} />
-          <View style={styles.cornerBottomRight} />
-          
-          <View style={styles.decorativeCircle1} />
-          <View style={styles.decorativeCircle2} />
-          <View style={styles.decorativeCircle3} />
+          <View style={styles.gradientOverlay} />
 
           <Pressable
             style={styles.hamburgerButton}
@@ -192,22 +186,25 @@ export default function HomeScreen() {
                 />
               </View>
               <Text style={styles.brandTitle}>PANIC RING</Text>
-              <Text style={styles.brandSubtitle}>Your Safety Matters</Text>
+              <Text style={styles.brandSubtitle}>Your Safety, Always Protected</Text>
             </View>
 
             <View style={styles.centerSection}>
               <Pressable
                 style={styles.panicButton}
                 onPress={handlePanicPress}
-                accessibilityLabel="Panic button - share your location"
+                accessibilityLabel="Emergency SOS button"
                 accessibilityRole="button"
+                accessibilityHint="Press to share your location and alert trusted contacts"
               >
-                <Text style={styles.panicButtonText}>PANIC</Text>
+                <View style={styles.panicButtonInner}>
+                  <Text style={styles.panicButtonText}>SOS</Text>
+                </View>
               </Pressable>
             </View>
 
             <View style={styles.bottomSection}>
-              <Text style={styles.instructionText}>Hold for emergency</Text>
+              <Text style={styles.instructionText}>Tap to activate emergency alert</Text>
             </View>
           </View>
 
@@ -477,197 +474,97 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.background },
   
+  // PREMIUM HOME SCREEN
   mainScreen: { 
     flex: 1, 
-    backgroundColor: '#FFE4F0',
+    backgroundColor: colors.background,
     position: 'relative',
   },
 
-  cornerTopLeft: {
+  // Subtle gradient overlay effect
+  gradientOverlay: {
     position: 'absolute',
     top: 0,
     left: 0,
-    width: 100,
-    height: 100,
-    borderBottomRightRadius: 50,
-    backgroundColor: 'rgba(220, 38, 38, 0.15)',
-    borderRightWidth: 4,
-    borderBottomWidth: 4,
-    borderColor: 'rgba(220, 38, 38, 0.4)',
-  },
-
-  cornerTopRight: {
-    position: 'absolute',
-    top: 0,
     right: 0,
-    width: 80,
-    height: 80,
-    borderBottomLeftRadius: 40,
-    backgroundColor: 'rgba(236, 72, 153, 0.15)',
-    borderLeftWidth: 4,
-    borderBottomWidth: 4,
-    borderColor: 'rgba(236, 72, 153, 0.4)',
+    height: height * 0.4,
+    backgroundColor: colors.primarySoft,
+    opacity: 0.5,
   },
 
-  cornerBottomLeft: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    width: 90,
-    height: 90,
-    borderTopRightRadius: 45,
-    backgroundColor: 'rgba(220, 38, 38, 0.15)',
-    borderRightWidth: 4,
-    borderTopWidth: 4,
-    borderColor: 'rgba(220, 38, 38, 0.4)',
-  },
-
-  cornerBottomRight: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 110,
-    height: 110,
-    borderTopLeftRadius: 55,
-    backgroundColor: 'rgba(236, 72, 153, 0.15)',
-    borderLeftWidth: 4,
-    borderTopWidth: 4,
-    borderColor: 'rgba(236, 72, 153, 0.4)',
-  },
-
-  decorativeCircle1: {
-    position: 'absolute',
-    top: '15%',
-    right: '10%',
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: 'rgba(255, 255, 255, 0.5)',
-    borderWidth: 3,
-    borderColor: 'rgba(220, 38, 38, 0.4)',
-  },
-
-  decorativeCircle2: {
-    position: 'absolute',
-    bottom: '25%',
-    left: '8%',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.4)',
-    borderWidth: 3,
-    borderColor: 'rgba(236, 72, 153, 0.4)',
-  },
-
-  decorativeCircle3: {
-    position: 'absolute',
-    top: '70%',
-    right: '15%',
-    width: 35,
-    height: 35,
-    borderRadius: 17.5,
-    backgroundColor: 'rgba(255, 255, 255, 0.4)',
-    borderWidth: 3,
-    borderColor: 'rgba(220, 38, 38, 0.4)',
-  },
-
+  // Premium Hamburger Menu
   hamburgerButton: {
     position: 'absolute',
     top: Platform.OS === 'ios' ? 60 : 50,
-    left: 20,
-    width: 70,
-    height: 70,
+    left: spacing.lg,
+    width: 56,
+    height: 56,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 35,
-    zIndex: 2000,
-    borderWidth: 5,
-    borderColor: '#DC2626',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#DC2626',
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.7,
-        shadowRadius: 15,
-      },
-      android: {
-        elevation: 15,
-      },
-    }),
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    zIndex: 3000,
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...shadows.md,
   },
 
   hamburgerLine: {
-    width: 36,
-    height: 5,
-    backgroundColor: '#DC2626',
-    marginVertical: 4,
-    borderRadius: 3,
+    width: 24,
+    height: 3,
+    backgroundColor: colors.primary,
+    marginVertical: 3,
+    borderRadius: 2,
   },
   
   fullScreenContainer: {
     flex: 1,
-    justifyContent: 'space-evenly',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 40,
-    paddingHorizontal: 20,
+    paddingVertical: spacing['4xl'],
+    paddingHorizontal: spacing.xl,
   },
 
   topSection: {
     alignItems: 'center',
     width: '100%',
-    paddingTop: 40,
+    paddingTop: spacing['2xl'],
   },
 
   logoContainer: {
-    width: Math.min(width * 0.35, 140),
-    height: Math.min(width * 0.35, 140),
-    marginBottom: 30,
-    borderRadius: Math.min(width * 0.175, 70),
-    backgroundColor: '#FFFFFF',
+    width: 100,
+    height: 100,
+    marginBottom: spacing.xl,
+    borderRadius: borderRadius['2xl'],
+    backgroundColor: colors.surface,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 6,
-    borderColor: '#DC2626',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#DC2626',
-        shadowOffset: { width: 0, height: 12 },
-        shadowOpacity: 0.5,
-        shadowRadius: 20,
-      },
-      android: {
-        elevation: 18,
-      },
-    }),
+    borderWidth: 3,
+    borderColor: colors.primary,
+    ...shadows.lg,
   },
 
   logo: {
-    width: '85%',
-    height: '85%',
+    width: '70%',
+    height: '70%',
   },
 
   brandTitle: {
-    fontSize: Math.min(width * 0.16, 72),
-    fontWeight: '900',
-    color: '#DC2626',
-    letterSpacing: 8,
-    marginBottom: 20,
+    fontSize: typography.fontSize['5xl'],
+    fontWeight: typography.fontWeight.black,
+    color: colors.primary,
+    letterSpacing: 3,
+    marginBottom: spacing.md,
     textAlign: 'center',
-    textShadowColor: 'rgba(220, 38, 38, 0.4)',
-    textShadowOffset: { width: 3, height: 3 },
-    textShadowRadius: 6,
-    lineHeight: Math.min(width * 0.18, 80),
   },
 
   brandSubtitle: {
-    fontSize: Math.min(width * 0.08, 32),
-    fontWeight: '800',
-    color: '#DC2626',
-    letterSpacing: 3,
+    fontSize: typography.fontSize.lg,
+    fontWeight: typography.fontWeight.semibold,
+    color: colors.textSecondary,
+    letterSpacing: 1,
     textAlign: 'center',
-    opacity: 0.95,
-    lineHeight: Math.min(width * 0.1, 40),
+    opacity: 0.9,
   },
 
   centerSection: {
@@ -675,263 +572,215 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     width: '100%',
+    paddingVertical: spacing['3xl'],
   },
 
   bottomSection: {
     alignItems: 'center',
     width: '100%',
-    paddingBottom: 20,
+    paddingBottom: spacing.xl,
   },
 
   instructionText: {
-    fontSize: Math.min(width * 0.06, 24),
-    fontWeight: '700',
-    color: '#DC2626',
-    letterSpacing: 2,
-    opacity: 0.85,
+    fontSize: typography.fontSize.base,
+    fontWeight: typography.fontWeight.medium,
+    color: colors.textSecondary,
+    letterSpacing: 0.5,
     textAlign: 'center',
   },
   
+  // PREMIUM SOS BUTTON
   panicButton: { 
-    width: Math.min(width * 0.75, 340),
-    height: Math.min(width * 0.75, 340),
-    maxWidth: 340,
-    maxHeight: 340,
-    minWidth: 220,
-    minHeight: 220,
-    borderRadius: Math.min(width * 0.75, 340) / 2,
-    backgroundColor: '#DC2626',
+    width: Math.min(width * 0.7, 280),
+    height: Math.min(width * 0.7, 280),
+    borderRadius: Math.min(width * 0.7, 280) / 2,
+    backgroundColor: colors.emergency,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 8,
-    borderColor: '#FFFFFF',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#DC2626',
-        shadowOffset: { width: 0, height: 16 },
-        shadowOpacity: 0.6,
-        shadowRadius: 24,
-      },
-      android: {
-        elevation: 20,
-      },
-    }),
+    borderWidth: 6,
+    borderColor: colors.surface,
+    ...shadows.xl,
+  },
+  
+  panicButtonInner: {
+    width: '85%',
+    height: '85%',
+    borderRadius: 9999,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   
   panicButtonText: { 
-    fontSize: Math.min(width * 0.14, 60), 
-    fontWeight: '900', 
-    color: '#FFFFFF',
-    letterSpacing: 6,
+    fontSize: typography.fontSize['4xl'],
+    fontWeight: typography.fontWeight.black,
+    color: colors.textInverse,
+    letterSpacing: 4,
     textTransform: 'uppercase',
-    textShadowColor: 'rgba(0, 0, 0, 0.4)',
-    textShadowOffset: { width: 3, height: 3 },
-    textShadowRadius: 6,
   },
   
+  // PREMIUM MODAL MENU
   modalOverlay: { 
     flex: 1, 
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: colors.overlay,
     justifyContent: 'flex-end',
   },
   
   menuContainer: { 
     backgroundColor: colors.surface,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: borderRadius['2xl'],
+    borderTopRightRadius: borderRadius['2xl'],
     maxHeight: height * 0.88,
-    paddingBottom: Platform.OS === 'ios' ? 34 : 20,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: -10 },
-        shadowOpacity: 0.3,
-        shadowRadius: 20,
-      },
-      android: {
-        elevation: 25,
-      },
-    }),
+    paddingBottom: Platform.OS === 'ios' ? 34 : spacing.lg,
+    ...shadows.xl,
   },
   
   menuHeader: { 
     flexDirection: 'row', 
     justifyContent: 'space-between', 
     alignItems: 'center',
-    paddingHorizontal: 28,
-    paddingTop: 24,
-    paddingBottom: 20,
-    borderBottomWidth: 2,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.lg,
+    borderBottomWidth: 1,
     borderBottomColor: colors.border,
-    backgroundColor: '#FEE2E2',
   },
   
   menuTitle: { 
-    fontSize: 28, 
-    fontWeight: '900', 
-    color: '#DC2626',
-    letterSpacing: 1,
+    fontSize: typography.fontSize['3xl'],
+    fontWeight: typography.fontWeight.black,
+    color: colors.text,
+    letterSpacing: 0.5,
   },
   
   closeButton: { 
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 10,
-    backgroundColor: colors.surface,
-    borderWidth: 2,
-    borderColor: '#DC2626',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.base,
+    backgroundColor: colors.surfaceMuted,
   },
   
   closeButtonText: { 
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#DC2626',
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.semibold,
+    color: colors.textSecondary,
   },
   
   menuScroll: { 
-    paddingHorizontal: 24,
-    paddingTop: 24,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.lg,
   },
 
   sectionTitle: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: colors.textSecondary,
-    letterSpacing: 1.5,
-    marginTop: 24,
-    marginBottom: 14,
-    marginLeft: 6,
+    fontSize: typography.fontSize.xs,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.textTertiary,
+    letterSpacing: 1.2,
+    marginTop: spacing.xl,
+    marginBottom: spacing.md,
+    marginLeft: spacing.xs,
     textTransform: 'uppercase',
   },
   
   menuItem: { 
     flexDirection: 'row', 
     alignItems: 'center',
-    paddingVertical: 18,
-    paddingHorizontal: 18,
-    borderRadius: 14,
-    marginBottom: 10,
+    paddingVertical: spacing.base,
+    paddingHorizontal: spacing.base,
+    borderRadius: borderRadius.md,
+    marginBottom: spacing.sm,
     backgroundColor: colors.surface,
-    borderWidth: 2,
-    borderColor: colors.border,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    ...shadows.sm,
   },
 
   activeMenuItem: {
-    backgroundColor: '#FEE2E2',
-    borderColor: '#DC2626',
-    borderWidth: 3,
+    backgroundColor: colors.primarySoft,
+    borderColor: colors.primaryLight,
   },
   
   iconCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 44,
+    height: 44,
+    borderRadius: borderRadius.base,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 18,
-    borderWidth: 2,
-    borderColor: 'rgba(0, 0, 0, 0.1)',
+    marginRight: spacing.md,
   },
 
   iconHome: {
-    backgroundColor: '#FEE2E2',
-    borderColor: '#DC2626',
+    backgroundColor: colors.primarySoft,
   },
 
   iconMap: {
-    backgroundColor: '#DBEAFE',
-    borderColor: '#3B82F6',
+    backgroundColor: colors.infoSoft,
   },
 
   iconContacts: {
-    backgroundColor: '#DBEAFE',
-    borderColor: '#3B82F6',
+    backgroundColor: colors.infoSoft,
   },
 
   iconAlert: {
-    backgroundColor: '#DBEAFE',
-    borderColor: '#3B82F6',
+    backgroundColor: colors.successSoft,
   },
 
   iconJourney: {
-    backgroundColor: '#DBEAFE',
-    borderColor: '#3B82F6',
+    backgroundColor: colors.successSoft,
   },
 
   iconFakeCall: {
-    backgroundColor: '#DBEAFE',
-    borderColor: '#3B82F6',
+    backgroundColor: colors.warningSoft,
   },
 
   iconSettings: {
-    backgroundColor: '#FEF3C7',
-    borderColor: '#F59E0B',
+    backgroundColor: colors.surfaceMuted,
   },
 
   iconGuide: {
-    backgroundColor: '#FEF3C7',
-    borderColor: '#F59E0B',
+    backgroundColor: colors.surfaceMuted,
   },
 
   iconFaq: {
-    backgroundColor: '#FEF3C7',
-    borderColor: '#F59E0B',
+    backgroundColor: colors.surfaceMuted,
   },
 
   iconFeedback: {
-    backgroundColor: '#FEF3C7',
-    borderColor: '#F59E0B',
+    backgroundColor: colors.surfaceMuted,
   },
   
   iconDanger: {
-    backgroundColor: '#FEE2E2',
-    borderColor: '#DC2626',
+    backgroundColor: colors.dangerLight,
   },
   
   iconPrimary: {
-    backgroundColor: colors.accentSoft,
-    borderColor: colors.accent,
+    backgroundColor: colors.primarySoft,
   },
   
   iconSuccess: {
     backgroundColor: colors.successSoft,
-    borderColor: colors.success,
   },
   
   iconWarning: {
     backgroundColor: colors.warningSoft,
-    borderColor: colors.warning,
   },
   
   iconInfo: {
-    backgroundColor: '#DBEAFE',
-    borderColor: '#3B82F6',
+    backgroundColor: colors.infoSoft,
   },
   
   iconNeutral: {
     backgroundColor: colors.surfaceMuted,
-    borderColor: colors.border,
   },
   
   iconLogout: {
-    backgroundColor: '#FEE2E2',
-    borderColor: '#DC2626',
+    backgroundColor: colors.dangerLight,
   },
   
   iconText: {
-    fontSize: 10,
-    fontWeight: '900',
+    fontSize: typography.fontSize.xs,
+    fontWeight: typography.fontWeight.black,
     color: colors.text,
     letterSpacing: 0.3,
   },
@@ -941,15 +790,15 @@ const styles = StyleSheet.create({
   },
   
   menuItemTitle: { 
-    fontSize: 17, 
-    fontWeight: '700', 
+    fontSize: typography.fontSize.base,
+    fontWeight: typography.fontWeight.semibold,
     color: colors.text,
     marginBottom: 2,
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
   },
   
   menuItemDesc: { 
-    fontSize: 13, 
+    fontSize: typography.fontSize.sm,
     color: colors.textSecondary,
     lineHeight: 18,
   },
@@ -957,52 +806,191 @@ const styles = StyleSheet.create({
   menuDivider: { 
     height: 1, 
     backgroundColor: colors.border,
-    marginVertical: 16,
+    marginVertical: spacing.base,
   },
   
   signOutItem: { 
-    borderColor: '#DC2626',
-    backgroundColor: '#FEE2E2',
-    borderWidth: 3,
-    marginTop: 12,
-    marginBottom: 24,
+    borderColor: colors.danger,
+    backgroundColor: colors.dangerLight,
+    marginTop: spacing.md,
+    marginBottom: spacing.xl,
   },
   
   signOutText: {
-    color: '#DC2626',
-    fontWeight: '800',
+    color: colors.danger,
+    fontWeight: typography.fontWeight.bold,
   },
 
-  page: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 52, paddingBottom: 40 },
-  header: { alignItems: 'center', marginBottom: 28 },
+  // AUTH SCREENS
+  page: { 
+    flexGrow: 1, 
+    paddingHorizontal: spacing.xl, 
+    paddingTop: spacing['4xl'], 
+    paddingBottom: spacing['3xl'],
+  },
+  
+  header: { 
+    alignItems: 'center', 
+    marginBottom: spacing['2xl'],
+  },
+  
   brandMark: {
-    width: 64, height: 64, borderRadius: 32, borderWidth: 3,
-    borderColor: colors.accent, alignItems: 'center', justifyContent: 'center', marginBottom: 20,
+    width: 80, 
+    height: 80, 
+    borderRadius: borderRadius.xl, 
+    borderWidth: 3,
+    borderColor: colors.primary, 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    marginBottom: spacing.xl,
+    backgroundColor: colors.surface,
+    ...shadows.md,
   },
-  brandMarkInner: { width: 30, height: 30, borderRadius: 15, backgroundColor: colors.accent },
-  eyebrow: { color: colors.accent, fontSize: 11, fontWeight: '700', letterSpacing: 2 },
-  title: { color: colors.text, fontSize: 36, fontWeight: '800', marginTop: 6 },
-  subtitle: { color: colors.textSecondary, fontSize: 15, lineHeight: 22, marginTop: 8, textAlign: 'center' },
-  card: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 20, borderWidth: 1, padding: 22 },
-  cardTitle: { color: colors.text, fontSize: 22, fontWeight: '700' },
-  body: { color: colors.textSecondary, fontSize: 14, lineHeight: 21, marginTop: 8 },
-  warning: { color: colors.warning, backgroundColor: colors.warningSoft, borderRadius: 10, lineHeight: 20, marginTop: 16, overflow: 'hidden', padding: 12 },
-  label: { color: colors.text, fontSize: 13, fontWeight: '600', marginBottom: 7, marginTop: 18 },
+  
+  brandMarkInner: { 
+    width: 40, 
+    height: 40, 
+    borderRadius: borderRadius.base, 
+    backgroundColor: colors.primary,
+  },
+  
+  eyebrow: { 
+    color: colors.primary, 
+    fontSize: typography.fontSize.xs, 
+    fontWeight: typography.fontWeight.bold, 
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+  },
+  
+  title: { 
+    color: colors.text, 
+    fontSize: typography.fontSize['4xl'], 
+    fontWeight: typography.fontWeight.black, 
+    marginTop: spacing.sm,
+  },
+  
+  subtitle: { 
+    color: colors.textSecondary, 
+    fontSize: typography.fontSize.base, 
+    lineHeight: typography.lineHeight.relaxed * typography.fontSize.base, 
+    marginTop: spacing.md, 
+    textAlign: 'center',
+  },
+  
+  card: { 
+    backgroundColor: colors.surface, 
+    borderColor: colors.border, 
+    borderRadius: borderRadius.xl, 
+    borderWidth: 1, 
+    padding: spacing.xl,
+    ...shadows.base,
+  },
+  
+  cardTitle: { 
+    color: colors.text, 
+    fontSize: typography.fontSize.xl, 
+    fontWeight: typography.fontWeight.bold,
+  },
+  
+  body: { 
+    color: colors.textSecondary, 
+    fontSize: typography.fontSize.sm, 
+    lineHeight: typography.lineHeight.relaxed * typography.fontSize.sm, 
+    marginTop: spacing.sm,
+  },
+  
+  warning: { 
+    color: colors.warning, 
+    backgroundColor: colors.warningSoft, 
+    borderRadius: borderRadius.base, 
+    lineHeight: typography.lineHeight.normal * typography.fontSize.sm, 
+    marginTop: spacing.base, 
+    overflow: 'hidden', 
+    padding: spacing.md,
+  },
+  
+  label: { 
+    color: colors.text, 
+    fontSize: typography.fontSize.sm, 
+    fontWeight: typography.fontWeight.semibold, 
+    marginBottom: spacing.sm, 
+    marginTop: spacing.lg,
+  },
+  
   input: {
-    backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 10,
-    borderWidth: 1, color: colors.text, fontSize: 16, minHeight: 50, paddingHorizontal: 14,
+    backgroundColor: colors.surface, 
+    borderColor: colors.border, 
+    borderRadius: borderRadius.base,
+    borderWidth: 1, 
+    color: colors.text, 
+    fontSize: typography.fontSize.base, 
+    minHeight: 50, 
+    paddingHorizontal: spacing.base,
   },
-  message: { color: colors.danger, fontSize: 14, lineHeight: 20, marginTop: 14 },
-  infoMessage: { color: colors.textSecondary },
+  
+  message: { 
+    color: colors.danger, 
+    fontSize: typography.fontSize.sm, 
+    lineHeight: typography.lineHeight.normal * typography.fontSize.sm, 
+    marginTop: spacing.md,
+  },
+  
+  infoMessage: { 
+    color: colors.textSecondary,
+  },
+  
   primaryButton: {
-    alignItems: 'center', backgroundColor: colors.accent, borderRadius: 12,
-    justifyContent: 'center', marginTop: 22, minHeight: 52,
+    alignItems: 'center', 
+    backgroundColor: colors.primary, 
+    borderRadius: borderRadius.md,
+    justifyContent: 'center', 
+    marginTop: spacing.xl, 
+    minHeight: 52,
+    ...shadows.md,
   },
-  disabledButton: { opacity: 0.5 },
-  primaryButtonText: { color: colors.surface, fontSize: 16, fontWeight: '700' },
-  textButton: { alignItems: 'center', marginTop: 18, paddingVertical: 8 },
-  textButtonText: { color: colors.accent, fontSize: 14, fontWeight: '600', textAlign: 'center' },
-  infoCard: { backgroundColor: colors.surfaceMuted, borderRadius: 16, marginTop: 18, padding: 18 },
-  infoTitle: { color: colors.text, fontSize: 16, fontWeight: '700' },
-  aboutLink: { alignSelf: 'center', color: colors.accent, fontSize: 14, fontWeight: '600', marginTop: 26, padding: 8 },
+  
+  disabledButton: { 
+    opacity: 0.5,
+  },
+  
+  primaryButtonText: { 
+    color: colors.textInverse, 
+    fontSize: typography.fontSize.base, 
+    fontWeight: typography.fontWeight.bold,
+  },
+  
+  textButton: { 
+    alignItems: 'center', 
+    marginTop: spacing.lg, 
+    paddingVertical: spacing.sm,
+  },
+  
+  textButtonText: { 
+    color: colors.primary, 
+    fontSize: typography.fontSize.sm, 
+    fontWeight: typography.fontWeight.semibold, 
+    textAlign: 'center',
+  },
+  
+  infoCard: { 
+    backgroundColor: colors.surfaceMuted, 
+    borderRadius: borderRadius.lg, 
+    marginTop: spacing.lg, 
+    padding: spacing.lg,
+  },
+  
+  infoTitle: { 
+    color: colors.text, 
+    fontSize: typography.fontSize.base, 
+    fontWeight: typography.fontWeight.bold,
+  },
+  
+  aboutLink: { 
+    alignSelf: 'center', 
+    color: colors.primary, 
+    fontSize: typography.fontSize.sm, 
+    fontWeight: typography.fontWeight.semibold, 
+    marginTop: spacing['2xl'], 
+    padding: spacing.sm,
+  },
 });
