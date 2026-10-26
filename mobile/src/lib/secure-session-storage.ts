@@ -28,10 +28,10 @@ async function readSecureValue(key: string, marker: string): Promise<string> {
     Array.from({ length: chunks.count }, (_, index) =>
       SecureStore.getItemAsync(`${key}.pr.${chunks.version}.${index}`)),
   );
-  if (values.some((chunk) => chunk === null)) {
+  if (values.some((chunk: string | null) => chunk === null)) {
     throw new Error('Secure sign-in storage is incomplete. Sign in again to restore your session.');
   }
-  return values.map((chunk) => {
+  return values.map((chunk: string | null) => {
     if (chunk === null) throw new Error('Secure sign-in storage is incomplete. Sign in again to restore your session.');
     return chunk;
   }).join('');
