@@ -163,8 +163,10 @@ export default function HomeScreen() {
     >
       {session ? (
         <View style={styles.mainScreen}>
-          <View style={styles.gradientOverlay} />
+          {/* Navy gradient header */}
+          <View style={styles.headerGradient} />
 
+          {/* Hamburger Menu Button */}
           <Pressable
             style={styles.hamburgerButton}
             onPress={() => setMenuOpen(true)}
@@ -176,8 +178,13 @@ export default function HomeScreen() {
             <View style={styles.hamburgerLine} />
           </Pressable>
 
-          <View style={styles.fullScreenContainer}>
-            <View style={styles.topSection}>
+          <ScrollView 
+            style={styles.scrollContainer}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* App Logo and Branding */}
+            <View style={styles.brandingSection}>
               <View style={styles.logoContainer}>
                 <Image 
                   source={require('../assets/icon.png')} 
@@ -185,28 +192,75 @@ export default function HomeScreen() {
                   resizeMode="contain"
                 />
               </View>
-              <Text style={styles.brandTitle}>PANIC RING</Text>
-              <Text style={styles.brandSubtitle}>Your Safety, Always Protected</Text>
+              <Text style={styles.appName}>PANIC RING</Text>
+              <Text style={styles.tagline}>Your Safety, Always Protected</Text>
             </View>
 
-            <View style={styles.centerSection}>
+            {/* Emergency SOS Button - Main Feature */}
+            <View style={styles.sosSection}>
+              <Text style={styles.sosLabel}>Emergency SOS</Text>
               <Pressable
-                style={styles.panicButton}
+                style={styles.sosButton}
                 onPress={handlePanicPress}
                 accessibilityLabel="Emergency SOS button"
                 accessibilityRole="button"
-                accessibilityHint="Press to share your location and alert trusted contacts"
+                accessibilityHint="Tap to activate emergency alert and share location"
               >
-                <View style={styles.panicButtonInner}>
-                  <Text style={styles.panicButtonText}>SOS</Text>
+                <View style={styles.sosButtonInner}>
+                  <View style={styles.sosButtonPulse} />
+                  <Text style={styles.sosButtonText}>SOS</Text>
+                  <Text style={styles.sosButtonSubtext}>TAP TO ALERT</Text>
                 </View>
               </Pressable>
+              <Text style={styles.sosHint}>Immediately alerts your trusted contacts</Text>
             </View>
 
-            <View style={styles.bottomSection}>
-              <Text style={styles.instructionText}>Tap to activate emergency alert</Text>
+            {/* Quick Actions */}
+            <View style={styles.quickActionsSection}>
+              <Text style={styles.sectionTitle}>QUICK ACCESS</Text>
+              <View style={styles.quickActionsGrid}>
+                <Pressable 
+                  style={styles.quickActionCard}
+                  onPress={() => navigateToFeature('/live-location')}
+                >
+                  <View style={[styles.quickActionIcon, styles.iconBlue]}>
+                    <Text style={styles.quickActionIconText}>MAP</Text>
+                  </View>
+                  <Text style={styles.quickActionTitle}>Live Location</Text>
+                </Pressable>
+
+                <Pressable 
+                  style={styles.quickActionCard}
+                  onPress={() => navigateToFeature('/circle')}
+                >
+                  <View style={[styles.quickActionIcon, styles.iconGreen]}>
+                    <Text style={styles.quickActionIconText}>CIRCLE</Text>
+                  </View>
+                  <Text style={styles.quickActionTitle}>Trusted Contacts</Text>
+                </Pressable>
+
+                <Pressable 
+                  style={styles.quickActionCard}
+                  onPress={() => navigateToFeature('/notes')}
+                >
+                  <View style={[styles.quickActionIcon, styles.iconPurple]}>
+                    <Text style={styles.quickActionIconText}>NOTES</Text>
+                  </View>
+                  <Text style={styles.quickActionTitle}>Private Notes</Text>
+                </Pressable>
+
+                <Pressable 
+                  style={styles.quickActionCard}
+                  onPress={() => navigateToFeature('/emergency')}
+                >
+                  <View style={[styles.quickActionIcon, styles.iconOrange]}>
+                    <Text style={styles.quickActionIconText}>CALL</Text>
+                  </View>
+                  <Text style={styles.quickActionTitle}>Emergency Services</Text>
+                </Pressable>
+              </View>
             </View>
-          </View>
+          </ScrollView>
 
           <Modal
             animationType="slide"
@@ -474,25 +528,23 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.background },
   
-  // PREMIUM HOME SCREEN
+  // MAIN HOME SCREEN
   mainScreen: { 
     flex: 1, 
     backgroundColor: colors.background,
-    position: 'relative',
   },
 
-  // Subtle gradient overlay effect
-  gradientOverlay: {
+  headerGradient: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    height: height * 0.4,
-    backgroundColor: colors.primarySoft,
-    opacity: 0.5,
+    height: height * 0.25,
+    backgroundColor: colors.primary,
+    opacity: 0.05,
   },
 
-  // Premium Hamburger Menu
+  // HAMBURGER MENU - Premium Navy
   hamburgerButton: {
     position: 'absolute',
     top: Platform.OS === 'ios' ? 60 : 50,
@@ -514,113 +566,191 @@ const styles = StyleSheet.create({
     height: 3,
     backgroundColor: colors.primary,
     marginVertical: 3,
-    borderRadius: 2,
-  },
-  
-  fullScreenContainer: {
-    flex: 1,
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: spacing['4xl'],
-    paddingHorizontal: spacing.xl,
+    borderRadius: borderRadius.sm,
   },
 
-  topSection: {
+  scrollContainer: {
+    flex: 1,
+  },
+
+  scrollContent: {
+    paddingTop: Platform.OS === 'ios' ? 120 : 110,
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing['5xl'],
+  },
+
+  // BRANDING SECTION
+  brandingSection: {
     alignItems: 'center',
-    width: '100%',
-    paddingTop: spacing['2xl'],
+    marginBottom: spacing['3xl'],
   },
 
   logoContainer: {
-    width: 100,
-    height: 100,
-    marginBottom: spacing.xl,
-    borderRadius: borderRadius['2xl'],
+    width: 80,
+    height: 80,
+    marginBottom: spacing.lg,
+    borderRadius: borderRadius.xl,
     backgroundColor: colors.surface,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 3,
+    borderWidth: 2,
     borderColor: colors.primary,
-    ...shadows.lg,
+    ...shadows.base,
   },
 
   logo: {
-    width: '70%',
-    height: '70%',
+    width: '65%',
+    height: '65%',
   },
 
-  brandTitle: {
-    fontSize: typography.fontSize['5xl'],
+  appName: {
+    fontSize: typography.fontSize['3xl'],
     fontWeight: typography.fontWeight.black,
     color: colors.primary,
-    letterSpacing: 3,
-    marginBottom: spacing.md,
-    textAlign: 'center',
+    letterSpacing: 2,
+    marginBottom: spacing.xs,
   },
 
-  brandSubtitle: {
-    fontSize: typography.fontSize.lg,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textSecondary,
-    letterSpacing: 1,
-    textAlign: 'center',
-    opacity: 0.9,
-  },
-
-  centerSection: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: '100%',
-    paddingVertical: spacing['3xl'],
-  },
-
-  bottomSection: {
-    alignItems: 'center',
-    width: '100%',
-    paddingBottom: spacing.xl,
-  },
-
-  instructionText: {
+  tagline: {
     fontSize: typography.fontSize.base,
     fontWeight: typography.fontWeight.medium,
     color: colors.textSecondary,
     letterSpacing: 0.5,
-    textAlign: 'center',
   },
-  
-  // PREMIUM SOS BUTTON
-  panicButton: { 
-    width: Math.min(width * 0.7, 280),
-    height: Math.min(width * 0.7, 280),
-    borderRadius: Math.min(width * 0.7, 280) / 2,
-    backgroundColor: colors.emergency,
+
+  // SOS SECTION - Premium Red Emergency Button
+  sosSection: {
+    alignItems: 'center',
+    marginBottom: spacing['4xl'],
+    paddingVertical: spacing.xl,
+  },
+
+  sosLabel: {
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.textSecondary,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    marginBottom: spacing.lg,
+  },
+
+  sosButton: {
+    width: Math.min(width * 0.65, 240),
+    height: Math.min(width * 0.65, 240),
+    borderRadius: Math.min(width * 0.65, 240) / 2,
+    backgroundColor: colors.danger,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 6,
-    borderColor: colors.surface,
+    marginBottom: spacing.lg,
     ...shadows.xl,
   },
-  
-  panicButtonInner: {
-    width: '85%',
-    height: '85%',
+
+  sosButtonInner: {
+    width: '88%',
+    height: '88%',
     borderRadius: 9999,
-    borderWidth: 2,
+    borderWidth: 3,
     borderColor: 'rgba(255, 255, 255, 0.3)',
     justifyContent: 'center',
     alignItems: 'center',
+    position: 'relative',
   },
-  
-  panicButtonText: { 
-    fontSize: typography.fontSize['4xl'],
+
+  sosButtonPulse: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    borderRadius: 9999,
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+
+  sosButtonText: {
+    fontSize: typography.fontSize['5xl'],
     fontWeight: typography.fontWeight.black,
     color: colors.textInverse,
-    letterSpacing: 4,
+    letterSpacing: 6,
+    marginBottom: spacing.xs,
+  },
+
+  sosButtonSubtext: {
+    fontSize: typography.fontSize.xs,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.textInverse,
+    letterSpacing: 2,
+    opacity: 0.9,
+  },
+
+  sosHint: {
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.medium,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    paddingHorizontal: spacing['2xl'],
+  },
+
+  // QUICK ACTIONS
+  quickActionsSection: {
+    marginBottom: spacing.xl,
+  },
+
+  sectionTitle: {
+    fontSize: typography.fontSize.xs,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.textTertiary,
+    letterSpacing: 1.5,
+    marginBottom: spacing.lg,
     textTransform: 'uppercase',
   },
-  
-  // PREMIUM MODAL MENU
+
+  quickActionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.md,
+    justifyContent: 'space-between',
+  },
+
+  quickActionCard: {
+    width: (width - spacing.xl * 2 - spacing.md) / 2,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...shadows.base,
+  },
+
+  quickActionIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: borderRadius.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+
+  iconBlue: { backgroundColor: colors.infoSoft },
+  iconGreen: { backgroundColor: colors.successSoft },
+  iconPurple: { backgroundColor: '#F3E8FF' },
+  iconOrange: { backgroundColor: colors.warningSoft },
+
+  quickActionIconText: {
+    fontSize: typography.fontSize.xs,
+    fontWeight: typography.fontWeight.black,
+    color: colors.text,
+    letterSpacing: 0.5,
+  },
+
+  quickActionTitle: {
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.semibold,
+    color: colors.text,
+    textAlign: 'center',
+  },
+
+  // MENU MODAL - Premium Design
   modalOverlay: { 
     flex: 1, 
     backgroundColor: colors.overlay,
@@ -645,12 +775,13 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.lg,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
+    backgroundColor: colors.surface,
   },
   
   menuTitle: { 
     fontSize: typography.fontSize['3xl'],
     fontWeight: typography.fontWeight.black,
-    color: colors.text,
+    color: colors.primary,
     letterSpacing: 0.5,
   },
   
@@ -699,6 +830,7 @@ const styles = StyleSheet.create({
   activeMenuItem: {
     backgroundColor: colors.primarySoft,
     borderColor: colors.primaryLight,
+    borderWidth: 2,
   },
   
   iconCircle: {
@@ -710,73 +842,23 @@ const styles = StyleSheet.create({
     marginRight: spacing.md,
   },
 
-  iconHome: {
-    backgroundColor: colors.primarySoft,
-  },
-
-  iconMap: {
-    backgroundColor: colors.infoSoft,
-  },
-
-  iconContacts: {
-    backgroundColor: colors.infoSoft,
-  },
-
-  iconAlert: {
-    backgroundColor: colors.successSoft,
-  },
-
-  iconJourney: {
-    backgroundColor: colors.successSoft,
-  },
-
-  iconFakeCall: {
-    backgroundColor: colors.warningSoft,
-  },
-
-  iconSettings: {
-    backgroundColor: colors.surfaceMuted,
-  },
-
-  iconGuide: {
-    backgroundColor: colors.surfaceMuted,
-  },
-
-  iconFaq: {
-    backgroundColor: colors.surfaceMuted,
-  },
-
-  iconFeedback: {
-    backgroundColor: colors.surfaceMuted,
-  },
-  
-  iconDanger: {
-    backgroundColor: colors.dangerLight,
-  },
-  
-  iconPrimary: {
-    backgroundColor: colors.primarySoft,
-  },
-  
-  iconSuccess: {
-    backgroundColor: colors.successSoft,
-  },
-  
-  iconWarning: {
-    backgroundColor: colors.warningSoft,
-  },
-  
-  iconInfo: {
-    backgroundColor: colors.infoSoft,
-  },
-  
-  iconNeutral: {
-    backgroundColor: colors.surfaceMuted,
-  },
-  
-  iconLogout: {
-    backgroundColor: colors.dangerLight,
-  },
+  iconHome: { backgroundColor: colors.primarySoft },
+  iconMap: { backgroundColor: colors.infoSoft },
+  iconContacts: { backgroundColor: colors.successSoft },
+  iconAlert: { backgroundColor: colors.warningSoft },
+  iconJourney: { backgroundColor: '#F3E8FF' },
+  iconFakeCall: { backgroundColor: colors.dangerLight },
+  iconSettings: { backgroundColor: colors.surfaceMuted },
+  iconGuide: { backgroundColor: colors.surfaceMuted },
+  iconFaq: { backgroundColor: colors.surfaceMuted },
+  iconFeedback: { backgroundColor: colors.surfaceMuted },
+  iconDanger: { backgroundColor: colors.dangerLight },
+  iconPrimary: { backgroundColor: colors.primarySoft },
+  iconSuccess: { backgroundColor: colors.successSoft },
+  iconWarning: { backgroundColor: colors.warningSoft },
+  iconInfo: { backgroundColor: colors.infoSoft },
+  iconNeutral: { backgroundColor: colors.surfaceMuted },
+  iconLogout: { backgroundColor: colors.dangerLight },
   
   iconText: {
     fontSize: typography.fontSize.xs,
@@ -785,9 +867,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   
-  menuTextContainer: { 
-    flex: 1 
-  },
+  menuTextContainer: { flex: 1 },
   
   menuItemTitle: { 
     fontSize: typography.fontSize.base,
@@ -812,6 +892,7 @@ const styles = StyleSheet.create({
   signOutItem: { 
     borderColor: colors.danger,
     backgroundColor: colors.dangerLight,
+    borderWidth: 2,
     marginTop: spacing.md,
     marginBottom: spacing.xl,
   },
@@ -821,7 +902,7 @@ const styles = StyleSheet.create({
     fontWeight: typography.fontWeight.bold,
   },
 
-  // AUTH SCREENS
+  // AUTH SCREENS - Premium Navy
   page: { 
     flexGrow: 1, 
     paddingHorizontal: spacing.xl, 
@@ -838,7 +919,7 @@ const styles = StyleSheet.create({
     width: 80, 
     height: 80, 
     borderRadius: borderRadius.xl, 
-    borderWidth: 3,
+    borderWidth: 2,
     borderColor: colors.primary, 
     alignItems: 'center', 
     justifyContent: 'center', 
