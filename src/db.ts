@@ -55,7 +55,6 @@ export async function sendEmailAuthOtp(email: string, purpose: 'signup' | 'login
 }
 
 export async function sendPhoneAuthOtp(phone: string, purpose: 'signup' | 'login') {
-    // Normalize phone number (remove spaces, ensure + prefix)
     const normalizedPhone = phone.replace(/\s/g, '').startsWith('+') ? phone.replace(/\s/g, '') : `+${phone.replace(/\s/g, '')}`;
     
     if (!DB_CONFIGURED)
@@ -188,13 +187,11 @@ export async function signInWithGoogle() {
 export async function isGoogleAuthEnabled(): Promise<boolean> {
     if (!DB_CONFIGURED) return false;
     try {
-        // Try to check if Google provider is available
-        // This is a simple check - if it fails, we know it's not enabled
         const testResult = await getClient().auth.signInWithOAuth({
             provider: 'google',
             options: { 
                 redirectTo: getFrontendRedirectUrl(FRONTEND_URL, window.location.origin),
-                skipBrowserRedirect: true // Don't actually redirect
+                skipBrowserRedirect: true
             },
         });
         return !testResult.error || !/unsupported provider|not enabled/i.test(testResult.error.message || '');
@@ -421,7 +418,6 @@ export async function fetchRecentAlerts(limit = 10) {
     }
 }
 
-// PIN Authentication Functions
 const EDGE_FUNCTION_URL = '';
 
 export async function setupPinsInCloud(

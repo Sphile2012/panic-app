@@ -45,7 +45,7 @@ export function renderSafetyPlan(root) {
         };
         store.saveSafetyPlan(plan);
         const btn = root.querySelector('#btn-save-plan');
-        btn.textContent = 'Saved ✓';
+        btn.textContent = 'Saved';
         setTimeout(() => { btn.textContent = 'Save'; }, 1500);
     });
 }

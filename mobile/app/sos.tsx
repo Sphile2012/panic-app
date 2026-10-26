@@ -100,7 +100,7 @@ export default function SOSScreen() {
         clearInterval(interval);
         void activateAlert();
       }
-    }, 30); // 1.5 seconds total (30ms * 50 steps)
+    }, 30);
 
     return () => clearInterval(interval);
   }
@@ -218,13 +218,11 @@ export default function SOSScreen() {
                   )}
                   {deliveryStatuses[contact.id] === 'delivered' && (
                     <>
-                      <Text style={styles.statusIcon}>✓</Text>
                       <Text style={[styles.statusText, styles.statusDelivered]}>Delivered</Text>
                     </>
                   )}
                   {deliveryStatuses[contact.id] === 'failed' && (
                     <>
-                      <Text style={styles.statusIcon}>✗</Text>
                       <Text style={[styles.statusText, styles.statusFailed]}>Failed to deliver</Text>
                     </>
                   )}
@@ -474,7 +472,6 @@ const styles = StyleSheet.create({
   },
   statusName: { color: colors.text, fontSize: typography.fontSize.base, fontWeight: typography.fontWeight.semibold },
   statusBadge: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  statusIcon: { fontSize: typography.fontSize.base },
   statusText: { fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.semibold },
   statusSending: { color: colors.warning },
   statusDelivered: { color: colors.success },

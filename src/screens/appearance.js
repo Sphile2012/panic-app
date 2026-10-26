@@ -21,7 +21,6 @@ export function renderAppearance(root) {
               title="${c.label}"
               aria-pressed="${current.accentId === c.id}"
               aria-label="${c.label}${current.accentId === c.id ? ' (selected)' : ''}">
-              ${current.accentId === c.id ? '✓' : ''}
             </button>
           `).join('')}
         </div>
@@ -55,7 +54,7 @@ export function renderAppearance(root) {
               <span class="ap-disguise-label">${d.label}</span>
               <span class="ap-disguise-desc">${d.description}</span>
               ${current.disguise === d.id
-        ? '<span class="ap-disguise-check">✓ Active</span>'
+        ? '<span class="ap-disguise-check">Active</span>'
         : ''}
             </button>
           `).join('')}
@@ -119,7 +118,7 @@ export function renderAppearance(root) {
                 const active = b.dataset['accent'] === ap.accentId;
                 b.classList.toggle('ap-colour-swatch--active', active);
                 b.setAttribute('aria-pressed', String(active));
-                b.textContent = active ? '✓' : '';
+                b.textContent = '';
                 b.setAttribute('aria-label', ACCENT_COLOURS.find(c => c.id === b.dataset['accent'])?.label ?? '');
                 if (active)
                     b.setAttribute('aria-label', b.getAttribute('aria-label') + ' (selected)');
@@ -143,7 +142,7 @@ export function renderAppearance(root) {
                 if (active && !existing) {
                     const badge = document.createElement('span');
                     badge.className = 'ap-disguise-check';
-                    badge.textContent = '✓ Active';
+                    badge.textContent = 'Active';
                     b.appendChild(badge);
                 }
                 else if (!active && existing) {

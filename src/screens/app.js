@@ -75,7 +75,7 @@ export function renderApp(root) {
         <div class="checkin-bar-inner">
           <span class="checkin-label" id="checkin-label">Check-in active</span>
           <span class="checkin-countdown" id="checkin-countdown"></span>
-          <button class="checkin-cancel" id="checkin-cancel" aria-label="Cancel check-in">Cancel ✕</button>
+          <button class="checkin-cancel" id="checkin-cancel" aria-label="Cancel check-in">Cancel</button>
         </div>
       </div>
 

@@ -183,7 +183,6 @@ export function renderSettings(root: HTMLElement) {
 }
 
 
-// Change PIN screen with security question verification
 export function renderChangePins(root: HTMLElement) {
   const questionIds = getRecoveryQuestionIds();
   if (!questionIds || questionIds.length < 2) {
@@ -266,7 +265,6 @@ export function renderChangePins(root: HTMLElement) {
       return;
     }
 
-    // Verify security answers and change PINs
     const success = await store.changePinsWithRecovery(answer1, answer2, newPin1, newPin2);
     if (!success) {
       errorEl.textContent = 'Security answers are incorrect. Please try again.';
@@ -274,12 +272,11 @@ export function renderChangePins(root: HTMLElement) {
     }
 
     errorEl.style.color = 'var(--safe)';
-    errorEl.textContent = '✓ PINs changed successfully!';
+    errorEl.textContent = 'PINs changed successfully.';
     setTimeout(() => store.navigateTo('settings'), 1500);
   });
 }
 
-// PIN Recovery screen (Forgot PIN)
 export function renderPinRecovery(root: HTMLElement) {
   const questionIds = getRecoveryQuestionIds();
   if (!questionIds || questionIds.length < 2) {
@@ -360,7 +357,6 @@ export function renderPinRecovery(root: HTMLElement) {
       return;
     }
 
-    // Verify security answers and reset PINs
     const success = await store.recoverPinWithAnswers(answer1, answer2, newPin1, newPin2);
     if (!success) {
       errorEl.textContent = 'Security answers are incorrect. Please try again.';
@@ -368,7 +364,7 @@ export function renderPinRecovery(root: HTMLElement) {
     }
 
     errorEl.style.color = 'var(--safe)';
-    errorEl.textContent = '✓ PINs reset successfully! You can now login.';
+    errorEl.textContent = 'PINs reset successfully. You can now log in.';
     setTimeout(() => store.navigateTo('calculator'), 2000);
   });
 }

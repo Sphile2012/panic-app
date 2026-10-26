@@ -31,7 +31,7 @@ export function renderBudget(root) {
           inputmode="numeric"
           placeholder="Amount"
           aria-label="Amount" />
-        <button class="budget-add-btn" id="budget-add" aria-label="Add">✓</button>
+        <button class="budget-add-btn" id="budget-add" aria-label="Add">Add</button>
       </div>
 
       <ul class="budget-tx-list" id="budget-tx-list">

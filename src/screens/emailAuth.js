@@ -56,7 +56,6 @@ function wireGoogleSignIn(root, errorSelector, buttonId) {
                 label.textContent = 'Continue with Google';
             return;
         }
-        // If no error and no redirect happened, it means the provider is disabled
         if (button.disabled) {
             error.textContent = 'Google Sign-In is not available. Please use email/password authentication.';
             button.disabled = false;
@@ -444,7 +443,6 @@ export function renderResetPassword(root) {
             error.textContent = formatAuthError(result.error);
             return;
         }
-        // Password updated successfully, navigate to login
         store.navigateTo('login');
     });
 }
@@ -498,7 +496,6 @@ export function renderChangePassword(root) {
         }
         submit.disabled = true;
         submit.textContent = 'Changing...';
-        // Verify current password by attempting to reauthenticate
         const authEmail = store.getState().authEmail;
         if (!authEmail) {
             error.textContent = 'Session expired. Please sign in again.';
@@ -506,7 +503,6 @@ export function renderChangePassword(root) {
             submit.textContent = 'Change password';
             return;
         }
-        // Try to sign in with current password to verify it
         const verifyResult = await signInWithPassword(authEmail, currentInput.value);
         if (verifyResult.error) {
             error.textContent = 'Current password is incorrect.';
@@ -514,7 +510,6 @@ export function renderChangePassword(root) {
             submit.textContent = 'Change password';
             return;
         }
-        // Update to new password
         const result = await updatePassword(newPasswordInput.value);
         submit.disabled = false;
         submit.textContent = 'Change password';

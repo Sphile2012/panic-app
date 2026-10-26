@@ -45,7 +45,7 @@ export default function NotesScreen() {
 
       if (error) throw error;
       setNotes(data || []);
-    } catch (error) {
+    } catch {
       Alert.alert('Error', 'Could not load notes.');
     } finally {
       setLoading(false);
@@ -76,7 +76,7 @@ export default function NotesScreen() {
       setNewContent('');
       await loadNotes();
       Alert.alert('Saved', 'Your note has been saved securely.');
-    } catch (error) {
+    } catch {
       Alert.alert('Error', 'Could not save note.');
     } finally {
       setCreating(false);
@@ -98,7 +98,7 @@ export default function NotesScreen() {
               const { error } = await client.from('notes').delete().eq('id', note.id);
               if (error) throw error;
               await loadNotes();
-            } catch (error) {
+            } catch {
               Alert.alert('Error', 'Could not delete note.');
             }
           },

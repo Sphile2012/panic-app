@@ -81,7 +81,7 @@ function renderMenu() {
           ${DISGUISE_OPTIONS.map(option => `
             <button class="side-menu-item" data-disguise="${option.id}" type="button" ${appearance.disguise === option.id ? 'aria-pressed="true"' : ''}>
               <span>${option.label}</span>
-              ${appearance.disguise === option.id ? '<span aria-hidden="true">✓</span>' : ''}
+              ${appearance.disguise === option.id ? '<span>Selected</span>' : ''}
             </button>
           `).join('')}
         </div>

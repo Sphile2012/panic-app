@@ -1105,7 +1105,6 @@ html[data-photo-background="true"] .phone-screen > .screen { background: transpa
   margin-top: 4px;
 }
 
-/* Modern location screen with full-screen map */
 .location-screen-modern {
   background: var(--bg);
   padding: 0;
@@ -5545,7 +5544,6 @@ select:focus-visible {
 }
 
 
-/* Emergency Status Screen Styles */
 .emergency-status-screen {
   background: linear-gradient(180deg, #fff5f5 0%, #fff 100%);
   gap: 16px;
@@ -5630,40 +5628,34 @@ select:focus-visible {
   box-shadow: 0 2px 8px rgba(0, 0, 0, .04);
 }
 
-.emergency-status-icon {
-  display: flex;
+.emergency-status-label {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  font-size: 1rem;
+  min-width: 64px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
   font-weight: 700;
   flex-shrink: 0;
 }
 
-.emergency-status-success .emergency-status-icon {
+.emergency-status-success .emergency-status-label {
   background: #e6f7ee;
   color: #16805b;
 }
 
-.emergency-status-pending .emergency-status-icon {
+.emergency-status-pending .emergency-status-label {
   background: #fff3e0;
   color: #f57c00;
-  animation: spin 2s linear infinite;
 }
 
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-.emergency-status-error .emergency-status-icon {
+.emergency-status-error .emergency-status-label {
   background: #ffe8ed;
   color: #d32f2f;
 }
 
-.emergency-status-inactive .emergency-status-icon {
+.emergency-status-inactive .emergency-status-label {
   background: #f5f5f5;
   color: #9e9e9e;
 }
@@ -6124,7 +6116,6 @@ select:focus-visible {
   75% { transform: translateX(8px); }
 }
 
-/* Dashboard Sections */
 .dashboard-section {
   display: flex;
   flex-direction: column;

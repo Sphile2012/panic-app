@@ -13,12 +13,6 @@ import { Link } from 'expo-router';
 import { getSupabaseClient } from '../src/lib/supabase';
 import { colors } from '../src/lib/theme';
 
-type SafetyPlanItem = {
-  id: string;
-  category: string;
-  content: string;
-};
-
 const CATEGORIES = [
   { key: 'trusted_people', label: 'Trusted People', icon: 'TC', placeholder: 'Who can I contact if I feel unsafe?' },
   { key: 'safe_places', label: 'Safe Places', icon: 'SP', placeholder: 'Where can I go if I need to leave quickly?' },
@@ -62,7 +56,7 @@ export default function SafetyPlanScreen() {
           things_to_remember: data.things_to_remember || '',
         });
       }
-    } catch (error) {
+    } catch {
       Alert.alert('Error', 'Could not load safety plan.');
     } finally {
       setLoading(false);
@@ -85,7 +79,7 @@ export default function SafetyPlanScreen() {
       if (error) throw error;
       Alert.alert('Saved', 'Your safety plan has been updated.');
       setEditingCategory(null);
-    } catch (error) {
+    } catch {
       Alert.alert('Error', 'Could not save safety plan.');
     } finally {
       setSaving(false);
@@ -145,7 +139,7 @@ export default function SafetyPlanScreen() {
                       style={styles.secondaryButton}
                       onPress={() => {
                         setEditingCategory(null);
-                        void loadSafetyPlan(); // Reload to discard changes
+                        void loadSafetyPlan();
                       }}
                     >
                       <Text style={styles.secondaryButtonText}>Cancel</Text>

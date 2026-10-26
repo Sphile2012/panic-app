@@ -6,7 +6,6 @@ export function hasDistinctPinDigits(pin) {
 }
 function buildInitialState() {
     const pub = loadPublicSync();
-    // Show welcome screen with signup/login options
     const initialScreen = 'welcome';
     return {
         screen: 'welcome',

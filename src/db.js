@@ -51,7 +51,6 @@ export async function sendEmailAuthOtp(email, purpose, fullName = '', phone = ''
     }
 }
 export async function sendPhoneAuthOtp(phone, purpose) {
-    // Normalize phone number (remove spaces, ensure + prefix)
     const normalizedPhone = phone.replace(/\s/g, '').startsWith('+') ? phone.replace(/\s/g, '') : `+${phone.replace(/\s/g, '')}`;
     if (!DB_CONFIGURED)
         return { error: 'Secure account service unavailable. Continue in offline mode.' };
@@ -181,13 +180,11 @@ export async function isGoogleAuthEnabled() {
     if (!DB_CONFIGURED)
         return false;
     try {
-        // Try to check if Google provider is available
-        // This is a simple check - if it fails, we know it's not enabled
         const testResult = await getClient().auth.signInWithOAuth({
             provider: 'google',
             options: {
                 redirectTo: getFrontendRedirectUrl(FRONTEND_URL, window.location.origin),
-                skipBrowserRedirect: true // Don't actually redirect
+                skipBrowserRedirect: true
             },
         });
         return !testResult.error || !/unsupported provider|not enabled/i.test(testResult.error.message || '');
@@ -378,7 +375,6 @@ export async function fetchRecentAlerts(limit = 10) {
         return [];
     }
 }
-// PIN Authentication Functions
 const EDGE_FUNCTION_URL = '';
 export async function setupPinsInCloud(pin1, pin2, question1_id, answer1, question2_id, answer2) {
     if (!DB_CONFIGURED)

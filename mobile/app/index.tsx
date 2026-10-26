@@ -145,10 +145,8 @@ export default function HomeScreen() {
     >
       {session ? (
         <View style={styles.mainScreen}>
-          {/* Navy gradient header */}
           <View style={styles.headerGradient} />
 
-          {/* Hamburger Menu Button */}
           <Pressable
             style={styles.hamburgerButton}
             onPress={() => setMenuOpen(true)}
@@ -165,7 +163,6 @@ export default function HomeScreen() {
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
-            {/* App Logo and Branding */}
             <View style={styles.brandingSection}>
               <View style={styles.logoContainer}>
                 <Image
@@ -178,7 +175,6 @@ export default function HomeScreen() {
               <Text style={styles.tagline}>Your Safety, Always Protected</Text>
             </View>
 
-            {/* Emergency SOS Button - Main Feature */}
             <View style={styles.sosSection}>
               <Text style={styles.sosLabel}>Emergency SOS</Text>
               <Pressable
@@ -197,7 +193,6 @@ export default function HomeScreen() {
               <Text style={styles.sosHint}>Immediately alerts your trusted contacts</Text>
             </View>
 
-            {/* Quick Actions */}
             <View style={styles.quickActionsSection}>
               <Text style={styles.sectionTitle}>QUICK ACCESS</Text>
               <View style={styles.quickActionsGrid}>
@@ -510,7 +505,6 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.background },
 
-  // MAIN HOME SCREEN
   mainScreen: {
     flex: 1,
     backgroundColor: colors.background,
@@ -526,7 +520,6 @@ const styles = StyleSheet.create({
     opacity: 0.05,
   },
 
-  // HAMBURGER MENU - Premium Navy
   hamburgerButton: {
     position: 'absolute',
     top: Platform.OS === 'ios' ? 60 : 50,
@@ -561,7 +554,6 @@ const styles = StyleSheet.create({
     paddingBottom: spacing['5xl'],
   },
 
-  // BRANDING SECTION
   brandingSection: {
     alignItems: 'center',
     marginBottom: spacing['3xl'],
@@ -600,7 +592,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
 
-  // SOS SECTION - Premium Red Emergency Button
   sosSection: {
     alignItems: 'center',
     marginBottom: spacing['4xl'],
@@ -672,7 +663,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing['2xl'],
   },
 
-  // QUICK ACTIONS
   quickActionsSection: {
     marginBottom: spacing.xl,
   },
@@ -732,7 +722,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  // MENU MODAL - Premium Design
   modalOverlay: {
     flex: 1,
     backgroundColor: colors.overlay,
@@ -873,7 +862,6 @@ const styles = StyleSheet.create({
     fontWeight: typography.fontWeight.bold,
   },
 
-  // AUTH SCREENS - Premium Navy
   page: {
     flexGrow: 1,
     paddingHorizontal: spacing.xl,

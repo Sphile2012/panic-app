@@ -361,7 +361,6 @@ export function renderLocation(root) {
             watchId = navigator.geolocation.watchPosition(position => {
                 const { latitude, longitude, accuracy } = position.coords;
                 
-                // Validate coordinates
                 if (!Number.isFinite(latitude) || !Number.isFinite(longitude) ||
                     latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180 ||
                     !Number.isFinite(accuracy) || accuracy <= 0) {
@@ -369,7 +368,6 @@ export function renderLocation(root) {
                     return;
                 }
                 
-                // Successfully got location
                 retryBtn.hidden = true;
                 retryAction = null;
                 permissionHelp.hidden = true;
@@ -476,7 +474,6 @@ export function renderLocation(root) {
             skipBtn.disabled = false;
             let enhancedReason = result.reason;
             
-            // Add helpful instructions based on the error
             if (result.reason.includes('denied')) {
                 enhancedReason += '\n\nTo fix: Click the lock icon in your browser address bar → Site settings → Location → Allow';
             } else if (result.reason.includes('unavailable') || result.reason.includes('No GPS')) {

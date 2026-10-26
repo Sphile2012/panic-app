@@ -174,7 +174,6 @@ export function renderSettings(root) {
             await store.factoryReset();
     });
 }
-// Change PIN screen with security question verification
 export function renderChangePins(root) {
     const questionIds = getRecoveryQuestionIds();
     if (!questionIds || questionIds.length < 2) {
@@ -251,18 +250,16 @@ export function renderChangePins(root) {
             errorEl.textContent = 'Secret PIN and Decoy PIN must be different.';
             return;
         }
-        // Verify security answers and change PINs
         const success = await store.changePinsWithRecovery(answer1, answer2, newPin1, newPin2);
         if (!success) {
             errorEl.textContent = 'Security answers are incorrect. Please try again.';
             return;
         }
         errorEl.style.color = 'var(--safe)';
-        errorEl.textContent = '✓ PINs changed successfully!';
+        errorEl.textContent = 'PINs changed successfully.';
         setTimeout(() => store.navigateTo('settings'), 1500);
     });
 }
-// PIN Recovery screen (Forgot PIN)
 export function renderPinRecovery(root) {
     const questionIds = getRecoveryQuestionIds();
     if (!questionIds || questionIds.length < 2) {
@@ -337,14 +334,13 @@ export function renderPinRecovery(root) {
             errorEl.textContent = 'Secret PIN and Decoy PIN must be different.';
             return;
         }
-        // Verify security answers and reset PINs
         const success = await store.recoverPinWithAnswers(answer1, answer2, newPin1, newPin2);
         if (!success) {
             errorEl.textContent = 'Security answers are incorrect. Please try again.';
             return;
         }
         errorEl.style.color = 'var(--safe)';
-        errorEl.textContent = '✓ PINs reset successfully! You can now login.';
+        errorEl.textContent = 'PINs reset successfully. You can now log in.';
         setTimeout(() => store.navigateTo('calculator'), 2000);
     });
 }

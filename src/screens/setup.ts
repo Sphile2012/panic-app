@@ -50,7 +50,7 @@ function disguiseScreenPreview(id: string): string {
             </div>`;
         case 'weather':
             return `<div class="disguise-preview disguise-preview--weather" aria-hidden="true">
-              <div class="disguise-preview-weather-header"><strong>Johannesburg</strong><span>⌕　•••</span></div>
+              <div class="disguise-preview-weather-header"><strong>Johannesburg</strong><span>More</span></div>
               <div class="disguise-preview-weather-hero"><span>Sunny</span><strong>23°</strong><b>Partly cloudy</b><small>H:27°　L:16°</small></div>
               <div class="disguise-preview-weather-details"><span>62%<small>Humidity</small></span><span>14 km/h<small>Wind</small></span><span>06:12<small>Sunrise</small></span></div>
               <div class="disguise-preview-weather-section">7-DAY FORECAST</div>
@@ -252,7 +252,6 @@ export function renderSetupPin(root: HTMLElement) {
         }
         errorEl.textContent = '';
         
-        // Store PINs temporarily for cloud backup after security questions
         sessionStorage.setItem('temp_pin1', pin);
         sessionStorage.setItem('temp_pin2', decoy);
         
@@ -404,11 +403,9 @@ export function renderRecoverySetup(root: HTMLElement, nextScreen: string) {
         submitBtn.textContent = 'Saving...';
         
         try {
-            // Save security questions locally
             await setRecoveryQuestions(store.getState().pinHash, [questionOne.value, questionTwo.value], [answerOne.value, answerTwo.value]);
             store.markRecoveryConfigured();
             
-            // Attempt cloud backup if user is authenticated
             if (DB_CONFIGURED && !existing) {
                 const user = await getUser();
                 if (user) {
@@ -432,7 +429,6 @@ export function renderRecoverySetup(root: HTMLElement, nextScreen: string) {
                             console.warn('[setup] Cloud backup failed:', cloudError);
                         }
                         
-                        // Clear temporary PIN storage
                         sessionStorage.removeItem('temp_pin1');
                         sessionStorage.removeItem('temp_pin2');
                     }
@@ -549,7 +545,6 @@ export function renderPinRecovery(root: HTMLElement) {
         error.textContent = '';
         
         try {
-            // Attempt cloud PIN change if cloud backup is enabled
             if (hasCloudBackup() && DB_CONFIGURED) {
                 const user = await getUser();
                 if (user) {
@@ -569,7 +564,6 @@ export function renderPinRecovery(root: HTMLElement) {
                 }
             }
             
-            // Recover local PINs
             const recovered = await store.recoverPins(answers.map(answer => answer.value), pin, decoy);
             if (!recovered) {
                 error.textContent = 'Your answers are incorrect. Please check your answers and try again.';
@@ -604,7 +598,7 @@ export function renderSetupContacts(root: HTMLElement, notice = '') {
               <span class="contact-phone">${escapeHtml(c.phone)}</span>
               <span class="contact-relationship">${escapeHtml(c.relationship || 'Other')}</span>
             </div>
-            <button class="contact-delete" data-id="${escapeHtml(c.id)}" aria-label="Remove ${escapeHtml(c.name)}">✕</button>
+            <button class="contact-delete" data-id="${escapeHtml(c.id)}" aria-label="Remove ${escapeHtml(c.name)}">Remove</button>
           </li>
         `).join('')}
       </ul>
@@ -693,7 +687,6 @@ export function renderSetupContacts(root: HTMLElement, notice = '') {
     const photoPreview = root.querySelector('#photo-preview') as HTMLElement;
     let photoDataUrl: string | undefined;
 
-    // Handle photo upload preview
     photoInput?.addEventListener('change', (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (file) {

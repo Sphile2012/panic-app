@@ -37,7 +37,6 @@ type AppState = {
 
 function buildInitialState(): AppState {
     const pub = loadPublicSync();
-    // Show welcome screen with signup/login options
     const initialScreen = 'welcome';
     return {
         screen: 'welcome',

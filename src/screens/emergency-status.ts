@@ -1,7 +1,3 @@
-/**
- * Emergency Status Screen
- * Shows real-time status of GPS, camera, tracking, and notifications during SOS
- */
 
 import { store } from '../state.js';
 import { getCurrentSession, onSessionChange, getEmergencyMessage, completeEmergencySession, cancelEmergencySession, uploadEmergencyPhotos, retryLocationRequest, retryCameraRequest, type EmergencySession } from '../emergencySession.js';
@@ -14,25 +10,25 @@ function escapeHtml(s: string): string {
     }[c] ?? c));
 }
 
-function getStatusIcon(status: string): string {
+function getStatusIndicatorText(status: string): string {
     switch (status) {
         case 'active':
         case 'ready':
         case 'completed':
         case 'uploaded':
         case 'sent':
-            return '✓';
+            return 'Ready';
         case 'acquiring':
         case 'capturing':
         case 'uploading':
         case 'pending':
-            return '⟳';
+            return 'Pending';
         case 'denied':
         case 'failed':
         case 'unavailable':
-            return '✕';
+            return 'Failed';
         default:
-            return '○';
+            return 'N/A';
     }
 }
 
@@ -109,7 +105,6 @@ export function renderEmergencyStatus(root: HTMLElement) {
     const { contacts } = store.getState();
     
     if (!session) {
-        // No active emergency
         root.innerHTML = `
             <div class="screen">
                 <header class="screen-header">
@@ -158,7 +153,7 @@ export function renderEmergencyStatus(root: HTMLElement) {
                     <h3>System Status</h3>
                     <div class="emergency-status-grid">
                         <div class="emergency-status-card ${getStatusClass(currentSession.gpsStatus)}">
-                            <span class="emergency-status-icon">${getStatusIcon(currentSession.gpsStatus)}</span>
+                            <span class="emergency-status-label">${getStatusIndicatorText(currentSession.gpsStatus)}</span>
                             <div class="emergency-status-info">
                                 <strong>${getStatusLabel('gps', currentSession.gpsStatus)}</strong>
                                 ${currentSession.latitude ? `<small>${currentSession.latitude.toFixed(5)}, ${currentSession.longitude?.toFixed(5)}</small>` : '<small>Waiting for GPS fix</small>'}
@@ -173,7 +168,7 @@ export function renderEmergencyStatus(root: HTMLElement) {
                         ` : ''}
                         
                         <div class="emergency-status-card ${getStatusClass(currentSession.cameraStatus)}">
-                            <span class="emergency-status-icon">${getStatusIcon(currentSession.cameraStatus)}</span>
+                            <span class="emergency-status-label">${getStatusIndicatorText(currentSession.cameraStatus)}</span>
                             <div class="emergency-status-info">
                                 <strong>${getStatusLabel('camera', currentSession.cameraStatus)}</strong>
                                 <small>${currentSession.photoCount > 0 ? `${currentSession.photoCount} photo(s)` : 'No photos yet'}</small>
@@ -188,7 +183,7 @@ export function renderEmergencyStatus(root: HTMLElement) {
                         ` : ''}
                         
                         <div class="emergency-status-card ${getStatusClass(currentSession.trackingStatus)}">
-                            <span class="emergency-status-icon">${getStatusIcon(currentSession.trackingStatus)}</span>
+                            <span class="emergency-status-label">${getStatusIndicatorText(currentSession.trackingStatus)}</span>
                             <div class="emergency-status-info">
                                 <strong>${getStatusLabel('tracking', currentSession.trackingStatus)}</strong>
                                 <small>${isTracking() ? 'Broadcasting location' : 'Not active'}</small>
@@ -196,7 +191,7 @@ export function renderEmergencyStatus(root: HTMLElement) {
                         </div>
                         
                         <div class="emergency-status-card ${getStatusClass(currentSession.notificationStatus)}">
-                            <span class="emergency-status-icon">${getStatusIcon(currentSession.notificationStatus)}</span>
+                            <span class="emergency-status-label">${getStatusIndicatorText(currentSession.notificationStatus)}</span>
                             <div class="emergency-status-info">
                                 <strong>${getStatusLabel('notifications', currentSession.notificationStatus)}</strong>
                                 <small>${contacts.length} contact(s)</small>
@@ -253,7 +248,7 @@ export function renderEmergencyStatus(root: HTMLElement) {
                     <div class="emergency-photo-card">
                         <p><strong>${currentSession.photoCount} photo(s) captured</strong></p>
                         ${currentSession.photoUrls.length > 0 ? `
-                            <p class="emergency-photo-status">✓ Photos uploaded and ready to share</p>
+                            <p class="emergency-photo-status">Photos uploaded and ready to share</p>
                             <div class="emergency-photo-list">
                                 ${currentSession.photoUrls.map((url, i) => `
                                     <a href="${url}" target="_blank" class="emergency-photo-link">
@@ -328,7 +323,7 @@ export function renderEmergencyStatus(root: HTMLElement) {
                 
                 <section class="emergency-actions-section">
                     <button class="btn-danger emergency-complete" id="btn-complete">
-                        ✓ I'm Safe - End Emergency
+                        I'm Safe - End Emergency
                     </button>
                     <button class="btn-secondary emergency-cancel" id="btn-cancel">
                         Cancel Alert
@@ -358,52 +353,43 @@ export function renderEmergencyStatus(root: HTMLElement) {
         
         root.querySelector('#btn-upload-photos')?.addEventListener('click', async () => {
             await uploadEmergencyPhotos();
-            paint(); // Repaint to show upload status
+            paint();
         });
         
         root.querySelector('#btn-retry-upload')?.addEventListener('click', async () => {
             await uploadEmergencyPhotos();
-            paint(); // Repaint to show upload status
+            paint();
         });
         
-        // Open phone location settings
         root.querySelector('#btn-open-location-settings')?.addEventListener('click', () => {
-            // For web browsers, open browser's site settings
             if (window.location.protocol === 'https:' || window.location.hostname === 'localhost') {
-                // Chrome/Edge command to open site settings
                 alert('To enable location access:\n\n1. Click the lock icon in your address bar\n2. Select "Site settings" or "Permissions"\n3. Find "Location" and set to "Allow"\n4. Click "Retry After Granting Permission" below\n\nOR on Android:\n\n1. Open Settings app\n2. Go to Apps → Panic Ring (or your browser)\n3. Tap Permissions → Location\n4. Select "Allow" or "While using the app"\n5. Return here and click Retry');
             } else {
                 alert('To enable location access:\n\n1. Open your phone Settings\n2. Go to Apps → Panic Ring (or your browser)\n3. Tap Permissions → Location\n4. Select "Allow" or "While using the app"\n5. Return here and click "Retry After Granting Permission"');
             }
         });
         
-        // Retry location after user grants permission
         root.querySelector('#btn-retry-location')?.addEventListener('click', async () => {
             await retryLocationRequest();
-            paint(); // Repaint to show new status
+            paint();
         });
         
-        // Open phone camera settings
         root.querySelector('#btn-open-camera-settings')?.addEventListener('click', () => {
-            // For web browsers, open browser's site settings
             if (window.location.protocol === 'https:' || window.location.hostname === 'localhost') {
-                // Chrome/Edge command to open site settings
                 alert('To enable camera access:\n\n1. Click the lock icon in your address bar\n2. Select "Site settings" or "Permissions"\n3. Find "Camera" and set to "Allow"\n4. Click "Retry After Granting Permission" below\n\nOR on Android:\n\n1. Open Settings app\n2. Go to Apps → Panic Ring (or your browser)\n3. Tap Permissions → Camera\n4. Select "Allow"\n5. Return here and click Retry');
             } else {
                 alert('To enable camera access:\n\n1. Open your phone Settings\n2. Go to Apps → Panic Ring (or your browser)\n3. Tap Permissions → Camera\n4. Select "Allow"\n5. Return here and click "Retry After Granting Permission"');
             }
         });
         
-        // Retry camera after user grants permission
         root.querySelector('#btn-retry-camera')?.addEventListener('click', async () => {
             await retryCameraRequest();
-            paint(); // Repaint to show new status
+            paint();
         });
     };
     
     paint();
     
-    // Subscribe to session changes
     const unsubscribe = onSessionChange(() => {
         if (!root.isConnected) {
             unsubscribe();
@@ -412,7 +398,6 @@ export function renderEmergencyStatus(root: HTMLElement) {
         paint();
     });
     
-    // Unsubscribe when leaving screen
     const unsubscribeNav = store.subscribe(state => {
         if (state.screen !== 'emergency-status') {
             unsubscribe();

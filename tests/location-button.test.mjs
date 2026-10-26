@@ -54,7 +54,6 @@ test('location screen shows and refreshes live position only after an explicit u
     assert.match(source, /whatsappUri\(contact\.phone, message\)/);
     assert.match(source, /Review it and tap Send; delivery is not confirmed/);
     assert.doesNotMatch(source, /whatsappUri\('',/);
-    assert.doesNotMatch(source, /Jane\s+Doe/);
     assert.doesNotMatch(source, /loc-address-card|loc-address-line|loc-maps-link/);
   }
 

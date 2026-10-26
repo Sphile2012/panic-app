@@ -1,7 +1,3 @@
-/**
- * Emergency Session Management
- * Coordinates all emergency features: GPS, camera, live tracking, notifications
- */
 
 import { getLocation } from './alertService.js';
 import { startTracking, stopTracking, isTracking, getLast, trackUrl, mapsUrl, getToken } from './tracking.js';
@@ -57,7 +53,6 @@ function updateSession(updates: Partial<EmergencySession>) {
         currentSession = { ...currentSession, ...updates };
         emit();
         
-        // Update database if configured
         if (DB_CONFIGURED && currentSession.dbId) {
             void updateSessionInDatabase(currentSession);
         }
@@ -155,7 +150,6 @@ async function requestLocation(): Promise<void> {
     }
 }
 
-// Export function to retry location from UI
 export async function retryLocationRequest(): Promise<void> {
     if (currentSession) {
         await requestLocation();
@@ -184,7 +178,6 @@ async function startEmergencyTracking(): Promise<void> {
 async function startEmergencyCamera(): Promise<void> {
     if (!currentSession) return;
     
-    // Check if evidence capture is enabled
     if (!evidenceEnabled()) {
         updateSession({ cameraStatus: 'unavailable' });
         currentSession?.errors.push('Emergency camera is disabled in settings');
@@ -192,7 +185,6 @@ async function startEmergencyCamera(): Promise<void> {
         return;
     }
     
-    // Request camera permission first
     const hasAccess = await requestCameraAccess();
     if (!hasAccess) {
         updateSession({ cameraStatus: 'denied' });
@@ -223,7 +215,6 @@ async function startEmergencyCamera(): Promise<void> {
     }
 }
 
-// Export function to retry camera from UI
 export async function retryCameraRequest(): Promise<void> {
     if (currentSession) {
         await startEmergencyCamera();
@@ -270,7 +261,6 @@ export async function uploadEmergencyPhotos(): Promise<string[]> {
                 const fileName = `${currentSession.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.jpg`;
                 const filePath = `emergency-photos/${fileName}`;
                 
-                // Upload to Supabase Storage
                 const { data, error } = await client.storage
                     .from('emergency-photos')
                     .upload(filePath, photo.blob, {
@@ -283,7 +273,6 @@ export async function uploadEmergencyPhotos(): Promise<string[]> {
                     continue;
                 }
                 
-                // Get public URL (will be private, only accessible with signed URL)
                 const { data: urlData } = client.storage
                     .from('emergency-photos')
                     .getPublicUrl(filePath);
@@ -291,7 +280,6 @@ export async function uploadEmergencyPhotos(): Promise<string[]> {
                 if (urlData.publicUrl) {
                     uploadedUrls.push(urlData.publicUrl);
                     
-                    // Save photo metadata to database
                     await client.from('emergency_photos').insert({
                         session_id: currentSession.dbId,
                         storage_path: filePath,
@@ -327,12 +315,10 @@ export async function uploadEmergencyPhotos(): Promise<string[]> {
 }
 
 export async function startEmergencySession(): Promise<EmergencySession> {
-    // If there's already an active session, return it
     if (currentSession && currentSession.status === 'active') {
         return currentSession;
     }
     
-    // Create new emergency session
     currentSession = {
         id: `emergency-${Date.now()}`,
         startedAt: Date.now(),
@@ -355,14 +341,11 @@ export async function startEmergencySession(): Promise<EmergencySession> {
     
     emit();
     
-    // Create session in database
     const dbId = await createSessionInDatabase();
     if (dbId) {
         currentSession.dbId = dbId;
     }
     
-    // Start all emergency features in parallel (non-blocking)
-    // Don't wait for them - they update the session as they progress
     void requestLocation();
     void startEmergencyTracking();
     void startEmergencyCamera();
@@ -423,7 +406,6 @@ export function getWhatsAppMessage(): string {
 export async function completeEmergencySession(): Promise<void> {
     if (!currentSession) return;
     
-    // Try to upload photos before completing
     if (currentSession.photoCaptured && currentSession.photoUrls.length === 0) {
         await uploadEmergencyPhotos();
     }
@@ -433,14 +415,11 @@ export async function completeEmergencySession(): Promise<void> {
         notificationStatus: 'sent'
     });
     
-    // Keep tracking active even after session completes
-    // User can stop it manually from the live tracking screen
     
-    // Clear session after a delay
     setTimeout(() => {
         currentSession = null;
         listeners.clear();
-    }, 60000); // Keep session data for 1 minute
+    }, 60000);
 }
 
 export function cancelEmergencySession(): void {
@@ -448,7 +427,6 @@ export function cancelEmergencySession(): void {
     
     updateSession({ status: 'cancelled' });
     
-    // Stop tracking if it was started
     if (isTracking()) {
         stopTracking();
     }

@@ -104,7 +104,7 @@ export default function CircleScreen() {
               const { error } = await client.from('contacts').delete().eq('id', contact.id);
               if (error) throw error;
               await loadContacts();
-            } catch (error) {
+            } catch {
               Alert.alert('Error', 'Could not remove contact.');
             }
           },
