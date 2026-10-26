@@ -30,16 +30,16 @@ export function renderApp(root) {
         : escapeHtml(avatarLetter);
     const currentDisguise = DISGUISE_OPTIONS.find(d => d.id === appearance.disguise);
     root.innerHTML = `
-    <div class="screen app-screen">
+    <div class="screen app-screen relative isolate min-h-full overflow-hidden bg-[#1a0828] text-white">
 
-      <header class="app-header">
-        <button class="app-menu-button" id="btn-menu" type="button" aria-label="Open app menu" title="Open app menu">
+      <header class="app-header relative z-20">
+        <button class="app-menu-button inline-flex items-center justify-center rounded-full" id="btn-menu" type="button" aria-label="Open app menu" title="Open app menu">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
         </button>
       </header>
 
-      <section class="dashboard-alert-card" aria-label="Emergency alert">
-        <button class="btn-hold" id="btn-hold" aria-label="Hold the PANIC button to send an alert" title="Hold for 1.5 seconds to send">
+      <section class="dashboard-alert-card relative z-10 flex flex-1 items-center justify-center" aria-label="Emergency alert">
+        <button class="btn-hold relative inline-flex items-center justify-center rounded-full font-black tracking-[.12em] text-white" id="btn-hold" aria-label="Hold the PANIC button to send an alert" title="Hold for 1.5 seconds to send">
           <span class="btn-hold-label">PANIC</span>
           <div class="btn-hold-ring"></div>
         </button>
@@ -48,9 +48,9 @@ export function renderApp(root) {
       <div id="dashboard-battery-alert"></div>
 
       <nav class="app-bottom-nav" aria-label="Main navigation">
-        <button class="app-bottom-nav-btn" data-bottom-nav="contacts" type="button">Circle</button>
-        <button class="app-bottom-nav-btn" data-bottom-nav="profile" type="button">Profile</button>
-        <button class="app-bottom-nav-btn" id="btn-open-menu" type="button">More</button>
+        <button class="app-bottom-nav-btn rounded-xl font-semibold text-white/80 transition hover:bg-white/15 hover:text-white" data-bottom-nav="contacts" type="button">Circle</button>
+        <button class="app-bottom-nav-btn rounded-xl font-semibold text-white/80 transition hover:bg-white/15 hover:text-white" data-bottom-nav="profile" type="button">Profile</button>
+        <button class="app-bottom-nav-btn rounded-xl font-semibold text-white/80 transition hover:bg-white/15 hover:text-white" id="btn-open-menu" type="button">More</button>
       </nav>
 
       <div class="checkin-bar" id="checkin-bar" style="display:none">
