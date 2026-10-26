@@ -150,7 +150,7 @@ export function renderEmergencyStatus(root: HTMLElement) {
                 
                 <div class="emergency-alert-banner">
                     <div class="emergency-pulse"></div>
-                    <h3>🚨 SOS Alert Activated</h3>
+                    <h3>SOS Alert Activated</h3>
                     <p>Emergency features are running</p>
                 </div>
                 
@@ -249,7 +249,7 @@ export function renderEmergencyStatus(root: HTMLElement) {
                 
                 ${currentSession.photoCaptured && currentSession.photoCount > 0 ? `
                 <section class="emergency-photo-section">
-                    <h3>📸 Emergency Photos</h3>
+                    <h3>Emergency Photos</h3>
                     <div class="emergency-photo-card">
                         <p><strong>${currentSession.photoCount} photo(s) captured</strong></p>
                         ${currentSession.photoUrls.length > 0 ? `
@@ -257,7 +257,7 @@ export function renderEmergencyStatus(root: HTMLElement) {
                             <div class="emergency-photo-list">
                                 ${currentSession.photoUrls.map((url, i) => `
                                     <a href="${url}" target="_blank" class="emergency-photo-link">
-                                        📷 Photo ${i + 1}
+                                        Photo ${i + 1}
                                     </a>
                                 `).join('')}
                             </div>

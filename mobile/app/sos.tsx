@@ -129,7 +129,7 @@ export default function SOSScreen() {
       ? `\n\nLocation: https://www.google.com/maps?q=${location.latitude},${location.longitude}`
       : '';
 
-    const message = `🚨 PANIC RING SOS ALERT 🚨\n\nI need help! This is an emergency alert from your trusted contact.\n\nPlease check on me or call me immediately.${locationText}\n\nSent from Panic Ring`;
+    const message = `PANIC RING SOS ALERT\n\nI need help! This is an emergency alert from your trusted contact.\n\nPlease check on me or call me immediately.${locationText}\n\nSent from Panic Ring`;
 
     const smsUrl = `sms:${contact.phone}${Platform.OS === 'ios' ? '&' : '?'}body=${encodeURIComponent(message)}`;
 
@@ -182,7 +182,7 @@ export default function SOSScreen() {
       ) : alertActive ? (
         <>
           <View style={styles.alertActiveCard}>
-            <Text style={styles.alertIcon}>🚨</Text>
+            <Text style={styles.alertIcon}>!</Text>
             <Text style={styles.alertTitle}>Alert Activated</Text>
             <Text style={styles.alertBody}>
               Sending alerts to your trusted contacts...
@@ -299,7 +299,7 @@ export default function SOSScreen() {
               <View style={styles.contactsList}>
                 {contacts.map((contact) => (
                   <View key={contact.id} style={styles.contactPreviewItem}>
-                    <Text style={styles.contactPreviewIcon}>👤</Text>
+                    <Text style={styles.contactPreviewIcon}>C</Text>
                     <Text style={styles.contactPreviewName}>{contact.name}</Text>
                   </View>
                 ))}

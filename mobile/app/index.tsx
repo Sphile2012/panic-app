@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Image,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -183,6 +184,13 @@ export default function HomeScreen() {
 
           <View style={styles.fullScreenContainer}>
             <View style={styles.topSection}>
+              <View style={styles.logoContainer}>
+                <Image 
+                  source={require('../assets/icon.png')} 
+                  style={styles.logo}
+                  resizeMode="contain"
+                />
+              </View>
               <Text style={styles.brandTitle}>PANIC RING</Text>
               <Text style={styles.brandSubtitle}>Your Safety Matters</Text>
             </View>
@@ -479,122 +487,122 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     left: 0,
-    width: 80,
-    height: 80,
-    borderBottomRightRadius: 40,
-    backgroundColor: 'rgba(220, 38, 38, 0.1)',
-    borderRightWidth: 3,
-    borderBottomWidth: 3,
-    borderColor: 'rgba(220, 38, 38, 0.3)',
+    width: 100,
+    height: 100,
+    borderBottomRightRadius: 50,
+    backgroundColor: 'rgba(220, 38, 38, 0.15)',
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderColor: 'rgba(220, 38, 38, 0.4)',
   },
 
   cornerTopRight: {
     position: 'absolute',
     top: 0,
     right: 0,
-    width: 60,
-    height: 60,
-    borderBottomLeftRadius: 30,
-    backgroundColor: 'rgba(236, 72, 153, 0.1)',
-    borderLeftWidth: 3,
-    borderBottomWidth: 3,
-    borderColor: 'rgba(236, 72, 153, 0.3)',
+    width: 80,
+    height: 80,
+    borderBottomLeftRadius: 40,
+    backgroundColor: 'rgba(236, 72, 153, 0.15)',
+    borderLeftWidth: 4,
+    borderBottomWidth: 4,
+    borderColor: 'rgba(236, 72, 153, 0.4)',
   },
 
   cornerBottomLeft: {
     position: 'absolute',
     bottom: 0,
     left: 0,
-    width: 70,
-    height: 70,
-    borderTopRightRadius: 35,
-    backgroundColor: 'rgba(220, 38, 38, 0.1)',
-    borderRightWidth: 3,
-    borderTopWidth: 3,
-    borderColor: 'rgba(220, 38, 38, 0.3)',
+    width: 90,
+    height: 90,
+    borderTopRightRadius: 45,
+    backgroundColor: 'rgba(220, 38, 38, 0.15)',
+    borderRightWidth: 4,
+    borderTopWidth: 4,
+    borderColor: 'rgba(220, 38, 38, 0.4)',
   },
 
   cornerBottomRight: {
     position: 'absolute',
     bottom: 0,
     right: 0,
-    width: 90,
-    height: 90,
-    borderTopLeftRadius: 45,
-    backgroundColor: 'rgba(236, 72, 153, 0.1)',
-    borderLeftWidth: 3,
-    borderTopWidth: 3,
-    borderColor: 'rgba(236, 72, 153, 0.3)',
+    width: 110,
+    height: 110,
+    borderTopLeftRadius: 55,
+    backgroundColor: 'rgba(236, 72, 153, 0.15)',
+    borderLeftWidth: 4,
+    borderTopWidth: 4,
+    borderColor: 'rgba(236, 72, 153, 0.4)',
   },
 
   decorativeCircle1: {
     position: 'absolute',
     top: '15%',
     right: '10%',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.4)',
-    borderWidth: 2,
-    borderColor: 'rgba(220, 38, 38, 0.3)',
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    borderWidth: 3,
+    borderColor: 'rgba(220, 38, 38, 0.4)',
   },
 
   decorativeCircle2: {
     position: 'absolute',
     bottom: '25%',
     left: '8%',
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    borderWidth: 2,
-    borderColor: 'rgba(236, 72, 153, 0.3)',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.4)',
+    borderWidth: 3,
+    borderColor: 'rgba(236, 72, 153, 0.4)',
   },
 
   decorativeCircle3: {
     position: 'absolute',
     top: '70%',
     right: '15%',
-    width: 25,
-    height: 25,
-    borderRadius: 12.5,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    borderWidth: 2,
-    borderColor: 'rgba(220, 38, 38, 0.3)',
+    width: 35,
+    height: 35,
+    borderRadius: 17.5,
+    backgroundColor: 'rgba(255, 255, 255, 0.4)',
+    borderWidth: 3,
+    borderColor: 'rgba(220, 38, 38, 0.4)',
   },
 
   hamburgerButton: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 60 : 40,
-    left: 24,
-    width: 64,
-    height: 64,
+    top: Platform.OS === 'ios' ? 60 : 50,
+    left: 20,
+    width: 70,
+    height: 70,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderRadius: 32,
-    zIndex: 1000,
-    borderWidth: 4,
+    borderRadius: 35,
+    zIndex: 2000,
+    borderWidth: 5,
     borderColor: '#DC2626',
     ...Platform.select({
       ios: {
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.6,
-        shadowRadius: 12,
+        shadowColor: '#DC2626',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.7,
+        shadowRadius: 15,
       },
       android: {
-        elevation: 12,
+        elevation: 15,
       },
     }),
   },
 
   hamburgerLine: {
-    width: 32,
-    height: 4,
+    width: 36,
+    height: 5,
     backgroundColor: '#DC2626',
     marginVertical: 4,
-    borderRadius: 2,
+    borderRadius: 3,
   },
   
   fullScreenContainer: {
@@ -609,6 +617,34 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
     paddingTop: 40,
+  },
+
+  logoContainer: {
+    width: Math.min(width * 0.35, 140),
+    height: Math.min(width * 0.35, 140),
+    marginBottom: 30,
+    borderRadius: Math.min(width * 0.175, 70),
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 6,
+    borderColor: '#DC2626',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#DC2626',
+        shadowOffset: { width: 0, height: 12 },
+        shadowOpacity: 0.5,
+        shadowRadius: 20,
+      },
+      android: {
+        elevation: 18,
+      },
+    }),
+  },
+
+  logo: {
+    width: '85%',
+    height: '85%',
   },
 
   brandTitle: {
@@ -701,155 +737,203 @@ const styles = StyleSheet.create({
   
   menuContainer: { 
     backgroundColor: colors.surface,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: height * 0.85,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: height * 0.88,
     paddingBottom: Platform.OS === 'ios' ? 34 : 20,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: -10 },
+        shadowOpacity: 0.3,
+        shadowRadius: 20,
+      },
+      android: {
+        elevation: 25,
+      },
+    }),
   },
   
   menuHeader: { 
     flexDirection: 'row', 
     justifyContent: 'space-between', 
     alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 20,
-    borderBottomWidth: 1,
+    paddingHorizontal: 28,
+    paddingTop: 24,
+    paddingBottom: 20,
+    borderBottomWidth: 2,
     borderBottomColor: colors.border,
+    backgroundColor: '#FEE2E2',
   },
   
   menuTitle: { 
-    fontSize: 24, 
-    fontWeight: '800', 
-    color: colors.text 
+    fontSize: 28, 
+    fontWeight: '900', 
+    color: '#DC2626',
+    letterSpacing: 1,
   },
   
   closeButton: { 
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: colors.surfaceMuted,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: colors.surface,
+    borderWidth: 2,
+    borderColor: '#DC2626',
   },
   
   closeButtonText: { 
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#DC2626',
   },
   
   menuScroll: { 
     paddingHorizontal: 24,
-    paddingTop: 20,
+    paddingTop: 24,
   },
 
   sectionTitle: {
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: 12,
+    fontWeight: '800',
     color: colors.textSecondary,
-    letterSpacing: 1,
-    marginTop: 20,
-    marginBottom: 12,
-    marginLeft: 4,
+    letterSpacing: 1.5,
+    marginTop: 24,
+    marginBottom: 14,
+    marginLeft: 6,
+    textTransform: 'uppercase',
   },
   
   menuItem: { 
     flexDirection: 'row', 
     alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    marginBottom: 12,
+    paddingVertical: 18,
+    paddingHorizontal: 18,
+    borderRadius: 14,
+    marginBottom: 10,
     backgroundColor: colors.surface,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: colors.border,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
 
   activeMenuItem: {
     backgroundColor: '#FEE2E2',
     borderColor: '#DC2626',
+    borderWidth: 3,
   },
   
   iconCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
+    marginRight: 18,
+    borderWidth: 2,
+    borderColor: 'rgba(0, 0, 0, 0.1)',
   },
 
   iconHome: {
     backgroundColor: '#FEE2E2',
+    borderColor: '#DC2626',
   },
 
   iconMap: {
-    backgroundColor: '#E0E7FF',
+    backgroundColor: '#DBEAFE',
+    borderColor: '#3B82F6',
   },
 
   iconContacts: {
-    backgroundColor: '#E0E7FF',
+    backgroundColor: '#DBEAFE',
+    borderColor: '#3B82F6',
   },
 
   iconAlert: {
-    backgroundColor: '#E0E7FF',
+    backgroundColor: '#DBEAFE',
+    borderColor: '#3B82F6',
   },
 
   iconJourney: {
-    backgroundColor: '#E0E7FF',
+    backgroundColor: '#DBEAFE',
+    borderColor: '#3B82F6',
   },
 
   iconFakeCall: {
-    backgroundColor: '#E0E7FF',
+    backgroundColor: '#DBEAFE',
+    borderColor: '#3B82F6',
   },
 
   iconSettings: {
-    backgroundColor: '#E0E7FF',
+    backgroundColor: '#FEF3C7',
+    borderColor: '#F59E0B',
   },
 
   iconGuide: {
-    backgroundColor: '#E0E7FF',
+    backgroundColor: '#FEF3C7',
+    borderColor: '#F59E0B',
   },
 
   iconFaq: {
-    backgroundColor: '#E0E7FF',
+    backgroundColor: '#FEF3C7',
+    borderColor: '#F59E0B',
   },
 
   iconFeedback: {
-    backgroundColor: '#E0E7FF',
+    backgroundColor: '#FEF3C7',
+    borderColor: '#F59E0B',
   },
   
   iconDanger: {
     backgroundColor: '#FEE2E2',
+    borderColor: '#DC2626',
   },
   
   iconPrimary: {
     backgroundColor: colors.accentSoft,
+    borderColor: colors.accent,
   },
   
   iconSuccess: {
     backgroundColor: colors.successSoft,
+    borderColor: colors.success,
   },
   
   iconWarning: {
     backgroundColor: colors.warningSoft,
+    borderColor: colors.warning,
   },
   
   iconInfo: {
-    backgroundColor: '#E0E7FF',
+    backgroundColor: '#DBEAFE',
+    borderColor: '#3B82F6',
   },
   
   iconNeutral: {
     backgroundColor: colors.surfaceMuted,
+    borderColor: colors.border,
   },
   
   iconLogout: {
-    backgroundColor: colors.dangerSoft,
+    backgroundColor: '#FEE2E2',
+    borderColor: '#DC2626',
   },
   
   iconText: {
-    fontSize: 11,
-    fontWeight: '800',
+    fontSize: 10,
+    fontWeight: '900',
     color: colors.text,
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
   },
   
   menuTextContainer: { 
@@ -857,10 +941,11 @@ const styles = StyleSheet.create({
   },
   
   menuItemTitle: { 
-    fontSize: 16, 
-    fontWeight: '600', 
+    fontSize: 17, 
+    fontWeight: '700', 
     color: colors.text,
     marginBottom: 2,
+    letterSpacing: 0.3,
   },
   
   menuItemDesc: { 
@@ -876,14 +961,16 @@ const styles = StyleSheet.create({
   },
   
   signOutItem: { 
-    borderColor: colors.danger,
-    backgroundColor: colors.dangerSoft,
-    marginTop: 8,
-    marginBottom: 20,
+    borderColor: '#DC2626',
+    backgroundColor: '#FEE2E2',
+    borderWidth: 3,
+    marginTop: 12,
+    marginBottom: 24,
   },
   
   signOutText: {
-    color: colors.danger,
+    color: '#DC2626',
+    fontWeight: '800',
   },
 
   page: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 52, paddingBottom: 40 },

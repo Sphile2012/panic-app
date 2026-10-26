@@ -184,7 +184,7 @@ export default function SafetyPlanScreen() {
           ))}
 
           <View style={styles.tipsCard}>
-            <Text style={styles.tipsTitle}>💡 Tips for Your Safety Plan</Text>
+            <Text style={styles.tipsTitle}>Tips for Your Safety Plan</Text>
             <View style={styles.tipsList}>
               <Text style={styles.tipItem}>
                 • Keep this information updated as your situation changes

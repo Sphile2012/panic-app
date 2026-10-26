@@ -378,7 +378,7 @@ export function getEmergencyMessage(): string {
     const name = profile.name || 'Someone';
     const time = new Date().toLocaleString();
     
-    let message = `🚨 PANIC RING EMERGENCY ALERT 🚨\n\n`;
+    let message = `PANIC RING EMERGENCY ALERT\n\n`;
     message += `${name} needs immediate assistance!\n`;
     message += `Time: ${time}\n\n`;
     
@@ -396,7 +396,7 @@ export function getEmergencyMessage(): string {
     }
     
     if (currentSession.photoCaptured && currentSession.photoCount > 0) {
-        message += `📸 ${currentSession.photoCount} emergency photo(s) captured\n`;
+        message += `${currentSession.photoCount} emergency photo(s) captured\n`;
         if (currentSession.photoUrls.length > 0) {
             message += `View photos:\n`;
             currentSession.photoUrls.forEach((url, i) => {

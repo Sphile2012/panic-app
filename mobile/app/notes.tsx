@@ -172,7 +172,6 @@ export default function NotesScreen() {
             <Text style={styles.sectionTitle}>Your Notes ({notes.length})</Text>
             {notes.length === 0 ? (
               <View style={styles.emptyState}>
-                <Text style={styles.emptyIcon}>📝</Text>
                 <Text style={styles.emptyText}>No notes yet</Text>
                 <Text style={styles.emptySubtext}>Create your first note above</Text>
               </View>
@@ -200,7 +199,7 @@ export default function NotesScreen() {
           </View>
 
           <View style={styles.tipsCard}>
-            <Text style={styles.tipsTitle}>💡 What to Include</Text>
+            <Text style={styles.tipsTitle}>What to Include</Text>
             <View style={styles.tipsList}>
               <Text style={styles.tipItem}>• Date and time of the incident</Text>
               <Text style={styles.tipItem}>• Location where it happened</Text>
