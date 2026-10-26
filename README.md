@@ -4,7 +4,7 @@ Panic Ring is a mobile-first personal safety app providing emergency alerts, loc
 
 ## Quick Start
 
-### Web App
+**Web App**
 ```sh
 npm install
 npm run dev
@@ -16,7 +16,7 @@ npm run build:web
 npm test
 ```
 
-### Mobile App (React Native/Expo)
+**Mobile App (React Native/Expo)**
 ```sh
 cd mobile
 npm install
@@ -30,7 +30,7 @@ Scan the QR code with **Expo Go** app on your Android device.
 
 The mobile app (`com.phumeh.mypanicring`) includes 6 core safety features:
 
-### 1. SOS Alert System
+**1. SOS Alert System**
 - Hold-to-activate button (1.5 second press)
 - Silent alert mechanism
 - SMS sending to trusted contacts
@@ -39,14 +39,14 @@ The mobile app (`com.phumeh.mypanicring`) includes 6 core safety features:
 - Cancel alert functionality
 - Google Maps integration
 
-### 2. Trusted Circle Management
+**2. Trusted Circle Management**
 - Add up to 5 trusted contacts
 - Name and phone number tracking
 - Status monitoring (accepted/pending)
 - Remove contacts with confirmation
 - Database persistence with RLS security
 
-### 3. Live Location Tracking
+**3. Live Location Tracking**
 - Real-time tracking (10-second intervals)
 - Location accuracy reporting
 - WhatsApp and SMS sharing
@@ -54,14 +54,14 @@ The mobile app (`com.phumeh.mypanicring`) includes 6 core safety features:
 - Start/stop controls
 - Background location support
 
-### 4. Private Notes/Evidence
+**4. Private Notes/Evidence**
 - Create encrypted notes
 - Title and content fields
 - Timestamp tracking
 - Secure deletion with confirmation
 - Private storage with RLS
 
-### 5. Safety Plan
+**5. Safety Plan**
 Six categories for comprehensive safety planning:
 - Trusted People
 - Safe Places
@@ -70,7 +70,7 @@ Six categories for comprehensive safety planning:
 - Transport Options
 - Things to Remember
 
-### 6. 🚨 Emergency Services Dialer
+**6. Emergency Services Dialer**
 One-tap calling to South African emergency services:
 - **General Emergency**: 112
 - **Police SAPS**: 10111
@@ -83,7 +83,7 @@ One-tap calling to South African emergency services:
 
 All tables use Supabase with Row-Level Security (RLS) enabled:
 
-### Tables:
+**Tables:**
 1. **contacts** - Trusted circle members (up to 5 per user)
 2. **live_locations** - Real-time location tracking
 3. **notes** - Private encrypted notes
@@ -91,11 +91,11 @@ All tables use Supabase with Row-Level Security (RLS) enabled:
 5. **sos_alerts** - SOS alert history
 6. **alert_deliveries** - SMS delivery tracking
 
-### Security:
-- ✓ Row-Level Security on all tables
-- ✓ Users can only access their own data
-- ✓ Trusted contacts can view shared locations
-- ✓ No cross-user data leakage
+**Security:**
+- Row-Level Security on all tables
+- Users can only access their own data
+- Trusted contacts can view shared locations
+- No cross-user data leakage
 
 
 ## Android Permissions
@@ -114,16 +114,16 @@ iOS permissions also configured for location services.
 
 ## Verification Status
 
-### TypeScript Compilation: PASSED
+**TypeScript Compilation: PASSED**
 - All files compile without errors
 - Type safety verified across all components
 
-### Database Integration: VERIFIED
+**Database Integration: VERIFIED**
 - All CRUD operations working
 - RLS policies tested
 - Data persistence confirmed
 
-### Features: 95% COMPLETE
+**Features: 95% COMPLETE**
 **Implemented:**
 - SOS Alert System
 - Trusted Circle Management
@@ -142,7 +142,7 @@ iOS permissions also configured for location services.
 - Support services directory (planned)
 - Consent-based referral (planned)
 
-### Code Quality: VERIFIED
+**Code Quality: VERIFIED**
 - TypeScript strict mode enabled
 - No compilation errors
 - Proper error handling
@@ -152,22 +152,22 @@ iOS permissions also configured for location services.
 
 ## Testing Guide
 
-### Manual Testing Checklist:
+**Manual Testing Checklist:**
 
-#### 1. Authentication Flow
+**1. Authentication Flow**
 - [ ] Sign up new user
 - [ ] Sign in existing user
 - [ ] Sign out
 - [ ] Session persistence
 
-#### 2. Trusted Circle
+**2. Trusted Circle**
 - [ ] Add contact (name + phone)
 - [ ] Add up to 5 contacts
 - [ ] Try adding 6th (should warn)
 - [ ] Remove contact
 - [ ] Verify persistence
 
-#### 3. SOS Alert
+**3. SOS Alert**
 - [ ] Hold button for 1.5 seconds
 - [ ] Send without location
 - [ ] Send with location
@@ -175,7 +175,7 @@ iOS permissions also configured for location services.
 - [ ] Check delivery status
 - [ ] Cancel alert
 
-#### 4. Live Location
+**4. Live Location**
 - [ ] Request permissions
 - [ ] Start tracking
 - [ ] View updates (every 10s)
@@ -183,53 +183,53 @@ iOS permissions also configured for location services.
 - [ ] Share via SMS
 - [ ] Stop tracking
 
-#### 5. Private Notes
+**5. Private Notes**
 - [ ] Create note
 - [ ] View notes list
 - [ ] Delete note
 - [ ] Verify persistence
 
-#### 6. Safety Plan
+**6. Safety Plan**
 - [ ] Edit each category
 - [ ] Save changes
 - [ ] Cancel changes
 - [ ] Verify persistence
 
-#### 7. Emergency Dialer
+**7. Emergency Dialer**
 - [ ] Tap each service
 - [ ] Verify confirmation dialog
 - [ ] Phone dialer opens
 - [ ] Cancel works
 
-### Security Testing:
+**Security Testing:**
 - [ ] Sign in as different users
 - [ ] Verify data isolation
 - [ ] Test permission handling
 - [ ] Deny/grant location access
 
-### Error Scenarios:
+**Error Scenarios:**
 - [ ] No internet connection
 - [ ] Invalid data input
 - [ ] Battery low during tracking
 - [ ] App in background
 
 
-## 🔧 Environment Setup
+## Environment Setup
 
-### Mobile App (.env file)
+**Mobile App (.env file)**
 Create `mobile/.env` with:
 ```
 EXPO_PUBLIC_SUPABASE_URL=https://bnmzydhlmhwxejfuydeb.supabase.co
 EXPO_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
 ```
 
-### Web App (.env file)
+**Web App (.env file)**
 Already configured in root `.env`
 
 
 ## Deployment
 
-### Mobile App:
+**Mobile App:**
 ```bash
 cd mobile
 # For Android
@@ -239,7 +239,7 @@ eas build --platform android
 eas build --platform ios
 ```
 
-### Web App:
+**Web App:**
 ```bash
 npm run build:web
 ```
@@ -247,9 +247,9 @@ npm run build:web
 Deploy to Netlify or similar platform.
 
 
-## 📦 Dependencies
+## Dependencies
 
-### Mobile App (Expo SDK ~58):
+**Mobile App (Expo SDK ~58):**
 - expo-location (v58.0.18)
 - expo-sms (v58.0.2)
 - expo-linking (v58.0.13)
@@ -260,15 +260,15 @@ Deploy to Netlify or similar platform.
 
 ## Known Limitations
 
-### SMS Behavior:
+**SMS Behavior:**
 - **iOS**: User must manually tap "Send" in message composer
 - **Android**: SMS composer opens, user confirms send
 
-### Background Location:
+**Background Location:**
 - Requires testing on physical device
 - May need additional config for production builds
 
-### Platform Limitations:
+**Platform Limitations:**
 - Web app uses SMS links (browser opens messaging app)
 - Battery monitoring depends on browser support
 - Location is snapshot-based in web app
