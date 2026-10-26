@@ -161,6 +161,17 @@ export default function HomeScreen() {
     >
       {session ? (
         <View style={styles.mainScreen}>
+          {/* Decorative corner elements */}
+          <View style={styles.cornerTopLeft} />
+          <View style={styles.cornerTopRight} />
+          <View style={styles.cornerBottomLeft} />
+          <View style={styles.cornerBottomRight} />
+          
+          {/* Decorative circles */}
+          <View style={styles.decorativeCircle1} />
+          <View style={styles.decorativeCircle2} />
+          <View style={styles.decorativeCircle3} />
+
           <Pressable
             style={styles.hamburgerButton}
             onPress={() => setMenuOpen(true)}
@@ -173,6 +184,9 @@ export default function HomeScreen() {
           </Pressable>
 
           <View style={styles.panicContainer}>
+            <Text style={styles.appTitle}>PANIC RING</Text>
+            <Text style={styles.appSubtitle}>Your Safety, Our Priority</Text>
+            
             <Pressable
               style={styles.panicButton}
               onPress={handlePanicPress}
@@ -181,6 +195,8 @@ export default function HomeScreen() {
             >
               <Text style={styles.panicButtonText}>PANIC</Text>
             </Pressable>
+            
+            <Text style={styles.instructionText}>Hold for emergency</Text>
           </View>
 
           <Modal
@@ -452,6 +468,96 @@ const styles = StyleSheet.create({
   mainScreen: { 
     flex: 1, 
     backgroundColor: '#FFE4F0',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+
+  cornerTopLeft: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: 80,
+    height: 80,
+    borderBottomRightRadius: 40,
+    backgroundColor: 'rgba(220, 38, 38, 0.1)',
+    borderRightWidth: 3,
+    borderBottomWidth: 3,
+    borderColor: 'rgba(220, 38, 38, 0.3)',
+  },
+
+  cornerTopRight: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: 60,
+    height: 60,
+    borderBottomLeftRadius: 30,
+    backgroundColor: 'rgba(236, 72, 153, 0.1)',
+    borderLeftWidth: 3,
+    borderBottomWidth: 3,
+    borderColor: 'rgba(236, 72, 153, 0.3)',
+  },
+
+  cornerBottomLeft: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    width: 70,
+    height: 70,
+    borderTopRightRadius: 35,
+    backgroundColor: 'rgba(220, 38, 38, 0.1)',
+    borderRightWidth: 3,
+    borderTopWidth: 3,
+    borderColor: 'rgba(220, 38, 38, 0.3)',
+  },
+
+  cornerBottomRight: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 90,
+    height: 90,
+    borderTopLeftRadius: 45,
+    backgroundColor: 'rgba(236, 72, 153, 0.1)',
+    borderLeftWidth: 3,
+    borderTopWidth: 3,
+    borderColor: 'rgba(236, 72, 153, 0.3)',
+  },
+
+  decorativeCircle1: {
+    position: 'absolute',
+    top: '15%',
+    right: '10%',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.4)',
+    borderWidth: 2,
+    borderColor: 'rgba(220, 38, 38, 0.3)',
+  },
+
+  decorativeCircle2: {
+    position: 'absolute',
+    bottom: '25%',
+    left: '8%',
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    borderWidth: 2,
+    borderColor: 'rgba(236, 72, 153, 0.3)',
+  },
+
+  decorativeCircle3: {
+    position: 'absolute',
+    top: '70%',
+    right: '15%',
+    width: 25,
+    height: 25,
+    borderRadius: 12.5,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    borderWidth: 2,
+    borderColor: 'rgba(220, 38, 38, 0.3)',
   },
 
   hamburgerButton: {
@@ -462,18 +568,18 @@ const styles = StyleSheet.create({
     height: 44,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 22,
     zIndex: 10,
     ...Platform.select({
       ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 4,
+        shadowColor: '#DC2626',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
       },
       android: {
-        elevation: 4,
+        elevation: 6,
       },
     }),
   },
@@ -490,6 +596,37 @@ const styles = StyleSheet.create({
     flex: 1, 
     justifyContent: 'center', 
     alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+
+  appTitle: {
+    fontSize: 36,
+    fontWeight: '900',
+    color: '#DC2626',
+    letterSpacing: 4,
+    marginBottom: 8,
+    textShadowColor: 'rgba(220, 38, 38, 0.3)',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 4,
+  },
+
+  appSubtitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#DC2626',
+    letterSpacing: 2,
+    marginBottom: 40,
+    opacity: 0.8,
+    fontStyle: 'italic',
+  },
+
+  instructionText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#DC2626',
+    marginTop: 30,
+    opacity: 0.7,
+    letterSpacing: 1,
   },
   
   panicButton: { 
@@ -503,25 +640,30 @@ const styles = StyleSheet.create({
     backgroundColor: '#DC2626',
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 6,
+    borderColor: 'rgba(255, 255, 255, 0.9)',
     ...Platform.select({
       ios: {
         shadowColor: '#DC2626',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.4,
-        shadowRadius: 16,
+        shadowOffset: { width: 0, height: 12 },
+        shadowOpacity: 0.5,
+        shadowRadius: 20,
       },
       android: {
-        elevation: 12,
+        elevation: 16,
       },
     }),
   },
   
   panicButtonText: { 
-    fontSize: Math.min(width * 0.12, 48), 
+    fontSize: Math.min(width * 0.12, 52), 
     fontWeight: '900', 
     color: '#FFFFFF',
-    letterSpacing: 3,
+    letterSpacing: 4,
     textTransform: 'uppercase',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 4,
   },
   
   modalOverlay: { 
