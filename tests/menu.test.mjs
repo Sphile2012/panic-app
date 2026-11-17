@@ -8,6 +8,7 @@ const main = await readFile(new URL('../src/main.js', import.meta.url), 'utf8');
 const welcome = await readFile(new URL('../src/screens/emailAuth.js', import.meta.url), 'utf8');
 const safetyPlan = await readFile(new URL('../src/screens/safetyPlan.js', import.meta.url), 'utf8');
 const storage = await readFile(new URL('../src/storage.js', import.meta.url), 'utf8');
+const styles = await readFile(new URL('../src/style.css', import.meta.url), 'utf8');
 
 test('hamburger and More open the same full menu without subscriptions, smartwatch, or Find My Phone', () => {
   assert.match(app, /bindImmediateActivation\(root\.querySelector(?:<HTMLButtonElement>)?\('#btn-menu'\), openMenu\)/);
@@ -33,6 +34,12 @@ test('hamburger and More open the same full menu without subscriptions, smartwat
   assert.doesNotMatch(menu, /side-menu-nav-controls|data-history=|side-menu-cancel/);
   assert.match(menu, /id="side-menu-theme-toggle"[\s\S]*?Day mode/);
   assert.match(menu, /applyAppearance\(appearance\)/);
+});
+
+test('dark-mode sign-out text stays readable on its button', () => {
+  const darkSignout = styles.match(/\[data-theme="dark"\]\s+\.side-menu-signout\s*\{([^}]+)\}/)?.[1] ?? '';
+  assert.match(darkSignout, /background:\s*#4a2d43/);
+  assert.match(darkSignout, /color:\s*#ffe9f4/);
 });
 
 test('welcome login uses a local PIN without requiring email or password', () => {

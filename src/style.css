@@ -7787,6 +7787,18 @@ h3,
   background: linear-gradient(180deg, #30233a, #241a2d);
 }
 
+[data-theme="dark"] .side-menu-signout {
+  border-color: #80506a;
+  background: #4a2d43;
+  color: #ffe9f4;
+}
+
+[data-theme="dark"] .side-menu-signout:hover,
+[data-theme="dark"] .side-menu-signout:focus-visible {
+  background: #633a55;
+  color: #fff7fb;
+}
+
 [data-theme="dark"] .side-menu-disguise {
   border-color: var(--border);
   background: var(--surface);
