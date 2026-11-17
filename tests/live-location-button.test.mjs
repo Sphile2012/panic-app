@@ -13,7 +13,7 @@ test('app menu button opens the full side menu and preserves the More action', (
     assert.match(source, /aria-label="Open app menu"/);
     assert.match(source, /title="Open app menu"/);
     assert.match(source, /<path d="M4 6h16M4 12h16M4 18h16"\/>/);
-    assert.match(source, /root\.querySelector\('#btn-menu'\)\.addEventListener\('click', openMenu\)/);
+    assert.match(source, /bindImmediateActivation\(root\.querySelector(?:<HTMLButtonElement>)?\('#btn-menu'\), openMenu\)/);
     assert.match(source, /id="btn-open-menu"[^>]*aria-label="\$\{t\('nav\.more'\)\}"[\s\S]*?<span>\$\{t\('nav\.more'\)\}<\/span>/);
     assert.match(source, /root\.querySelector\('#btn-open-menu'\)\.addEventListener\('click', openMoreMenu\)/);
     assert.match(source, /id="btn-hold"/);

@@ -10,7 +10,9 @@ const safetyPlan = await readFile(new URL('../src/screens/safetyPlan.js', import
 const storage = await readFile(new URL('../src/storage.js', import.meta.url), 'utf8');
 
 test('hamburger and More open the same full menu without subscriptions, smartwatch, or Find My Phone', () => {
-  assert.match(app, /root\.querySelector\('#btn-menu'\)\.addEventListener\('click', openMenu\)/);
+  assert.match(app, /bindImmediateActivation\(root\.querySelector(?:<HTMLButtonElement>)?\('#btn-menu'\), openMenu\)/);
+  assert.match(app, /button\.addEventListener\('pointerdown'/);
+  assert.match(app, /button\.addEventListener\('click'[\s\S]*?event\.detail === 0/);
   assert.match(app, /root\.querySelector\('#btn-open-menu'\)\.addEventListener\('click', openMoreMenu\)/);
   assert.doesNotMatch(app, /querySelector\('#btn-profile'\)|querySelector\('#btn-disguise'\)/);
   const bottomNav = app.match(/<nav class="app-bottom-nav"[^>]*>([\s\S]*?)<\/nav>/)?.[1] ?? '';

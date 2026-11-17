@@ -2031,7 +2031,7 @@ html[data-photo-background="true"] .phone-screen > .screen { background: transpa
 .app-bottom-nav-btn:hover { color: var(--accent); background: var(--surface2); }
 
 .side-menu-root { position: fixed; inset: 0; z-index: 1000; }
-.side-menu-backdrop { position: absolute; inset: 0; background: rgba(14, 17, 44, .48); backdrop-filter: blur(2px); }
+.side-menu-backdrop { position: absolute; inset: 0; background: rgba(14, 17, 44, .48); }
 .side-menu {
   position: absolute;
   inset: 0 auto 0 0;
@@ -2043,7 +2043,7 @@ html[data-photo-background="true"] .phone-screen > .screen { background: transpa
   overflow: hidden;
   background: linear-gradient(180deg, #fff 0%, #faf8ff 100%);
   box-shadow: 15px 0 40px rgba(20, 22, 66, .28);
-  animation: menu-slide-in .2s ease-out;
+  animation: menu-slide-in .1s ease-out;
 }
 @keyframes menu-slide-in { from { transform: translateX(-24px); opacity: .7; } to { transform: translateX(0); opacity: 1; } }
 .side-menu-head {
@@ -7839,6 +7839,7 @@ body {
   .side-menu-item {
     transition: none;
   }
+  .side-menu { animation: none; }
 }
 
 body {

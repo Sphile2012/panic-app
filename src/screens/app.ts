@@ -25,6 +25,17 @@ const DASHBOARD_CARDS = [
     { screen: 'troubleshoot', icon: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 4 2c-1 .7-1.5 1.1-1.5 2.5M12 17h.01"/>', label: 'Troubleshooting', detail: 'Fix common issues' },
 ];
 
+function bindImmediateActivation(button: HTMLButtonElement, action: () => void): void {
+    button.addEventListener('pointerdown', event => {
+        if (event.isPrimary && event.button === 0)
+            action();
+    });
+    button.addEventListener('click', event => {
+        if (event.detail === 0)
+            action();
+    });
+}
+
 export function renderApp(root) {
     const { contacts, authEmail, profile } = store.getState();
     const appearance = loadAppearance();
@@ -181,7 +192,7 @@ export function renderApp(root) {
             cancelHold();
     });
     holdBtn.addEventListener('blur', cancelHold);
-    root.querySelector('#btn-menu').addEventListener('click', openMenu);
+    bindImmediateActivation(root.querySelector('#btn-menu'), openMenu);
     root.querySelector('#btn-open-menu').addEventListener('click', openMoreMenu);
     root.querySelector('#btn-manage-contacts')?.addEventListener('click', () => {
         store.navigateTo('contacts');
