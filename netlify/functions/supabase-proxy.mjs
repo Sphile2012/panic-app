@@ -7,7 +7,7 @@ const HOP_BY_HOP_HEADERS = new Set([
 
 function upstreamConfig(env) {
   const supabaseUrl = env.SUPABASE_URL;
-  const publishableKey = env.SUPABASE_ANON_KEY;
+  const publishableKey = env.SUPABASE_PUBLISHABLE_KEY ?? env.SUPABASE_ANON_KEY;
   if (!supabaseUrl || !publishableKey)
     return null;
   try {
@@ -17,7 +17,7 @@ function upstreamConfig(env) {
         (url.protocol === 'http:' && !local) ||
         url.username || url.password || url.pathname !== '/' || url.search || url.hash)
       return null;
-    return { url, anonKey: publishableKey };
+    return { url, apiKey: publishableKey };
   }
   catch {
     return null;
@@ -67,9 +67,13 @@ export async function handler(event) {
     if (!HOP_BY_HOP_HEADERS.has(lowerName) && typeof value === 'string')
       headers.set(lowerName, value);
   }
-  headers.set('apikey', config.anonKey);
-  if (headers.get('authorization') === `Bearer ${PROXY_API_KEY}`)
-    headers.set('authorization', `Bearer ${config.anonKey}`);
+  headers.set('apikey', config.apiKey);
+  if (headers.get('authorization') === `Bearer ${PROXY_API_KEY}`) {
+    if (config.apiKey.startsWith('sb_publishable_'))
+      headers.delete('authorization');
+    else
+      headers.set('authorization', `Bearer ${config.apiKey}`);
+  }
 
   const body = event.isBase64Encoded
     ? Buffer.from(event.body ?? '', 'base64')

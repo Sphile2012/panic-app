@@ -14,6 +14,7 @@ const originalFetch = globalThis.fetch;
 const netlifyConfig = await readFile(new URL('../netlify.toml', import.meta.url), 'utf8');
 const originalEnv = {
   SUPABASE_URL: process.env.SUPABASE_URL,
+  SUPABASE_PUBLISHABLE_KEY: process.env.SUPABASE_PUBLISHABLE_KEY,
   SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY,
   WHAT3WORDS_API_KEY: process.env.WHAT3WORDS_API_KEY,
 };
@@ -23,8 +24,14 @@ test('Netlify keeps Supabase credentials in private site environment settings, n
   assert.doesNotMatch(netlifyConfig, /^\s*VITE_AUTH_ENABLED\s*=\s*"true"/m);
 });
 
+test('Netlify secret scanning omits only public Supabase URL and API keys', () => {
+  assert.match(netlifyConfig, /SECRETS_SCAN_OMIT_KEYS\s*=\s*"SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,SUPABASE_ANON_KEY,VITE_SUPABASE_ANON_KEY"/);
+  assert.doesNotMatch(netlifyConfig, /SERVICE_ROLE/);
+});
+
 beforeEach(() => {
   delete process.env.SUPABASE_URL;
+  delete process.env.SUPABASE_PUBLISHABLE_KEY;
   delete process.env.SUPABASE_ANON_KEY;
   delete process.env.WHAT3WORDS_API_KEY;
 });
@@ -127,6 +134,27 @@ test('Supabase proxy injects its anon key and substitutes only the placeholder b
   assert.equal(request.options.headers.get('authorization'), 'Bearer server-side-anon-key');
   assert.equal(request.options.headers.get('host'), null);
   assert.deepEqual(JSON.parse(Buffer.from(result.body, 'base64').toString()), { id: 'created' });
+});
+
+test('Supabase proxy sends publishable keys only as API keys', async () => {
+  process.env.SUPABASE_URL = 'https://project.supabase.co';
+  process.env.SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_test-key';
+  let requestHeaders;
+  globalThis.fetch = async (_url, options) => {
+    requestHeaders = options.headers;
+    return new Response('{"ok":true}', { status: 200 });
+  };
+
+  const result = await supabaseProxy({
+    httpMethod: 'GET',
+    path: '/api/rest/v1/devices',
+    rawUrl: 'https://panic-ring.example/api/rest/v1/devices',
+    headers: { authorization: 'Bearer panic-ring-public-proxy-key' },
+  });
+
+  assert.equal(result.statusCode, 200);
+  assert.equal(requestHeaders.get('apikey'), 'sb_publishable_test-key');
+  assert.equal(requestHeaders.get('authorization'), null);
 });
 
 test('Supabase proxy preserves a signed-in user token and sanitizes upstream server errors', async () => {
