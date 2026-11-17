@@ -6,6 +6,8 @@ const menu = await readFile(new URL('../src/menu.js', import.meta.url), 'utf8');
 const app = await readFile(new URL('../src/screens/app.js', import.meta.url), 'utf8');
 const main = await readFile(new URL('../src/main.js', import.meta.url), 'utf8');
 const welcome = await readFile(new URL('../src/screens/emailAuth.js', import.meta.url), 'utf8');
+const safetyPlan = await readFile(new URL('../src/screens/safetyPlan.js', import.meta.url), 'utf8');
+const storage = await readFile(new URL('../src/storage.js', import.meta.url), 'utf8');
 
 test('hamburger and More open the same full menu without subscriptions, smartwatch, or Find My Phone', () => {
   assert.match(app, /root\.querySelector\('#btn-menu'\)\.addEventListener\('click', openMenu\)/);
@@ -38,4 +40,11 @@ test('welcome login uses a local PIN without requiring email or password', () =>
   assert.doesNotMatch(screen, /type="email"|type="password"|email\/password/);
   assert.match(main, /case 'location':\s*renderLocation\(appRoot\)/);
   assert.match(main, /case 'watch':\s*renderWatch\(appRoot\)/);
+});
+
+test('safety plan stores a safe word and exposes the safe-word screen', () => {
+  assert.match(storage, /safeWord:\s*''/);
+  assert.match(safetyPlan, /safe-word[\s\S]*?Safe word|Safe word[\s\S]*?safe-word/);
+  assert.match(safetyPlan, /safeWord:\s*get\('safe-word'\)/);
+  assert.match(main, /case 'safe-word':\s*renderSafeWord\(appRoot\)/);
 });

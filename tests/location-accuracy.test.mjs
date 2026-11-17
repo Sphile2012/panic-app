@@ -6,6 +6,8 @@ import { hasValidCoordinates, isShareableAccuracy, MAX_SHARE_ACCURACY_METERS } f
 const alertService = await readFile(new URL('../src/alertService.ts', import.meta.url), 'utf8');
 const locationScreen = await readFile(new URL('../src/screens/location.ts', import.meta.url), 'utf8');
 const liveScreen = await readFile(new URL('../src/screens/live.ts', import.meta.url), 'utf8');
+const tracking = await readFile(new URL('../src/tracking.ts', import.meta.url), 'utf8');
+const trackingRuntime = await readFile(new URL('../src/tracking.js', import.meta.url), 'utf8');
 
 test('location sharing only accepts valid coordinates with GPS accuracy within 50 metres', () => {
   assert.equal(MAX_SHARE_ACCURACY_METERS, 50);
@@ -26,6 +28,18 @@ test('location sharing requests a fresh GPS fix and labels mapped addresses as a
   assert.doesNotMatch(locationScreen, /Current coordinates/);
   assert.match(locationScreen, /GPS accuracy/);
   assert.match(locationScreen, /Open in Google Maps/);
+});
+
+test('location previews and live sharing reject GPS fixes less accurate than 50 metres', () => {
+  assert.match(locationScreen, /isShareableAccuracy\(accuracy\)/);
+  assert.match(locationScreen, /Waiting for a fix within 50 m before displaying or sharing it/);
+  assert.match(tracking, /isShareableAccuracy\(accuracy\)/);
+  assert.match(tracking, /last = null;\s*error = 'inaccurate';\s*return;/);
+  assert.match(liveScreen, /err === 'inaccurate'[\s\S]*?GPS accuracy is over 50 m/);
+  for (const source of [tracking, trackingRuntime]) {
+    assert.match(source, /hasValidCoordinates\(lat, lng\)/);
+    assert.match(source, /!isShareableAccuracy\(accuracy\)/);
+  }
 });
 
 test('live SMS and WhatsApp messages include a mapped address and GPS fallback', () => {

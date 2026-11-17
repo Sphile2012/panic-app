@@ -7840,3 +7840,158 @@ body {
     transition: none;
   }
 }
+
+body {
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(ellipse at 50% 8%, rgba(108, 72, 143, .18), transparent 42%),
+    radial-gradient(ellipse at 50% 92%, rgba(173, 69, 133, .12), transparent 38%),
+    var(--bg);
+}
+
+:root,
+[data-theme="light"] {
+  --side-line: rgba(136, 91, 158, .22);
+  --side-glow: rgba(177, 108, 181, .12);
+  --side-panel: rgba(244, 238, 249, .78);
+}
+
+[data-theme="dark"] {
+  --side-line: rgba(202, 152, 213, .22);
+  --side-glow: rgba(193, 128, 198, .08);
+  --side-panel: rgba(24, 20, 34, .45);
+}
+
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  z-index: 0;
+  top: 50%;
+  width: clamp(72px, 10vw, 128px);
+  height: min(72vh, 620px);
+  transform: translateY(-50%);
+  border: 1px solid var(--side-line);
+  border-radius: 80px;
+  background:
+    radial-gradient(circle at 50% 10%, transparent 0 23px, var(--side-line) 24px 25px, transparent 26px),
+    radial-gradient(circle at 50% 90%, transparent 0 18px, var(--side-line) 19px 20px, transparent 21px),
+    radial-gradient(ellipse at 50% 10%, var(--side-glow), transparent 32%),
+    repeating-linear-gradient(180deg, transparent 0 27px, var(--side-line) 28px 29px, transparent 30px 58px),
+    linear-gradient(180deg, var(--surface2), var(--side-panel));
+  box-shadow: inset 0 0 28px var(--side-glow), 0 0 32px rgba(127, 69, 135, .12);
+  pointer-events: none;
+}
+
+body::before {
+  left: max(16px, calc(50% - 450px));
+}
+
+body::after {
+  right: max(16px, calc(50% - 450px));
+}
+
+.phone-frame {
+  z-index: 1;
+  background: var(--bg);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, .2), 0 0 0 1px var(--border);
+}
+
+.phone-frame::before,
+.phone-frame::after {
+  content: "";
+  position: absolute;
+  z-index: 20;
+  top: 18%;
+  bottom: 18%;
+  width: 2px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, transparent, rgba(211, 157, 223, .65), rgba(197, 104, 170, .52), transparent);
+  opacity: .48;
+  pointer-events: none;
+}
+
+.phone-frame::before { left: 4px; }
+.phone-frame::after { right: 4px; }
+
+@media (max-width: 680px) {
+  body::before,
+  body::after {
+    display: none;
+  }
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #12101a;
+  --surface: #1d1927;
+  --surface2: #292337;
+  --border: #3a3248;
+  --text: #f7f1fb;
+  --text-muted: #c1b6ca;
+}
+
+[data-theme="dark"] body {
+  background:
+    radial-gradient(ellipse at 50% 8%, rgba(108, 72, 143, .18), transparent 42%),
+    radial-gradient(ellipse at 50% 92%, rgba(173, 69, 133, .12), transparent 38%),
+    #100e18;
+}
+
+[data-theme="dark"] .phone-frame {
+  background: #17131f;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, .48), 0 0 0 1px rgba(198, 148, 212, .24);
+}
+
+[data-theme="dark"] .screen:not(.app-screen):not(.chat-screen):not(.calculator-screen):not(.decoy-screen):not(.location-screen-modern):not(.weather-screen):not(.notes-plain-screen):not(.budget-screen):not(.clock-screen) {
+  color: var(--text);
+  background: linear-gradient(155deg, #211c2b, #12101a);
+}
+
+[data-theme="dark"] .splash-screen {
+  color: var(--text);
+  background:
+    radial-gradient(ellipse at 8% 4%, rgba(163, 72, 129, .28), transparent 48%),
+    radial-gradient(ellipse at 100% 88%, rgba(99, 78, 162, .28), transparent 46%),
+    linear-gradient(155deg, #1d1827, #100e18);
+}
+
+[data-theme="dark"] .splash-screen::after {
+  background: linear-gradient(155deg, rgba(226, 190, 226, .04), rgba(154, 128, 182, .08));
+}
+
+[data-theme="dark"] .splash-card,
+[data-theme="dark"] .auth-card,
+[data-theme="dark"] .auth-sheet {
+  color: var(--text);
+  border-color: rgba(195, 157, 209, .28);
+  background: linear-gradient(155deg, rgba(42, 34, 54, .97), rgba(28, 23, 39, .97));
+  box-shadow: 0 16px 38px rgba(0, 0, 0, .26), inset 0 1px 0 rgba(255, 255, 255, .06);
+}
+
+[data-theme="dark"] .splash-tagline,
+[data-theme="dark"] .splash-pin-hint,
+[data-theme="dark"] .splash-signup-text,
+[data-theme="dark"] .splash-forgot-link,
+[data-theme="dark"] .splash-install-message {
+  color: #e8dced;
+  text-shadow: none;
+}
+
+[data-theme="dark"] .splash-screen .lang-select {
+  color: var(--text);
+  border-color: var(--border);
+  background-color: var(--surface);
+}
+
+[data-theme="dark"] .location-screen {
+  background: linear-gradient(155deg, #211c2b, #12101a);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body::before,
+  body::after {
+    scroll-behavior: auto;
+  }
+}

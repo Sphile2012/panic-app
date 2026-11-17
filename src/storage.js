@@ -39,7 +39,7 @@ function savePublic(d) {
 }
 export const EMPTY_PLAN = {
     trustedPeople: '', safePlaces: '', emergencyNumbers: '',
-    importantDocs: '', transportOptions: '', thingsToRemember: '',
+    importantDocs: '', transportOptions: '', thingsToRemember: '', safeWord: '',
 };
 export const EMPTY_VAULT = { contacts: [], notes: [], safetyPlan: { ...EMPTY_PLAN } };
 export async function loadVault(pinHash) {
@@ -52,6 +52,10 @@ export async function loadVault(pinHash) {
             return { ...EMPTY_VAULT };
         return {
             ...data,
+            safetyPlan: {
+                ...EMPTY_PLAN,
+                ...(data.safetyPlan ?? {}),
+            },
             contacts: data.contacts.map(contact => ({
                 ...contact,
                 relationship: contact.relationship || 'Other',

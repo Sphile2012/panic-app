@@ -1,6 +1,7 @@
 import { store } from '../state.js';
 import { getLocation } from '../alertService.js';
 import { smsUri, whatsappUri } from '../storage.js';
+import { isShareableAccuracy } from '../locationConfig.mjs';
 function esc(value) {
     return value.replace(/[&<>"']/g, character => ({
         '&': '&amp;',
@@ -154,6 +155,7 @@ export function renderLocation(root) {
   `;
     const mapFrame = root.querySelector('#location-map') as HTMLIFrameElement;
     const mapPlaceholder = root.querySelector('#location-map-placeholder') as HTMLElement;
+    const mapPlaceholderHint = mapPlaceholder.querySelector('small') as HTMLElement;
     const mapStatus = root.querySelector('#location-map-status') as HTMLElement;
     const googleMapsLink = root.querySelector('#location-google-maps') as HTMLAnchorElement;
     const mapDetails = root.querySelector('#location-map-details') as HTMLElement;
@@ -200,6 +202,7 @@ export function renderLocation(root) {
         mapFrame.title = `Map showing your current location with reported accuracy of approximately ${Math.round(accuracy)} metres`;
         mapFrame.hidden = false;
         mapPlaceholder.hidden = true;
+        mapPlaceholderHint.textContent = 'Allow location access to find your position.';
         mapStatus.textContent = `${label} · GPS accuracy ±${Math.round(accuracy)} m`;
         mapDetails.textContent = `GPS accuracy ±${Math.round(accuracy)} m · Updated ${new Date().toLocaleTimeString()}`;
         mapDetails.hidden = false;
@@ -367,7 +370,24 @@ export function renderLocation(root) {
                     showLocationError('The device returned an invalid location. Check that Location is enabled in your device settings and try again.', 'live');
                     return;
                 }
+                if (!isShareableAccuracy(accuracy)) {
+                    errorEl.textContent = `GPS accuracy is ±${Math.ceil(accuracy)} m. Waiting for a fix within 50 m before displaying or sharing it.`;
+                    mapStatus.textContent = errorEl.textContent;
+                    retryBtn.hidden = true;
+                    permissionHelp.hidden = true;
+                    retryAction = null;
+                    mapFrame.hidden = true;
+                    mapFrame.removeAttribute('src');
+                    googleMapsLink.hidden = true;
+                    googleMapsLink.removeAttribute('href');
+                    mapPlaceholder.hidden = false;
+                    mapPlaceholderHint.textContent = 'Waiting for GPS accuracy within 50 m.';
+                    mapDetails.hidden = true;
+                    lastMapPosition = null;
+                    return;
+                }
                 
+                errorEl.textContent = '';
                 retryBtn.hidden = true;
                 retryAction = null;
                 permissionHelp.hidden = true;

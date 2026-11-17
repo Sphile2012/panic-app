@@ -84,7 +84,7 @@ export function disguiseDescription(id) {
 }
 const STORAGE_KEY = 'pr_appearance';
 const DEFAULT = {
-    mode: 'light',
+    mode: 'dark',
     accentId: 'pink',
     disguise: 'calculator',
     backgroundImage: '',

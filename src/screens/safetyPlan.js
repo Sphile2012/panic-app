@@ -22,6 +22,7 @@ export function renderSafetyPlan(root) {
         ${planField('important-docs', 'Important documents', 'ID, passport, bank cards — where they are', p.importantDocs)}
         ${planField('transport', 'Transport options', 'How I can get to a safe place', p.transportOptions)}
         ${planField('remember', 'Things to remember', 'Anything else I need to know in an emergency', p.thingsToRemember)}
+        ${planField('safe-word', 'Safe word', 'A word or phrase only your trusted person knows', p.safeWord ?? '')}
       </form>
 
       <p class="plan-footer">
@@ -42,6 +43,7 @@ export function renderSafetyPlan(root) {
             importantDocs: get('important-docs'),
             transportOptions: get('transport'),
             thingsToRemember: get('remember'),
+            safeWord: get('safe-word'),
         };
         store.saveSafetyPlan(plan);
         const btn = root.querySelector('#btn-save-plan');

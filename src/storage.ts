@@ -30,6 +30,7 @@ export type SafetyPlan = {
     importantDocs: string;
     transportOptions: string;
     thingsToRemember: string;
+    safeWord: string;
 };
 
 export type Profile = {
@@ -104,7 +105,7 @@ function savePublic(d) {
 }
 export const EMPTY_PLAN: SafetyPlan = {
     trustedPeople: '', safePlaces: '', emergencyNumbers: '',
-    importantDocs: '', transportOptions: '', thingsToRemember: '',
+    importantDocs: '', transportOptions: '', thingsToRemember: '', safeWord: '',
 };
 
 export const EMPTY_VAULT: VaultData = { contacts: [], notes: [], safetyPlan: { ...EMPTY_PLAN } };
@@ -119,6 +120,10 @@ export async function loadVault(pinHash: string): Promise<VaultData> {
             return { ...EMPTY_VAULT };
         return {
             ...data,
+            safetyPlan: {
+                ...EMPTY_PLAN,
+                ...(data.safetyPlan ?? {}),
+            },
             contacts: data.contacts.map(contact => ({
                 ...contact,
                 relationship: contact.relationship || 'Other',

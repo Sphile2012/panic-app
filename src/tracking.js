@@ -1,4 +1,5 @@
 import { DB_CONFIGURED, getClient } from './db.js';
+import { hasValidCoordinates, isShareableAccuracy } from './locationConfig.mjs';
 const TOKEN_KEY = 'pr_track_token';
 const ACTIVE_KEY = 'pr_track_active';
 const INTERVAL_MS = 10000;
@@ -119,8 +120,13 @@ async function tick() {
         const { latitude, longitude, accuracy } = pos.coords;
         if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90 ||
             !Number.isFinite(longitude) || longitude < -180 || longitude > 180 ||
-            !Number.isFinite(accuracy) || accuracy < 0) {
+            !Number.isFinite(accuracy) || accuracy <= 0) {
             throw new Error('The browser returned an invalid location.');
+        }
+        if (!isShareableAccuracy(accuracy)) {
+            last = null;
+            error = 'inaccurate';
+            return;
         }
         last = {
             lat: latitude,
@@ -161,6 +167,7 @@ async function tick() {
         }
     }
     catch (e) {
+        last = null;
         error = e && e.code === 1 ? 'denied' : 'unavailable';
         if (error === 'denied')
             stopTracking();
@@ -213,10 +220,17 @@ export async function fetchTrack(token) {
             return null;
         }
         const r = data[0];
+        const lat = Number(r.lat);
+        const lng = Number(r.lng);
+        const accuracy = Number(r.accuracy);
+        if (!hasValidCoordinates(lat, lng) || !isShareableAccuracy(accuracy)) {
+            console.warn('[tracking] Shared location is outside the accuracy limit.');
+            return null;
+        }
         return {
-            lat: r.lat,
-            lng: r.lng,
-            accuracy: r.accuracy,
+            lat,
+            lng,
+            accuracy,
             battery: r.battery,
             charging: r.charging,
             at: new Date(r.updated_at).getTime(),

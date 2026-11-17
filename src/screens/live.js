@@ -65,8 +65,10 @@ export function renderLive(root) {
     }
     const paint = () => {
         const on = isTracking();
-        const last = on ? getLast() ?? capturedLocation : capturedLocation ?? getLast();
         const err = getError();
+        const last = err === 'inaccurate'
+            ? null
+            : on ? getLast() ?? capturedLocation : capturedLocation ?? getLast();
         const low = getLowBattery();
         const mapUrl = last ? mapsUrl(last) : null;
         const address = last ? resolveCurrentAddress(last) : null;
@@ -96,6 +98,8 @@ export function renderLive(root) {
         let status = t('trk.off');
         if (err === 'pending')
             status = t('trk.requesting');
+        else if (err === 'inaccurate')
+            status = 'GPS accuracy is over 50 m; waiting for a more accurate fix.';
         else if (err === 'insecure')
             status = t('trk.insecure');
         else if (err === 'denied')

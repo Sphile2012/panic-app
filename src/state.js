@@ -21,7 +21,7 @@ function buildInitialState() {
         notes: [],
         safetyPlan: {
             trustedPeople: '', safePlaces: '', emergencyNumbers: '',
-            importantDocs: '', transportOptions: '', thingsToRemember: '',
+            importantDocs: '', transportOptions: '', thingsToRemember: '', safeWord: '',
         },
         autoLockMinutes: pub.autoLockMinutes,
         alertLocation: 'Location not shared',
@@ -358,12 +358,13 @@ class Store {
         this.notify();
     }
     saveSafetyPlan(plan) {
-        this.state = { ...this.state, safetyPlan: plan };
+        const nextPlan = { ...this.state.safetyPlan, ...plan };
+        this.state = { ...this.state, safetyPlan: nextPlan };
         this.touch();
         this.notify();
         (async () => {
             const vault = await loadVault(this.state.pinHash);
-            vault.safetyPlan = plan;
+            vault.safetyPlan = nextPlan;
             await saveVault(vault, this.state.pinHash);
         })().catch(console.error);
     }

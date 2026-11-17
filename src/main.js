@@ -13,6 +13,8 @@ import { renderChat } from './screens/chat.js';
 import { renderSending, renderSent, updateSendingList } from './screens/sending.js';
 import { renderNotes, renderNoteEdit } from './screens/notes.js';
 import { renderSafetyPlan } from './screens/safetyPlan.js';
+import { renderSafeWord } from './screens/safeWord.js';
+import { renderContactMessage } from './screens/contactMessage.js';
 import { renderSupport } from './screens/support.js';
 import { renderSettings, renderChangePins, renderPinRecovery } from './screens/settings.js';
 import { renderAppearance } from './screens/appearance.js';
@@ -150,6 +152,15 @@ function render(screen) {
             break;
         case 'safety-plan':
             renderSafetyPlan(appRoot);
+            break;
+        case 'safe-word':
+            renderSafeWord(appRoot);
+            break;
+        case 'contact-message':
+            renderContactMessage(appRoot, 'referral');
+            break;
+        case 'contact-message-checkin':
+            renderContactMessage(appRoot, 'checkin');
             break;
         case 'support':
             renderSupport(appRoot);
