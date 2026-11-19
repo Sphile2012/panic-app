@@ -45,15 +45,23 @@ serve(async request => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
+    if (Boolean(pin) !== Boolean(questions)) {
+      console.error('PIN status lookup found an incomplete account record')
+      return new Response(JSON.stringify({ error: 'PIN status is unavailable' }), {
+        status: 503,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
     return new Response(JSON.stringify({
-      configured: Boolean(pin && questions),
+      configured: Boolean(pin),
       questionIds: questions ? [questions.question1_id, questions.question2_id] : [],
       lockedUntil: pin?.locked_until ?? null,
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
     })
-  } catch {
+  } catch (error) {
+    console.error('PIN status lookup failed:', error instanceof Error ? error.name : 'unknown')
     return new Response(JSON.stringify({ error: 'PIN status is unavailable' }), {
       status: 503,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -15,6 +15,7 @@ export type Screen =
   | 'welcome'
   | 'account-pin-check'
   | 'account-pin-login'
+  | 'account-pin-recovery'
   | 'calculator'
   | 'decoy'
   | 'setup-pin'

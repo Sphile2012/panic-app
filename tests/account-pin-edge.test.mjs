@@ -8,12 +8,16 @@ const migration = await readFile(
 );
 const setup = await readFile(new URL('../supabase/functions/pin-setup/index.ts', import.meta.url), 'utf8');
 const accountPinScreen = await readFile(new URL('../src/screens/accountPin.ts', import.meta.url), 'utf8');
+const accountPinScreenRuntime = await readFile(new URL('../src/screens/accountPin.js', import.meta.url), 'utf8');
 const recoveryScreen = await readFile(new URL('../src/screens/setup.ts', import.meta.url), 'utf8');
 const recoveryStorage = await readFile(new URL('../src/storage.ts', import.meta.url), 'utf8');
 const verify = await readFile(new URL('../supabase/functions/pin-verify/index.ts', import.meta.url), 'utf8');
 const change = await readFile(new URL('../supabase/functions/pin-change/index.ts', import.meta.url), 'utf8');
 const status = await readFile(new URL('../supabase/functions/pin-status/index.ts', import.meta.url), 'utf8');
 const databaseRunner = await readFile(new URL('../scripts/db.mjs', import.meta.url), 'utf8');
+const database = await readFile(new URL('../src/db.ts', import.meta.url), 'utf8');
+const databaseRuntime = await readFile(new URL('../src/db.js', import.meta.url), 'utf8');
+const bootstrap = await readFile(new URL('../supabase/schema.sql', import.meta.url), 'utf8');
 
 test('PIN hashes are inaccessible to public roles and setup storage is service-role only', () => {
   assert.match(migration, /revoke all on public\.user_pins, public\.security_questions from public, anon, authenticated/);
@@ -63,6 +67,39 @@ test('setup validates PIN confirmations and status exposes no credential hashes'
   assert.match(status, /question1_id, question2_id/);
   assert.doesNotMatch(status, /pin1_hash|pin2_hash|answer_hash/);
   assert.match(status, /Cache-Control': 'no-store'/);
+  assert.match(status, /Boolean\(pin\) !== Boolean\(questions\)/);
+  assert.match(status, /configured: Boolean\(pin\)/);
+});
+
+test('existing device PINs are connected without asking the user to create or confirm another pair', () => {
+  for (const screen of [accountPinScreen, accountPinScreenRuntime]) {
+    assert.match(screen, /const hasExistingDevicePins = Boolean\(publicData\.pin\)/);
+    assert.match(screen, /hasExistingDevicePins \? 'Connect your existing PINs' : 'Create your account PINs'/);
+    assert.match(screen, /hasExistingDevicePins \? 'Existing first PIN' : 'First PIN', !hasExistingDevicePins/);
+    assert.match(screen, /hasExistingDevicePins \? first : read\(root, 'pin-one-confirm'\)/);
+    assert.match(screen, /if \(!hasExistingDevicePins && \(first !== firstConfirm \|\| second !== secondConfirm\)\)/);
+    assert.match(screen, /!publicData\.decoyPin \|\| await hashPin\(first\) !== publicData\.pin \|\| await hashPin\(second\) !== publicData\.decoyPin/);
+  }
+});
+
+test('PIN backup and recovery calls use the configured Supabase client proxy', () => {
+  for (const source of [database, databaseRuntime]) {
+    assert.match(source, /setupAccountPins\(/);
+    assert.match(source, /verifyAccountPins\(pin1, pin2\)/);
+    assert.match(source, /changeAccountPins\(/);
+    assert.doesNotMatch(source, /EDGE_FUNCTION_URL|fetch\(`\$\{EDGE_FUNCTION_URL\}/);
+  }
+});
+
+test('fresh database bootstrap includes locked-down PIN tables and service-role RPCs', () => {
+  assert.match(bootstrap, /create table if not exists public\.user_pins/);
+  assert.match(bootstrap, /create table if not exists public\.security_questions/);
+  assert.match(bootstrap, /alter table public\.user_pins enable row level security/);
+  assert.match(bootstrap, /alter table public\.security_questions enable row level security/);
+  assert.match(bootstrap, /revoke all on public\.user_pins, public\.security_questions from public, anon, authenticated/);
+  assert.match(bootstrap, /grant execute on function public\.store_account_pin_setup[^;]*to service_role/);
+  assert.match(bootstrap, /grant execute on function public\.record_pin_failure[^;]*to service_role/);
+  assert.match(bootstrap, /grant execute on function public\.clear_pin_failures[^;]*to service_role/);
 });
 
 test('PIN Edge Functions restrict methods and advertise CORS methods', () => {

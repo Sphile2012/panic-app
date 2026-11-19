@@ -20,12 +20,15 @@ const mainRuntime = await readFile(new URL('../src/main.js', import.meta.url), '
 const liveScreen = await readFile(new URL('../src/screens/live.ts', import.meta.url), 'utf8');
 const liveRuntime = await readFile(new URL('../src/screens/live.js', import.meta.url), 'utf8');
 
-test('the app exposes PIN-only access, with no email or password dashboard', () => {
+test('the app requires email sign-in for account PIN access without exposing the old dashboard', () => {
   assert.match(emailAuth, /welcome\.pinHint/);
   assert.match(emailAuth, /welcome\.login/);
+  assert.match(emailAuth, /DB_CONFIGURED \? 'login'/);
   assert.match(emailAuth, /welcome\.new[\s\S]*?welcome\.signup/);
   assert.match(emailAuth, /splash-signup[\s\S]*?store\.navigateTo\('signup'\)/);
   assert.match(mainApp, /case 'signup':[\s\S]*?renderSignup\(appRoot\)/);
+  assert.match(mainApp, /case 'login':[\s\S]*?renderLogin\(appRoot\)/);
+  assert.match(mainApp, /case 'account-pin-check':[\s\S]*?renderAccountPinGate\(appRoot\)/);
   assert.doesNotMatch(dashboard, /d-li-email|d-su-email|d-li-password|d-su-password/);
   assert.match(dashboard, /http-equiv="refresh" content="0;url=\/"/);
   assert.match(dashboard, /window\.location\.replace/);
@@ -70,7 +73,7 @@ test('restored Supabase sessions initialize the app auth state used by Live Map'
   for (const source of [appState, appStateRuntime]) {
     assert.match(source, /isAuthenticated:\s*false/);
     assert.match(source, /isPinUnlocked:\s*true/);
-    assert.match(source, /isAuthenticated:\s*isAuthenticated \|\| this\.state\.isPinUnlocked/);
+    assert.match(source, /isAuthenticated,\s*[\s\S]*screen: isRecoveryReauthentication \? this\.state\.screen : 'account-pin-check'/);
     assert.match(source, /async savePin\([\s\S]*?isFirstRun: false,[\s\S]*?isPinUnlocked: true,[\s\S]*?isAuthenticated: true/);
     assert.match(source, /event === 'INITIAL_SESSION'/);
     assert.match(source, /restoreSession/);
@@ -94,7 +97,7 @@ test('PIN setup and updates require confirmation and reject repeated digits', ()
   assert.match(appState, /new Set\(pin\)\.size === pin\.length/);
 });
 
-test('signup collects the requested details and continues to PIN confirmation without passwords or OTP', () => {
+test('signup collects details, verifies email, and then continues through account PIN setup', () => {
   for (const source of [emailAuth, emailAuthRuntime]) {
     assert.match(source, /splash-signup[\s\S]*?store\.navigateTo\('signup'\)/);
     for (const fieldId of ['su-name', 'su-surname', 'su-dob', 'su-phone', 'su-email', 'su-province', 'su-country', 'su-address']) {
@@ -108,8 +111,9 @@ test('signup collects the requested details and continues to PIN confirmation wi
     assert.match(source, /Please agree to the Terms and Conditions to continue/);
     assert.match(source, /syncSignupDraft\(\)/);
     assert.match(source, /pendingSignupProfile = \{/);
-    assert.match(source, /store\.navigateTo\('setup-pin'\)/);
-    assert.doesNotMatch(source.match(/export function renderSignup[\s\S]*?(?=\nexport function renderLogin)/)?.[0] ?? '', /sendEmailAuthOtp|verifyEmailOtp|type="password"|otp-code/i);
+    assert.match(source, /sendEmailAuthOtp\(email, 'signup'/);
+    assert.match(source, /verifyEmailOtp\(pendingSignupEmail, code\.value\)/);
+    assert.match(source, /awaitingEmailCode/);
   }
   assert.match(mainApp, /case 'signup':[\s\S]*?renderSignup\(appRoot\)/);
   assert.match(pinSetup, /id="pin-confirm"/);

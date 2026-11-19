@@ -1,5 +1,5 @@
 import { store } from '../state.js';
-import { sendEmailAuthOtp, sendPhoneAuthOtp, setAuthenticatedPassword, signInWithGoogle, signInWithPassword, verifyEmailOtp, sendPasswordResetEmail, updatePassword } from '../db.js';
+import { DB_CONFIGURED, sendEmailAuthOtp, sendPhoneAuthOtp, signInWithGoogle, signInWithPassword, verifyEmailOtp, sendPasswordResetEmail, updatePassword } from '../db.js';
 import { resolveIdentifier } from '../authConfig.mjs';
 import { formatAuthError, SIGNUP_CONFIRMATION_MESSAGE } from '../authMessages.js';
 import { bindLanguageBar, languageBarHtml, t } from '../i18n.js';
@@ -67,7 +67,7 @@ function wireGoogleSignIn(root, errorSelector, buttonId) {
 function validateEmail(rawEmail) {
     return resolveIdentifier(rawEmail);
 }
-function showEmailCodeForm(form, email, purpose, fullName = '') {
+function showEmailCodeForm(form, email, purpose, fullName = '', phone = '') {
     form.innerHTML = `
     <label class="auth-visually-hidden" for="email-otp-code">Email verification code</label>
     <input class="text-input" id="email-otp-code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="Enter verification code" required />
@@ -78,7 +78,7 @@ function showEmailCodeForm(form, email, purpose, fullName = '') {
     form.querySelector('#email-otp-resend')?.addEventListener('click', async (event) => {
         const button = event.currentTarget;
         button.disabled = true;
-        const result = await sendEmailAuthOtp(email, purpose, fullName);
+        const result = await sendEmailAuthOtp(email, purpose, fullName, phone);
         button.disabled = false;
         error.textContent = result.error ? formatAuthError(result.error) : 'A new code has been sent.';
     });
@@ -104,11 +104,11 @@ function showPhoneCodeForm(form, phone, purpose) {
 export function renderWelcome(root) {
     const hasPinStored = Boolean(store.getState().pinHash);
     const welcomeTitle = t('welcome.title');
-    const welcomeTitleHtml = ({
+    const welcomeTitleHtml = {
         'We are one': 'We are<br><em>one</em>',
         'Re ntho e le nngwe': 'Re ntho e le<br><em>nngwe</em>',
         'Ons is een': 'Ons is<br><em>een</em>',
-    })[welcomeTitle] ?? escapeSignupValue(welcomeTitle);
+    }[welcomeTitle] ?? escapeSignupValue(welcomeTitle);
     root.innerHTML = `
     <div class="screen splash-screen relative isolate min-h-full overflow-y-auto bg-[#170820] p-0 text-white">
       <img class="splash-backdrop" src="/gbv-home-cover.png" alt="" aria-hidden="true" />
@@ -122,7 +122,6 @@ export function renderWelcome(root) {
             </button>
             ${languageBarHtml()}
           </div>
-
           <div class="splash-content">
             <h1 class="splash-tagline">${welcomeTitleHtml}</h1>
             <p class="splash-pin-hint">${t('welcome.pinHint')}</p>
@@ -149,7 +148,7 @@ export function renderWelcome(root) {
       </div>
     </div>`;
     root.querySelector('#splash-login')?.addEventListener('click', () => {
-        store.navigateTo(hasPinStored ? 'calculator' : 'setup-pin');
+        store.navigateTo(DB_CONFIGURED ? 'login' : hasPinStored ? 'calculator' : 'setup-pin');
     });
     root.querySelector('#splash-panic-button')?.addEventListener('click', () => {
         const message = root.querySelector('#splash-panic-message');
@@ -158,7 +157,7 @@ export function renderWelcome(root) {
     });
     bindLanguageBar(root, () => renderWelcome(root));
     root.querySelector('#splash-signup')?.addEventListener('click', () => store.navigateTo('signup'));
-    root.querySelector('#splash-forgot')?.addEventListener('click', () => store.navigateTo('pin-recovery'));
+    root.querySelector('#splash-forgot')?.addEventListener('click', () => store.navigateTo(DB_CONFIGURED ? 'login' : 'pin-recovery'));
 }
 export function renderSignup(root) {
     const draft = pendingSignupProfile;
@@ -166,7 +165,7 @@ export function renderSignup(root) {
     const surname = draft?.surname ?? '';
     root.innerHTML = `
     <div class="screen auth-screen auth-screen--scenic">
-      <header class="auth-hero auth-hero--signup"><h1>Sign up</h1><p>Enter your details, then create and confirm your PINs.</p></header>
+      <header class="auth-hero auth-hero--signup"><h1>Sign up</h1><p>${DB_CONFIGURED ? 'Enter your details and verify your email to create a persistent account PIN.' : 'Enter your details, then create and confirm your PINs.'}</p></header>
       <section class="auth-sheet">
         <form class="auth-form signup-details-form" id="signup-form" autocomplete="on" novalidate>
           <label class="field-label" for="su-name">First name</label>
@@ -177,8 +176,8 @@ export function renderSignup(root) {
           <input class="text-input" id="su-dob" type="date" autocomplete="bday" value="${escapeSignupValue(draft?.dateOfBirth ?? '')}" />
           <label class="field-label" for="su-phone">Cellphone number</label>
           <input class="text-input" id="su-phone" type="tel" placeholder="+27 82 123 4567" autocomplete="tel" maxlength="24" value="${escapeSignupValue(draft?.phone ?? '')}" required />
-          <label class="field-label" for="su-email">Email address (optional)</label>
-          <input class="text-input" id="su-email" type="email" placeholder="Email address" autocomplete="email" maxlength="254" value="${escapeSignupValue(draft?.email ?? '')}" />
+          <label class="field-label" for="su-email">${DB_CONFIGURED ? 'Email address' : 'Email address (optional)'}</label>
+          <input class="text-input" id="su-email" type="email" placeholder="${DB_CONFIGURED ? 'Email address (required)' : 'Email address'}" autocomplete="email" maxlength="254" value="${escapeSignupValue(draft?.email ?? '')}" ${DB_CONFIGURED ? 'required' : ''} />
           <label class="field-label" for="su-province">Province (optional)</label>
           <input class="text-input" id="su-province" type="text" placeholder="Province" autocomplete="address-level1" maxlength="100" value="${escapeSignupValue(draft?.province ?? '')}" />
           <label class="field-label" for="su-country">Country (optional)</label>
@@ -214,6 +213,8 @@ export function renderSignup(root) {
     const error = root.querySelector('#su-error');
     const submit = root.querySelector('#su-submit');
     let location = signupLocation;
+    let awaitingEmailCode = false;
+    let pendingSignupEmail = '';
     const syncSignupDraft = () => {
         signupFirstName = nameInput.value.trim();
         signupTermsAccepted = termsInput.checked;
@@ -257,6 +258,17 @@ export function renderSignup(root) {
     });
     form.addEventListener('submit', async (event) => {
         event.preventDefault();
+        if (awaitingEmailCode) {
+            const code = form.querySelector('#email-otp-code');
+            const codeError = form.querySelector('#email-otp-error');
+            const verifyButton = form.querySelector('#email-otp-submit');
+            verifyButton.disabled = true;
+            const result = await verifyEmailOtp(pendingSignupEmail, code.value);
+            verifyButton.disabled = false;
+            if (result.error)
+                codeError.textContent = formatAuthError(result.error, 'otp');
+            return;
+        }
         error.textContent = '';
         const name = nameInput.value.trim();
         const surname = surnameInput.value.trim();
@@ -275,12 +287,33 @@ export function renderSignup(root) {
             error.textContent = 'Enter a valid email address or leave it blank.';
             return;
         }
+        if (DB_CONFIGURED && !email) {
+            error.textContent = 'Enter an email address to create your account.';
+            emailInput.focus();
+            return;
+        }
         if (!termsInput.checked) {
             error.textContent = 'Please agree to the Terms and Conditions to continue.';
             termsInput.focus();
             return;
         }
         syncSignupDraft();
+        if (DB_CONFIGURED) {
+            submit.disabled = true;
+            submit.textContent = 'Sending verification code…';
+            const fullName = `${name} ${surname}`;
+            const result = await sendEmailAuthOtp(email, 'signup', fullName, phone);
+            submit.disabled = false;
+            submit.textContent = 'Continue to PIN setup';
+            if (result.error) {
+                error.textContent = formatAuthError(result.error);
+                return;
+            }
+            pendingSignupEmail = email;
+            awaitingEmailCode = true;
+            showEmailCodeForm(form, email, 'signup', fullName, phone);
+            return;
+        }
         submit.disabled = true;
         store.navigateTo('setup-pin');
     });
@@ -290,6 +323,7 @@ export function renderLogin(root) {
     <div class="screen auth-screen auth-screen--scenic">
       <header class="auth-hero"><h1>Sign In</h1></header>
       <section class="auth-sheet">
+        <p class="auth-subtitle">Enter your email and verify the one-time code. You’ll then unlock with your account PINs.</p>
         <form class="auth-form" id="login-form" autocomplete="on" novalidate>
           <label class="auth-visually-hidden" for="li-email">Email address</label>
           <input class="text-input" id="li-email" type="email" placeholder="Email address" autocomplete="email" required />

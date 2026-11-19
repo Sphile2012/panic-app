@@ -6,6 +6,7 @@ import { renderApp } from './screens/app.js';
 import { renderContacts } from './screens/contacts.js';
 import { renderLocation } from './screens/location.js';
 import { renderLive } from './screens/live.js';
+import { renderEmergencyStatus } from './screens/emergency-status.js';
 import { renderProfile } from './screens/profile.js';
 import { renderHistory, renderJourney, renderFakeCall, renderWatch, renderGuide, renderFaq } from './screens/pages.js';
 import { renderRecords } from './screens/records.js';
@@ -21,13 +22,14 @@ import { renderAppearance } from './screens/appearance.js';
 import { renderBudget } from './screens/disguise/budget.js';
 import { renderWeather } from './screens/disguise/weather.js';
 import { renderNotesPlain } from './screens/disguise/notesPlain.js';
-import { renderClock } from './screens/disguise/clock.js';
+import { disposeClock, renderClock } from './screens/disguise/clock.js';
 import { renderCompanion } from './screens/companion.js';
 import { renderAbout } from './screens/about.js';
 import { renderTerms } from './screens/terms.js';
 import { renderEmergencyDialer, renderTroubleshooting } from './screens/emergency.js';
 import { renderDecoy } from './screens/decoy.js';
-import { renderSignup, renderWelcome } from './screens/emailAuth.js';
+import { renderLogin, renderSignup, renderWelcome } from './screens/emailAuth.js';
+import { renderAccountPinGate, renderAccountPinRecovery } from './screens/accountPin.js';
 import { runAlertSequence } from './alertService.js';
 import { pruneStaleQueue, watchForReconnect } from './alertQueue.js';
 import { loadAppearance, applyAppearance } from './theme.js';
@@ -71,6 +73,8 @@ function renderDisguise() {
     }
 }
 function render(screen) {
+    if (currentScreen === 'calculator' && screen !== 'calculator')
+        disposeClock();
     currentScreen = screen;
     document.documentElement.dataset['screen'] = screen;
     appRoot.scrollTop = 0;
@@ -80,6 +84,17 @@ function render(screen) {
             break;
         case 'signup':
             renderSignup(appRoot);
+            break;
+        case 'login':
+            renderLogin(appRoot);
+            break;
+        case 'account-pin-check':
+        case 'account-pin-setup':
+        case 'account-pin-login':
+            void renderAccountPinGate(appRoot);
+            break;
+        case 'account-pin-recovery':
+            renderAccountPinRecovery(appRoot);
             break;
         case 'calculator':
             renderDisguise();
@@ -116,6 +131,9 @@ function render(screen) {
             break;
         case 'live':
             renderLive(appRoot);
+            break;
+        case 'emergency-status':
+            renderEmergencyStatus(appRoot);
             break;
         case 'history':
             renderHistory(appRoot);

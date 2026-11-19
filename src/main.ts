@@ -14,6 +14,8 @@ import { renderChat } from './screens/chat.js';
 import { renderSending, renderSent, updateSendingList } from './screens/sending.js';
 import { renderNotes, renderNoteEdit } from './screens/notes.js';
 import { renderSafetyPlan } from './screens/safetyPlan.js';
+import { renderSafeWord } from './screens/safeWord.js';
+import { renderContactMessage } from './screens/contactMessage.js';
 import { renderSupport } from './screens/support.js';
 import { renderSettings, renderChangePins, renderPinRecovery } from './screens/settings.js';
 import { renderAppearance } from './screens/appearance.js';
@@ -26,7 +28,8 @@ import { renderAbout } from './screens/about.js';
 import { renderTerms } from './screens/terms.js';
 import { renderEmergencyDialer, renderTroubleshooting } from './screens/emergency.js';
 import { renderDecoy } from './screens/decoy.js';
-import { renderSignup, renderWelcome } from './screens/emailAuth.js';
+import { renderLogin, renderSignup, renderWelcome } from './screens/emailAuth.js';
+import { renderAccountPinGate, renderAccountPinRecovery } from './screens/accountPin.js';
 import { runAlertSequence } from './alertService.js';
 import { pruneStaleQueue, watchForReconnect } from './alertQueue.js';
 import { loadAppearance, applyAppearance } from './theme.js';
@@ -86,6 +89,17 @@ function render(screen: string) {
             break;
         case 'signup':
             renderSignup(appRoot);
+            break;
+        case 'login':
+            renderLogin(appRoot);
+            break;
+        case 'account-pin-check':
+        case 'account-pin-setup':
+        case 'account-pin-login':
+            void renderAccountPinGate(appRoot);
+            break;
+        case 'account-pin-recovery':
+            renderAccountPinRecovery(appRoot);
             break;
         case 'calculator':
             renderDisguise();
@@ -161,6 +175,15 @@ function render(screen: string) {
             break;
         case 'safety-plan':
             renderSafetyPlan(appRoot);
+            break;
+        case 'safe-word':
+            renderSafeWord(appRoot);
+            break;
+        case 'contact-message':
+            renderContactMessage(appRoot, 'referral');
+            break;
+        case 'contact-message-checkin':
+            renderContactMessage(appRoot, 'checkin');
             break;
         case 'support':
             renderSupport(appRoot);

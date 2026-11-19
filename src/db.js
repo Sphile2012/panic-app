@@ -375,35 +375,21 @@ export async function fetchRecentAlerts(limit = 10) {
         return [];
     }
 }
-const EDGE_FUNCTION_URL = '';
 export async function setupPinsInCloud(pin1, pin2, question1_id, answer1, question2_id, answer2) {
     if (!DB_CONFIGURED)
         return { error: 'Cloud backup not available in offline mode', success: false };
     try {
-        const session = await getSession();
-        if (!session?.access_token) {
-            return { error: 'Authentication required for cloud backup', success: false };
-        }
-        const response = await fetch(`${EDGE_FUNCTION_URL}/functions/v1/pin-setup`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${session.access_token}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                pin1,
-                pin2,
-                question1_id,
-                question1_answer: answer1,
-                question2_id,
-                question2_answer: answer2,
-            }),
+        const result = await setupAccountPins({
+            pin1,
+            confirmPin1: pin1,
+            pin2,
+            confirmPin2: pin2,
+            question1Id: question1_id,
+            question1Answer: answer1,
+            question2Id: question2_id,
+            question2Answer: answer2,
         });
-        const result = await response.json();
-        if (!response.ok) {
-            return { error: result.error || 'Failed to save PINs', success: false };
-        }
-        return { error: null, success: true };
+        return { error: result.error ?? null, success: result.success };
     }
     catch (error) {
         console.error('[pin-setup] Error:', error);
@@ -414,28 +400,13 @@ export async function verifyPinsInCloud(pin1, pin2) {
     if (!DB_CONFIGURED)
         return { error: 'Cloud verification not available', success: false };
     try {
-        const session = await getSession();
-        if (!session?.access_token) {
-            return { error: 'Authentication required', success: false };
-        }
-        const response = await fetch(`${EDGE_FUNCTION_URL}/functions/v1/pin-verify`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${session.access_token}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ pin1, pin2 }),
-        });
-        const result = await response.json();
-        if (!response.ok) {
-            return {
-                error: result.error || 'PIN verification failed',
-                success: false,
-                locked: result.locked,
-                remainingAttempts: result.remainingAttempts,
-            };
-        }
-        return { error: null, success: true };
+        const result = await verifyAccountPins(pin1, pin2);
+        return {
+            error: result.error ?? null,
+            success: result.success,
+            locked: result.locked,
+            remainingAttempts: result.remainingAttempts,
+        };
     }
     catch (error) {
         console.error('[pin-verify] Error:', error);
@@ -446,28 +417,15 @@ export async function changePinsInCloud(answer1, answer2, newPin1, newPin2) {
     if (!DB_CONFIGURED)
         return { error: 'Cloud backup not available', success: false };
     try {
-        const session = await getSession();
-        if (!session?.access_token) {
-            return { error: 'Authentication required', success: false };
-        }
-        const response = await fetch(`${EDGE_FUNCTION_URL}/functions/v1/pin-change`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${session.access_token}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                answer1,
-                answer2,
-                new_pin1: newPin1,
-                new_pin2: newPin2,
-            }),
+        const result = await changeAccountPins({
+            answer1,
+            answer2,
+            newPin1,
+            confirmPin1: newPin1,
+            newPin2,
+            confirmPin2: newPin2,
         });
-        const result = await response.json();
-        if (!response.ok) {
-            return { error: result.error || 'Failed to change PINs', success: false };
-        }
-        return { error: null, success: true };
+        return { error: result.error ?? null, success: result.success };
     }
     catch (error) {
         console.error('[pin-change] Error:', error);
@@ -478,15 +436,8 @@ export async function checkCloudPinsExist() {
     if (!DB_CONFIGURED)
         return false;
     try {
-        const user = await getUser();
-        if (!user)
-            return false;
-        const { data, error } = await getClient()
-            .from('user_pins')
-            .select('id')
-            .eq('user_id', user.id)
-            .maybeSingle();
-        return !error && data !== null;
+        const status = await getAccountPinStatus();
+        return status.configured;
     }
     catch {
         return false;

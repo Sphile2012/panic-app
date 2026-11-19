@@ -500,23 +500,32 @@ class Store {
         this.state = {
             ...this.state,
             authEmail: email,
-            isAuthenticated: isAuthenticated || this.state.isPinUnlocked,
-            ...(identityChanged ? { accountPinUnlocked: true, accountPinQuestionIds: [] } : {}),
+            isAuthenticated,
+            ...(identityChanged ? { accountPinQuestionIds: [] } : {}),
         };
-        if (!restoreSession && email && this.state.isFirstRun &&
-            (previousEmail !== email || ['welcome', 'login', 'signup', 'verify-email'].includes(this.state.screen))) {
-            this.state = { ...this.state, screen: 'setup-pin' };
-        } else if (!restoreSession && email && !this.state.isFirstRun) {
-            this.state = { ...this.state, screen: 'calculator' };
-        } else if (!restoreSession && !email && previousEmail && ['account-pin-check', 'account-pin-setup', 'account-pin-login'].includes(this.state.screen)) {
-            this.state = { ...this.state, screen: buildInitialState().screen };
+        const isRecoveryReauthentication = Boolean(email && email === previousEmail && this.state.screen === 'account-pin-recovery');
+        if (email && isAuthenticated) {
+            this.state = {
+                ...this.state,
+                screen: isRecoveryReauthentication ? this.state.screen : 'account-pin-check',
+                isPinUnlocked: false,
+                accountPinUnlocked: false,
+            };
+        } else if (!email && previousEmail) {
+            this.state = {
+                ...this.state,
+                screen: 'welcome',
+                isPinUnlocked: false,
+                accountPinUnlocked: false,
+            };
         }
         this.notify();
     }
     async unlockAccountWithPrimaryPin(primaryPin: string, secondPin: string): Promise<boolean> {
         const pinHash = await hashPin(primaryPin);
+        const decoyHash = await hashPin(secondPin);
         const pub = loadPublicSync();
-        if (pub.pin && pub.pin !== pinHash)
+        if ((pub.pin && pub.pin !== pinHash) || (pub.decoyPin && pub.decoyPin !== decoyHash))
             return false;
         if (!pub.pin)
             await this.savePin(primaryPin, secondPin);

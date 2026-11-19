@@ -42,11 +42,13 @@ test('dark-mode sign-out text stays readable on its button', () => {
   assert.match(darkSignout, /color:\s*#ffe9f4/);
 });
 
-test('welcome login uses a local PIN without requiring email or password', () => {
+test('welcome login uses account email authentication when configured and preserves offline PIN access', () => {
   const screen = welcome.match(/export function renderWelcome\(root\) \{[\s\S]*?(?=\nexport function renderSignup)/)?.[0] ?? '';
-  assert.match(screen, /store\.navigateTo\(hasPinStored \? 'calculator' : 'setup-pin'\)/);
+  assert.match(screen, /store\.navigateTo\(DB_CONFIGURED \? 'login' : hasPinStored \? 'calculator' : 'setup-pin'\)/);
+  assert.match(main, /case 'login':\s*renderLogin\(appRoot\)/);
+  assert.match(main, /case 'account-pin-check':[\s\S]*?renderAccountPinGate\(appRoot\)/);
+  assert.match(main, /case 'account-pin-recovery':\s*renderAccountPinRecovery\(appRoot\)/);
   assert.match(screen, /id="splash-panic-message"[^>]*>Please log in to use the app\.<\/p>/);
-  assert.doesNotMatch(screen, /type="email"|type="password"|email\/password/);
   assert.match(main, /case 'location':\s*renderLocation\(appRoot\)/);
   assert.match(main, /case 'watch':\s*renderWatch\(appRoot\)/);
 });
